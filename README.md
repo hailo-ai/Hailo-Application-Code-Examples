@@ -1,1 +1,0 @@
-# Hailo-Application-Code-Examples
