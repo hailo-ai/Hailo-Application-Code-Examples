@@ -1,8 +1,0 @@
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [],
-    "program": "./build/x86_64/vstream_re_id_example.4.8.1 -hef=yolov5s_personface.hef -reid=repvgg_a0_person_reid_2048.hef -num=1"
-}
