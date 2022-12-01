@@ -1,2 +1,0 @@
-{{          some,         random,         boring},
- {       strings,             in, xtensor xarray}}
