@@ -14,3 +14,4 @@ In order to compile the sample application, one should run "./build.sh"
 
 After successful compilation, one should run "./build/x86_64/vstream_re_id_example.4.10.0 -hef=yolov5s_personface.hef -reid=repvgg_a0_person_reid_2048.hef -num=1"
 
+This code is a Hailo open source, and Hailo proprietary.
