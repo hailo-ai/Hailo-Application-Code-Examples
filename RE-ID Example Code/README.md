@@ -1,6 +1,6 @@
 # Hailo RE-ID example code
 
-The folowwing is a sample code for using Hailo-8 chip to identify persons entering a room,
+The folowing is a sample code for using Hailo-8 chip to identify persons entering a room,
 and the saving them in a database for further identification, in case a person comes back to the room.
 
 Requirements for compiling and running the sample code:
