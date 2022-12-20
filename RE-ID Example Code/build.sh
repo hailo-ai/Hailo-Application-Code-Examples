@@ -1,10 +1,6 @@
 #!/bin/bash
 
-declare -A COMPILER=( [x86_64]=/usr/bin/gcc
-                      [aarch64]=/usr/bin/aarch64-linux-gnu-gcc
-                      [armv7l]=/usr/bin/arm-linux-gnueabi-gcc)
-
-# HAILORT_ROOT=/local/users/omerw/HailoRT/4.4.0/Installer/platform/hailort
+declare -A COMPILER=( [x86_64]=/usr/bin/gcc )
 
 for ARCH in x86_64
 do
