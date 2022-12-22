@@ -1,0 +1,9 @@
+[submodule "RE-ID_example_code/xtensor"]
+	path = RE-ID_example_code/xtensor
+	url = https://github.com/xtensor-stack/xtensor.git
+[submodule "RE-ID_example_code/rapidjson"]
+	path = RE-ID_example_code/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "RE-ID_example_code/xtl"]
+	path = RE-ID_example_code/xtl
+	url = https://github.com/xtensor-stack/xtl.git
