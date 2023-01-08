@@ -156,7 +156,7 @@ hailo_status read_all(OutputVStream &output, std::string &video_path)
 {
     std::vector<T> data(output.get_frame_size());
     std::vector<cv::String> file_names;
-    std::cout << "-I- Started read thread " << output.get_frame_size() << std::endl;
+    std::cout << "-I- Started read thread " << std::endl;
     cv::glob(video_path, file_names, false);
     size_t num_frames = 0;
     for (std::string file : file_names) {

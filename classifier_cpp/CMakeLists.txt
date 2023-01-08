@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(classifier)
 
-set(CMAKE_CXX_STANDARD 2a)
 set(COMPILE_OPTIONS -Wall -std=gnu++2a -Werror -O3)
 
 find_package(HailoRT REQUIRED)
