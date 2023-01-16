@@ -15,7 +15,7 @@ Hailo Model Zoo prerequesities (installed from the Hailo Model Zoo requierments.
 
 
 ## Running the example:
-```./yolo_inference.py [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH] HEF_PATH IMAGES_PATH YOLO_ARCH```
+```./yolo_inference.py [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH] HEF_PATH IMAGES_PATH YOLO_ARCH```  
 for example:  
 ```./yolo_inference.py --labels coco2017.txt yolov7.hef images yolo_v7```
 
