@@ -119,3 +119,10 @@ log.info('-------------------------------------')
 log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
 log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
 log.info('-------------------------------------')
+
+
+
+
+
+
+
