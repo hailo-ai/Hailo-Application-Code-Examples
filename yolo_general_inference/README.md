@@ -1,7 +1,7 @@
 This is a general YOLO architecture Hailo inference example.  
 
 The example takes one or more images, performs inference using the input HEF file and draws the detection boxes, claas type and confidence on the resized image.  
-The example works with .jpg, .png and .bmp image files.   
+The example works with .jpg, .jpeg, .png and .bmp image files.   
 
 The example was tested with the following Hailo Models Zoo networks:  
 yolov3, yolov3_gluon, yolov4_leaky, yolov5m_wo_spp, yolox_l_leaky, yolov6n, yolov7
