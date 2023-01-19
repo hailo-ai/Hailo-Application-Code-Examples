@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(cpp_another_vstreams_example)
+project(cpp_yolov5_win_standalone_example)
 
 set(CMAKE_CXX_STANDARD 20)
 
