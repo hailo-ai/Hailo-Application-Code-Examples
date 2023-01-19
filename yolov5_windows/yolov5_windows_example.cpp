@@ -11,20 +11,14 @@
  * You shall not reproduce, modify or distribute this software without prior written permission.
  **/
 /**
- * @file detection_app_c_api.cpp
- * @brief This example demonstrates running inference with virtual streams using the Hailort's C API on yolov5m
+ * @file yolov5_windows_example.cpp
+ * @brief This example demonstrates running inference with virtual streams on yolov5m
  **/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <thread> 
-#include <vector>
-#include <regex>
-#include <chrono>
 #include <future>
-#include <fstream>
-#include <memory>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -37,24 +31,18 @@
 
 #include "common.h"
 #include "hailo/hailort.h"
-#include <windows.h>
-#include <time.h>
 
 #define MAX_EDGE_LAYERS (16)
 #define MAX_BATCH (64)
+#define FRAME_WIDTH (640)
+#define FRAME_HEIGHT (640)
+#define PROCESSED_VID_FILE ("./processed_video.mp4")
 
-cv::Mat g_frame[10300];
+cv::Mat* g_frame;
 uint8_t *dst_data[MAX_EDGE_LAYERS][MAX_BATCH] = {NULL};
 uint32_t g_TotalFrame = 0xFFFFFFFF;
 extern float bbox_array[][6];
 extern unsigned int box_index;
-
-
-
-void free_statistics_struct(statistics* stats){
-    FREE(stats->input_vstream_infos);
-    FREE(stats->output_vstream_infos);
-}
 
 hailo_status build_streams(hailo_configured_network_group network_group,
     hailo_input_vstream *input_vstreams, size_t *input_frame_sizes,
@@ -107,6 +95,7 @@ hailo_status build_streams(hailo_configured_network_group network_group,
     }
 
     status = HAILO_SUCCESS;
+    //TODO remove goto
     goto l_exit;
 
 l_clear_buffers:
@@ -132,7 +121,7 @@ hailo_status write_all(hailo_input_vstream input_vstream, std::string video_path
     uint32_t i = 0; 
     hailo_input_vstream vstream = input_vstream;
     cv::Mat org_frame;
-    cv::Mat pp_frame(640, 640, CV_8UC3);  
+    cv::Mat pp_frame(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC3);  
     cv::Mat input_image;
 
     std::vector <cv::String > file_names;
@@ -141,14 +130,12 @@ hailo_status write_all(hailo_input_vstream input_vstream, std::string video_path
 
     status = hailo_get_input_vstream_frame_size(vstream, &input_frame_size);
 
-    // (void) clock_gettime(CLOCK_MONOTONIC_RAW, &(stats->start_time));
-
     // Prepare src data here
     for (i = 0; i < g_TotalFrame; i++) {
         cap>>org_frame; 
         if (org_frame.empty())
             break;
-        cv::resize(org_frame, g_frame[i], cv::Size(640, 640), 1);
+        cv::resize(org_frame, g_frame[i], cv::Size(FRAME_HEIGHT, FRAME_WIDTH), 1);
 
         status = hailo_vstream_write_raw_buffer(vstream, g_frame[i].data, input_frame_size);
 
@@ -177,14 +164,12 @@ hailo_status read_all(hailo_output_vstream output_vstream, std::shared_ptr<Featu
     return HAILO_SUCCESS;
 }
 
-
-
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features)
 {
     auto status = HAILO_SUCCESS;
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
-    cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(640,640));
+    cv::VideoWriter video(PROCESSED_VID_FILE, cv::VideoWriter::fourcc('m','p','4','v'), 30, cv::Size(FRAME_HEIGHT,FRAME_WIDTH));
 
     for (uint32_t i = 0; i < g_TotalFrame; i++) {
         auto detections = post_processing(
@@ -206,27 +191,28 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
                                           cv::Point2f(detection.xmax, detection.ymax), 
                                           cv::Scalar(0, 0, 255), 1);
             }
-            std::cout << "Detection: " << get_coco_name_from_int((int)detection.class_id) << ", Confidence: " << detection.confidence << std::endl;
+            std::cout << "Detection: " << get_coco_name_from_int(static_cast<int>(detection.class_id)) << ", Confidence: " << detection.confidence << std::endl;
         }
-  
+
         video.write(g_frame[i]);
 
     }
     video.release();
-    
+
     return status;
 }
-
-
 
 hailo_status run_network(hailo_configured_network_group network_group, hailo_input_vstream input_vstream, 
                         size_t input_frame_size, hailo_output_vstream *output_vstreams, 
                         size_t output_vstreams_size, std::string video_path)
 {
     hailo_status status = HAILO_SUCCESS; // Success oriented
-    hailo_activated_network_group activated_network_group = NULL;
+    hailo_activated_network_group activated_network_group = NULL;   
+    
+    std::cout << "-I- Running network. Input frame size: " << input_frame_size << std::endl;
 
-    printf("-I- Running network. Input frame size: %zu\n", input_frame_size);
+    cv::VideoCapture cap(video_path);
+    g_frame = new cv::Mat[cap.get(cv::CAP_PROP_FRAME_COUNT)];
 
     status = hailo_activate_network_group(network_group, NULL, &activated_network_group);
 
@@ -279,8 +265,7 @@ hailo_status run_network(hailo_configured_network_group network_group, hailo_inp
     return status;
 }
 
-
-std::string getCmdOption(int argc, char *argv[], const std::string &option)
+std::string get_cmd_option(int argc, char *argv[], const std::string &option)
 {
     std::string cmd;
     for (int i = 1; i < argc; ++i)
@@ -298,8 +283,8 @@ std::string getCmdOption(int argc, char *argv[], const std::string &option)
 
 
 int main(int argc, char** argv) {
-    std::string hef_path = getCmdOption(argc, argv, "-hef=");
-    std::string video_path = getCmdOption(argc, argv, "-video=");
+    std::string hef_path = get_cmd_option(argc, argv, "-hef=");
+    std::string video_path = get_cmd_option(argc, argv, "-video=");
     
     std::cout<<hef_path<<std::endl;
     
@@ -340,11 +325,11 @@ int main(int argc, char** argv) {
 
     status = run_network(network_group, input_vstreams[0], input_frame_size[0], output_vstreams, num_output_vstreams, video_path);
 
+    delete[] g_frame;
+
     printf(BOLDBLUE);
     printf("\nInference ran successfully!\n\n");
     printf(RESET);
-
-    
 
     status = HAILO_SUCCESS;
 
