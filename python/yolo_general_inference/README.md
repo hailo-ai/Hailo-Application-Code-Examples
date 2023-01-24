@@ -9,14 +9,17 @@ yolov3, yolov3_gluon, yolov4_leaky, yolov5m_wo_spp, yolox_l_leaky, yolov6n, yolo
 ## Prerequesities:  
 numpy  
 zenlog  
-PIL  
-hailo_platform (installed from the HailoRT .whl)  
-Hailo Model Zoo prerequesities (installed from the Hailo Model Zoo requierments.txt)  
+Pillow  
+hailo_platform (installed from the HailoRT .whl) (tested on version 4.12.0)  
+Hailo Model Zoo prerequesities (tested on version 2.6.0)
+
+Install the hailo model-zoo, and hailort whl, and then the requirements:
+`pip instasll -r requiremets.txt`
 
 
 ## Running the example:  
 ```./yolo_inference.py [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH] HEF_PATH IMAGES_PATH YOLO_ARCH```    
 for example:  
-```./yolo_inference.py --labels coco2017.txt yolov7.hef images yolo_v7```  
+```CUDA_VISIBLE_DEVICES=9 ./yolo_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
 
 For more information, run ```./yolo_inference.py --help```   

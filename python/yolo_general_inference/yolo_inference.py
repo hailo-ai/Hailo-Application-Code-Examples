@@ -17,7 +17,7 @@ parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
 parser.add_argument('arch', help="The architecture type of the model: yolov3, yolov4, yolov4t (tiny-yolov4), yolov5, yolox, yolov6 or yolov7.")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
-parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
+parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL.", default='coco2017.txt')
 args = parser.parse_args()
 
 
@@ -164,12 +164,11 @@ def postproc_yolov5_yolov7(height,width, anchors, meta_arch, num_of_classes, raw
                             meta_arch=meta_arch, 
                             classes=num_of_classes,
                             nms_iou_thresh=0.1,
-                            score_threshold=0.55,
+                            score_threshold=0.3,
                             labels_offset=1, 
                             **kwargs)
     
     detections = []
-    
     for raw_det in raw_detections_keys:
         detections.append(raw_detections[raw_det])
         
@@ -316,10 +315,5 @@ with PcieDevice(devices[0]) as target:
                 img = letterbox_image(image, (width,height))
                                             
                 post_process(results, img, i, output_path, width, height)
-                            
-
-
-
-
-
-
+log.info('Check results in \'output_image\' directory')
+log.info('Finished inference')

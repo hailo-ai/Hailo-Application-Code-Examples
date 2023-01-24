@@ -1,0 +1,2 @@
+zenlog
+Pillow>=9.4.0
