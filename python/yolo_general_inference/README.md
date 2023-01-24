@@ -14,11 +14,13 @@ hailo_platform (installed from the HailoRT .whl) (tested on version 4.12.0)
 Hailo Model Zoo prerequesities (tested on version 2.6.0)
 
 Install the hailo model-zoo, and hailort whl, and then the requirements:
-`pip instasll -r requiremets.txt`
+`pip install -r requiremets.txt`
 
 
 ## Running the example:  
-```./yolo_inference.py [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH] HEF_PATH IMAGES_PATH YOLO_ARCH```    
+```./yolo_inference.py [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH] HEF_PATH IMAGES_PATH YOLO_ARCH```
+
+You can download a sample image and a HEF with the `get_sources.sh` script, and then execute the inference.
 for example:  
 ```CUDA_VISIBLE_DEVICES=9 ./yolo_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
 
