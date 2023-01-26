@@ -1,6 +1,6 @@
 #include "hailo/hailort.hpp"
 #include "common.h"
-#include "yolov5_post_processing.hpp"
+#include "yolo_post_processing.hpp"
 
 #include <iostream>
 #include <chrono>
