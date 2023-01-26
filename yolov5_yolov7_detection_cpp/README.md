@@ -1,6 +1,6 @@
 **Last HailoRT version checked - 4.12.0**
 
-This is a hailort C++ API yolov5 & yolov7 detection example.
+This is a HailoRT C++ API yolov5 & yolov7 detection example.
 
 The example does the following:
 
@@ -12,7 +12,7 @@ The example does the following:
 6. Prints the object detected + confidence to the screen
 5. Prints statistics
 
-NOTE: Currently support only devices connected on a PCIe link.
+NOTE: Currently supports only devices connected on a PCIe link.
 
 Prequisites:
 OpenCV 4.2.X
