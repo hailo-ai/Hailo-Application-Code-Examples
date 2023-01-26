@@ -26,4 +26,5 @@ To run the compiled example:
 `./build/x86_64/vstream_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4`
 
 NOTE: You can also save the processed video by commenting in a few lines in the "post_processing_all" function.
+
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.  
