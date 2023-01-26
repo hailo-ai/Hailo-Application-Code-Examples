@@ -1,4 +1,5 @@
-** Last HailoRT version checked - 4.12.0 **
+**Last HailoRT version checked - 4.12.0**
+
 This is a hailort C++ API yolov5 & yolov7 detection example.
 
 The example does the following:
