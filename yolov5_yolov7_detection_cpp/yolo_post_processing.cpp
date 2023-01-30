@@ -11,8 +11,8 @@
  * You shall not reproduce, modify or distribute this software without prior written permission.
  **/
 /**
- * @file yolov5_post_processing.cpp
- * @brief Yolov5 Post-Processing
+ * @file yolo_post_processing.cpp
+ * @brief Yolo Post-Processing
  **/
 
 #include "yolo_post_processing.hpp"
