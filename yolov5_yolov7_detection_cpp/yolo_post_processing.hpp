@@ -11,8 +11,8 @@
  * You shall not reproduce, modify or distribute this software without prior written permission.
  **/
 /**
- * @file yolov5_post_processing.hpp
- * @brief Yolov5 Post-Processing
+ * @file yolo_post_processing.hpp
+ * @brief Yolo Post-Processing
  **/
 
 #ifndef _HAILO_YOLOV5_POST_PROCESSING_HPP_
