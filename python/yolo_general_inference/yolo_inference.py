@@ -15,7 +15,7 @@ from hailo_model_zoo.core.postprocessing.detection.yolo import YoloPostProc
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: yolov3, yolov4, yolov4t (tiny-yolov4), yolov5, yolox, yolov6 or yolov7.")
+parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolo_v4t (tiny-yolov4), yolo_v5, yolox, yolo_v6 or yolo_v7.")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL.", default='coco2017.txt')
 args = parser.parse_args()
