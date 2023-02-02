@@ -56,13 +56,13 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
 
 
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, double frame_count, 
-                                std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames)
+                                std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, double org_height, double org_width)
 {
     auto status = HAILO_SUCCESS;   
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
 
-    // cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(640,640));
+    // cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size((int)org_width, (int)org_height));
 
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
@@ -85,15 +85,16 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             }
         
 	        {
-                cv::rectangle(frames[i], cv::Point2f(detection.xmin, detection.ymin), 
-                                          cv::Point2f(detection.xmax, detection.ymax), 
-                                          cv::Scalar(0, 0, 255), 1);
+                cv::resize(frames[i], frames[i], cv::Size((int)org_width, (int)org_height), 1);
+                cv::rectangle(frames[i], cv::Point2f(float(detection.xmin / 640.0 * float(org_width)), float(detection.ymin / 640.0 * float(org_height))), 
+                            cv::Point2f(float(detection.xmax / 640.0 * float(org_width)), float(detection.ymax / 640.0 * float(org_height))), 
+                            cv::Scalar(0, 0, 255), 1);
             }
             std::cout << "Detection: " << get_coco_name_from_int(detection.class_id) << ", Confidence: " << std::fixed << std::setprecision(2) << detection.confidence * 100.0 << "%" << std::endl;
         }
         // cv::imshow("Display window", frames[i]);
         // cv::waitKey(0);
-        
+
         // video.write(frames[i]);
     }
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
@@ -176,7 +177,8 @@ hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_fra
 hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string video_path,
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
-                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, double frame_count) {
+                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, 
+                    double frame_count, double org_height, double org_width) {
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -206,7 +208,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i]))); 
     }
 
-    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames)));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -356,13 +358,15 @@ int main(int argc, char** argv) {
         throw "Error when reading video";
     }
     double frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+    double org_height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    double org_width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     capture.release();
 
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 
                         video_path, 
                         write_time_vec, read_time_vec, 
-                        inference_time, postprocess_time, frame_count);
+                        inference_time, postprocess_time, frame_count, org_height, org_width);
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
