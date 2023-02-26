@@ -66,7 +66,7 @@ void ssd_extract_boxes(std::pair<OutTensor,OutTensor> &tensors,
                 std::pair<uint32_t, float32_t> max_id_score_pair = {0, -1.f};
                 for (int idx_class = 1; idx_class < num_classes; ++idx_class){ // starting without background class.
                     // access index for class
-                    uint32_t access_cls = (col * num_anchors * num_classes) + (row * feature_map_height * num_anchors * num_classes) + (idx_anchor * num_classes) + idx_class; // assuming rows are anchors, cols are 4
+                    uint32_t access_cls = (col * num_anchors * num_classes) + (row * feature_map_height * num_anchors * num_classes) + (idx_anchor * num_classes) + idx_class;
                     auto class_confidence = fix_scale(tensors.second.m_data[access_cls], tensors.second.qp_scale, tensors.second.qp_zp);
                     class_confidence = sigmoid(class_confidence);
                     if (class_confidence > max_id_score_pair.second) { 
@@ -76,7 +76,7 @@ void ssd_extract_boxes(std::pair<OutTensor,OutTensor> &tensors,
                 }
 
                 // access index for bbox
-                uint32_t access_bbox = (col * num_anchors * 4) + (row * feature_map_height * num_anchors * 4) + (idx_anchor * 4); // assuming rows are anchors, cols are 4
+                uint32_t access_bbox = (col * num_anchors * 4) + (row * feature_map_height * num_anchors * 4) + (idx_anchor * 4);
 
                 if (max_id_score_pair.second >= thr) {
                     const auto &ha = branch_anchors[idx_anchor * 2];
@@ -110,7 +110,6 @@ void ssd_extract_boxes(std::pair<OutTensor,OutTensor> &tensors,
                         objects.push_back(DetectionObject(y_min, x_min, y_max, x_max, max_id_score_pair.second, max_id_score_pair.first));
                     }
                     else return;
-
                 }
             }
         }
@@ -120,7 +119,6 @@ void ssd_extract_boxes(std::pair<OutTensor,OutTensor> &tensors,
 
 std::vector<DetectionObject> ssd_decode(std::vector<std::pair<OutTensor,OutTensor>> &tensors, std::vector<std::vector<float>> &anchors, float& thr)
 {
-    size_t num_boxes = 0;
     std::vector<DetectionObject> objects;
     objects.reserve(MAX_BOXES);
     if (tensors.size() <= 0) return objects;
@@ -128,14 +126,14 @@ std::vector<DetectionObject> ssd_decode(std::vector<std::pair<OutTensor,OutTenso
     for(size_t i = 0; i < tensors.size(); i++){
         ssd_extract_boxes(tensors[i], anchors[i], objects, thr);
     }
-    num_boxes = objects.size();
+    size_t num_boxes = objects.size();
 
     // filter by overlapping boxes
     if(objects.size() > 0) {
         std::sort(objects.begin(), objects.end());
         for (unsigned int i = 0; i < objects.size(); ++i) {
             if (objects[i].confidence <= thr) {
-                break;
+                continue;
             }
             for (unsigned int j = i + 1; j < objects.size(); ++j) {
                 if ((objects[i].class_id == objects[j].class_id) && (objects[j].confidence >= thr)) {

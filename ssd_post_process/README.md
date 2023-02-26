@@ -4,9 +4,10 @@ SSD detection example with HailoRT C++, NMS on host.
 
 ## How to run  
 1. To compile the example run `./build.sh`   
-2. get hef and video: `./videos/get_hefs_and_video.sh`  
-To run the compiled example:  
-`./build/x86_64/vstream_ssd_example_cpp -hef=./hefs/ssd_mobilenet_v2_wo_nms.hef -video=./videos/short.mp4`  
+2. get hef and video: `./get_hefs_and_video.sh` 
+For better performance, resize offline by running: `ffmpeg -i full_mov_slow.mp4 -vf scale=300:300 full_mov_slow_scaled.mp4`
+3. To run the compiled example:  
+`./build/x86_64/vstream_ssd_example_cpp -hef=./ssd_mobilenet_v2_wo_nms.hef -video=./full_mov_slow_scaled.mp4`  
 
 ### Notes  
 1. You can also save the processed video by commenting in a few lines in the "post_processing_all" function.  

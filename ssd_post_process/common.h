@@ -50,15 +50,15 @@ public:
     m_buffers(buffers_size), m_qp_zp(qp_zp), m_qp_scale(qp_scale), m_height(height), m_width(width), m_channels(channels)
     {}
     static bool sort_tensors_by_size (std::shared_ptr<FeatureData> i, std::shared_ptr<FeatureData> j) { 
-		if(i->m_width == j->m_width){
-			return i->m_channels < j->m_channels;
-		}
-		return i->m_width > j->m_width; 
-	};
+		  if(i->m_width == j->m_width){
+			  return i->m_channels < j->m_channels;
+		  }
+		  return i->m_width > j->m_width; 
+	  };
 
-    DoubleBuffer m_buffers;
-    float32_t m_qp_zp;
-    float32_t m_qp_scale;
+  DoubleBuffer m_buffers;
+  float32_t m_qp_zp;
+  float32_t m_qp_scale;
 	uint32_t m_height;
 	uint32_t m_width;
 	uint32_t m_channels;
