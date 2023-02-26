@@ -26,7 +26,6 @@
 #include "common.h"
 
 // === CONFIGURATION =======================================================================================
-#define IMAGE_SIZE           300
 #define CONFIDENCE_THRESHOLD 0.4f
 #define IOU_THRESHOLD        0.6f
 #define MAX_BOXES            50
