@@ -54,6 +54,7 @@ struct DetectionObject {
         final boxes for display (Nx6) - DetectionObject
 */
 std::vector<DetectionObject> post_processing(
+    std::string &arch,
     uint8_t *fm1, float qp_zp_1, float qp_scale_1,
     uint8_t *fm2, float qp_zp_2, float qp_scale_2,
     uint8_t *fm3, float qp_zp_3, float qp_scale_3);
