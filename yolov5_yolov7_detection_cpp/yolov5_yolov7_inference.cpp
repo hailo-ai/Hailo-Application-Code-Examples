@@ -1,6 +1,6 @@
 #include "hailo/hailort.hpp"
 #include "common.h"
-#include "yolov5_post_processing.hpp"
+#include "yolo_post_processing.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -56,7 +56,8 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
 
 
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, double frame_count, 
-                                std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, double org_height, double org_width)
+                                std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, 
+                                double org_height, double org_width, std::string arch)
 {
     auto status = HAILO_SUCCESS;   
 
@@ -70,7 +71,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
 
     for (int i = 0; i < (int)frame_count; i++){
         
-        auto detections = post_processing(
+        auto detections = post_processing(arch,
             features[0]->m_buffers.get_read_buffer().data(), features[0]->m_qp_zp, features[0]->m_qp_scale,
             features[1]->m_buffers.get_read_buffer().data(), features[1]->m_qp_zp, features[1]->m_qp_scale,
             features[2]->m_buffers.get_read_buffer().data(), features[2]->m_qp_zp, features[2]->m_qp_scale);
@@ -153,7 +154,7 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
             break;
             }
 
-        cv::resize(org_frame, frames[i], cv::Size(width, height), 1);
+        cv::resize(org_frame, frames[i], cv::Size(height, width), 1);
 
         input_vstream.write(MemoryView(frames[i].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
         if (HAILO_SUCCESS != status)
@@ -178,7 +179,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
                     std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, 
-                    double frame_count, double org_height, double org_width) {
+                    double frame_count, double org_height, double org_width, std::string arch) {
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -208,7 +209,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i]))); 
     }
 
-    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, arch));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -321,8 +322,9 @@ int main(int argc, char** argv) {
     std::chrono::duration<double> total_time;
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
-    std::string yolov_hef      = getCmdOption(argc, argv, "-hef=");
+    std::string yolov_hef       = getCmdOption(argc, argv, "-hef=");
     std::string video_path      = getCmdOption(argc, argv, "-video=");
+    std::string arch            = getCmdOption(argc, argv, "-arch=");
 
     std::chrono::time_point<std::chrono::system_clock> write_time_vec;
     std::chrono::duration<double> inference_time;
@@ -366,7 +368,8 @@ int main(int argc, char** argv) {
                         std::ref(vstreams.second), 
                         video_path, 
                         write_time_vec, read_time_vec, 
-                        inference_time, postprocess_time, frame_count, org_height, org_width);
+                        inference_time, postprocess_time, 
+                        frame_count, org_height, org_width, arch);
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
