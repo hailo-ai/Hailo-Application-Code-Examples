@@ -172,15 +172,21 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
 }
 
 std::vector<DetectionObject> post_processing(
+    std::string &arch,
     uint8_t *fm1, float qp_zp_1, float qp_scale_1,
     uint8_t *fm2, float qp_zp_2, float qp_scale_2,
     uint8_t *fm3, float qp_zp_3, float qp_scale_3)
 {
-    int anchors1[] = {116, 90, 156, 198, 373, 326};
-    int anchors2[] = {30, 61, 62, 45, 59, 119};
-    int anchors3[] = {10, 13, 16, 30, 33, 23};
+
+    std::map<std::string, std::vector<std::vector<int>>> arch_to_anchors = {
+        {"yolov5", {{116, 90, 156, 198, 373, 326}, {30, 61, 62, 45, 59, 119}, {10, 13, 16, 30, 33, 23}}},
+        {"yolov7", {{142, 110, 192, 243, 459, 401}, {36, 75, 76, 55, 72, 146}, {12, 16, 19, 36, 40, 28}}}
+    };
+
     float thr = 0.1f;
 
-    return _decode(fm1, fm2, fm3, &anchors1[0], &anchors2[0], &anchors3[0], qp_zp_1, qp_scale_1,
+    auto anchors = arch_to_anchors[arch];
+
+    return _decode(fm1, fm2, fm3, &anchors[0][0], &anchors[1][0], &anchors[2][0], qp_zp_1, qp_scale_1,
         qp_zp_2, qp_scale_2, qp_zp_3, qp_scale_3, thr);
 }
