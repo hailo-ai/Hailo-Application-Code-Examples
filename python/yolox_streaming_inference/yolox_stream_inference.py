@@ -102,9 +102,7 @@ with PcieDevice() as target:
             elif key == ord('v'):
                 source = 'video'
                 cap.release()
-                print (mp4_files) 
                 random_mp4 = random.choice(mp4_files)
-                print (random_mp4) 
                 cap = cv2.VideoCapture(video_dir+random_mp4)
             elif key == ord('q'):
                 break
