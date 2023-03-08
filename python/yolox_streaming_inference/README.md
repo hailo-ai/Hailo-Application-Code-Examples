@@ -9,8 +9,10 @@ This example requires yolox_s_leaky.hef and video resources in order to run.
 Usage:
 - Run the get_resources script once prior to running the example. 
 - Run the example.
-- When the example is running, Use the keyboard to toggle between camera `c` (if available) and video `v` sources. 
-- hit `q` to quit the example
+- When the example is running, Use the keyboard to toggle between 
+- - camera (`c`) (if available) 
+- - video (`v`) (selects a random video)
+- - quit (`q`) to quit the example
 
 
 ```
