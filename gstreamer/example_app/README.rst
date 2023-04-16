@@ -9,6 +9,9 @@ Features
 - Instantiate a Gstreamer pipeline with Hailo plugins running full detection pipeline.
 - Attaching a callback to the pipeline bus to receive messages from the pipeline.
 - Example code for selecting input source (camera, video file, URI).
+   - For camera input example /dev/video0
+   - For video file input example file:///home/user/video.mp4 (URI file prefix file://)
+   - For online URI example try http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
 - Example code for getting Hailo statistics from the pipeline bus messages.
 
 
@@ -35,3 +38,4 @@ Running
 =======
 | Run ./example_app to start the app.
 | Run ./example_app -h to see the available options.
+| online URI example: ./example_app --sync-pipeline -i http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4

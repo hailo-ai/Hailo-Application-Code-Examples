@@ -90,7 +90,7 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
         pipeline_string += "videoflip video-direction=horiz ! ";
     } else {
         // input source is a video file
-        pipeline_string = "filesrc location=" + input_src + " ! decodebin ! ";
+        pipeline_string = "uridecodebin uri=" + input_src + " ! ";
         pipeline_string += QUEUE + " name=decode_q max-size-buffers=3 ! ";
     }
     pipeline_string += "videoconvert name=preproc_convert qos=false ! ";
