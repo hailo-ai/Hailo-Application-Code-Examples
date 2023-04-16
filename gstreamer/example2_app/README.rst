@@ -15,7 +15,7 @@ Features
 - Example code for getting Hailo statistics from the pipeline bus messages.
 - Example code for adding a custom overlay to the video stream.
 - Data aggregation and statistics calculation to be added as overlay on the video stream.
- - Includes, FPS, Hailo stats, and Host stats (memory and CPU usage).
+   - Includes, FPS, Hailo stats, and Host stats (memory and CPU usage).
 - Attach callback to element to get FPS on the element.
 - Attach callback to element to print detections (--probe-example)
 
