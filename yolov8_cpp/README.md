@@ -31,9 +31,13 @@ For a video:
 `./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=VIDEO_FILE.mp4`
 
 NOTE: This example uses xtensor C++ ibrary compiled from the xtl git as an external source. 
+
 NOTE: You can also save the processed image\video by commenting in a few lines in the "post_processing_all" function - for images, the cv::imwrite line and for a video the other commented out lines.
+
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.
+
 NOTE: You can play with the values of IOU_THRESHOLD and SCORE_THRESHOLD in the yolov8_postprocess.cpp file for different videos to get more detections. 
+
 NOTE: In case you prefer to perform the Sigmoid on host, you can comment in the relevant line to do that. Please notice that you'll need a HEF file that does not have an on-chip sigmoid if you choose to use the example in such a way. 
 
 IMPORTANT NOTE: The pre-compiled Yolov8 HEF files Hailo Model Zoo are compiled with normalization and sigmoid activation on-chip and have a 16-bit output layer.
