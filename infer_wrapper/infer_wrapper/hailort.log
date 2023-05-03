@@ -87,3 +87,311 @@
 [2023-05-02 19:45:19.108] [1298418] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
 [2023-05-02 19:45:19.108] [1298429] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
 [2023-05-02 19:45:19.108] [1298418] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 10:21:43.665] [1367139] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 10:21:43.665] [1367139] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 10:21:43.665] [1367139] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 10:21:43.665] [1367139] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.199241 milliseconds
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.495356 milliseconds
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 10:21:43.711] [1367139] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type UINT16, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 10:21:43.712] [1367150] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 10:21:43.712] [1367149] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 10:21:43.712] [1367149] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 10:21:43.712] [1367149] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 10:21:43.712] [1367139] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 10:21:43.712] [1367150] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 10:21:43.712] [1367139] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:20:50.645] [1426156] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:20:50.645] [1426156] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:20:50.645] [1426156] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:20:50.645] [1426156] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:20:50.713] [1426156] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 15.017566 milliseconds
+[2023-05-03 15:20:50.713] [1426156] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 15.434328 milliseconds
+[2023-05-03 15:20:50.714] [1426156] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:20:50.714] [1426156] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:20:50.715] [1426156] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:20:50.748] [1426167] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:20:50.748] [1426166] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:20:50.748] [1426166] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:20:50.748] [1426166] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:20:50.748] [1426156] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:20:50.748] [1426167] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:20:50.748] [1426156] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:21:02.833] [1426296] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:21:02.833] [1426296] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:21:02.833] [1426296] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:21:02.833] [1426296] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:21:02.896] [1426296] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 13.903366 milliseconds
+[2023-05-03 15:21:02.896] [1426296] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 14.295056 milliseconds
+[2023-05-03 15:21:02.897] [1426296] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:21:02.897] [1426296] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:21:02.897] [1426296] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:21:02.897] [1426296] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:21:02.898] [1426296] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:21:02.898] [1426296] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:21:02.898] [1426296] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:21:02.898] [1426296] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:21:02.898] [1426296] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:21:02.922] [1426307] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:21:02.922] [1426306] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:21:02.922] [1426306] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:21:02.922] [1426306] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:21:02.922] [1426296] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:21:02.922] [1426307] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:21:02.922] [1426296] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:24:23.361] [1426961] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:24:23.361] [1426961] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:24:23.361] [1426961] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:24:23.361] [1426961] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:24:23.421] [1426961] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 13.864434 milliseconds
+[2023-05-03 15:24:23.421] [1426961] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 14.255816 milliseconds
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:24:23.423] [1426961] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:24:23.446] [1426972] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:24:23.446] [1426971] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:24:23.446] [1426971] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:24:23.446] [1426971] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:24:23.447] [1426961] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:24:23.447] [1426972] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:24:23.447] [1426961] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:26:01.449] [1427219] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:26:01.449] [1427219] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:26:01.449] [1427219] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:26:01.449] [1427219] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:26:01.508] [1427219] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.559865 milliseconds
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.988741 milliseconds
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:26:01.509] [1427219] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:26:01.533] [1427230] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:26:01.533] [1427229] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:26:01.533] [1427229] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:26:01.533] [1427229] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:26:01.533] [1427219] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:26:01.533] [1427230] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:26:01.533] [1427219] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:26:42.985] [1427396] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:26:42.985] [1427396] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:26:42.985] [1427396] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:26:42.985] [1427396] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:26:43.032] [1427396] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 9.877436 milliseconds
+[2023-05-03 15:26:43.032] [1427396] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.161711 milliseconds
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:26:43.033] [1427396] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:26:43.056] [1427409] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:26:43.056] [1427408] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:26:43.056] [1427408] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:26:43.056] [1427408] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:26:43.056] [1427396] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:26:43.056] [1427409] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:26:43.056] [1427396] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:32:54.153] [1427657] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 15:32:54.153] [1427657] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 15:32:54.153] [1427657] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 15:32:54.153] [1427657] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 15:32:54.214] [1427657] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.895302 milliseconds
+[2023-05-03 15:32:54.214] [1427657] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 11.292256 milliseconds
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 15:32:54.215] [1427657] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 15:32:54.239] [1427667] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 15:32:54.239] [1427668] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 15:32:54.239] [1427667] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 15:32:54.239] [1427667] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:32:54.239] [1427657] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 15:32:54.239] [1427668] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 15:32:54.239] [1427657] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:01:04.201] [1428251] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:01:04.201] [1428251] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:01:04.201] [1428251] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:01:04.201] [1428251] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:01:04.261] [1428251] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 12.795351 milliseconds
+[2023-05-03 16:01:04.261] [1428251] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 13.213879 milliseconds
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:01:04.263] [1428251] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:01:04.288] [1428262] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:01:04.288] [1428261] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:01:04.288] [1428261] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:01:04.288] [1428261] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:01:04.288] [1428251] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:01:04.288] [1428262] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:01:04.288] [1428251] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:32:10.933] [1429428] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:32:10.933] [1429428] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:32:10.933] [1429428] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:32:10.933] [1429428] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:32:10.994] [1429428] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.429087 milliseconds
+[2023-05-03 16:32:10.994] [1429428] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.827667 milliseconds
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:32:10.995] [1429428] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:32:11.018] [1429439] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:32:11.018] [1429438] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:32:11.019] [1429438] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:32:11.019] [1429438] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:32:11.019] [1429428] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:32:11.019] [1429439] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:32:11.019] [1429428] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:32:36.253] [1429613] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:32:36.253] [1429613] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:32:36.253] [1429613] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:32:36.253] [1429613] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:32:36.314] [1429613] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 13.772428 milliseconds
+[2023-05-03 16:32:36.315] [1429613] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 14.138917 milliseconds
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:32:36.316] [1429613] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:32:36.340] [1429624] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:32:36.340] [1429623] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:32:36.340] [1429623] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:32:36.340] [1429623] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:32:36.340] [1429613] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:32:36.340] [1429624] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:32:36.341] [1429613] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:35:02.661] [1429979] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:35:02.661] [1429979] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:35:02.661] [1429979] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:35:02.661] [1429979] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:35:02.724] [1429979] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 13.921105 milliseconds
+[2023-05-03 16:35:02.724] [1429979] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 14.318741 milliseconds
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:35:02.726] [1429979] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:35:02.749] [1429990] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:35:02.749] [1429989] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:35:02.749] [1429989] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:35:02.749] [1429989] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:35:02.749] [1429979] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:35:02.749] [1429990] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:35:02.749] [1429979] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:36:37.497] [1430422] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:36:37.497] [1430422] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:36:37.497] [1430422] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:36:37.497] [1430422] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:36:37.555] [1430422] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.512691 milliseconds
+[2023-05-03 16:36:37.555] [1430422] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.903242 milliseconds
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:36:37.556] [1430422] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:36:37.579] [1430433] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:36:37.579] [1430432] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:36:37.579] [1430432] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:36:37.579] [1430432] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:36:37.579] [1430422] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:36:37.579] [1430433] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:36:37.579] [1430422] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:37:36.101] [1430615] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:37:36.101] [1430615] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:37:36.101] [1430615] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:37:36.101] [1430615] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:37:36.163] [1430615] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 13.447693 milliseconds
+[2023-05-03 16:37:36.164] [1430615] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 13.841508 milliseconds
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:37:36.165] [1430615] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:37:36.189] [1430626] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:37:36.189] [1430625] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:37:36.189] [1430625] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:37:36.189] [1430625] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:37:36.189] [1430615] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:37:36.189] [1430626] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:37:36.189] [1430615] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:43:53.733] [1430790] [HailoRT] [info] [hailort_driver.cpp:169] [HailoRTDriver] Hailo PCIe driver version 4.13.0
+[2023-05-03 16:43:53.733] [1430790] [HailoRT] [info] [device.cpp:46] [Device] OS Version: Linux 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64
+[2023-05-03 16:43:53.733] [1430790] [HailoRT] [info] [control.cpp:89] [control__parse_identify_results] firmware_version is: 4.13.0
+[2023-05-03 16:43:53.733] [1430790] [HailoRT] [info] [vdevice.cpp:363] [create] VDevice Infos: 0000:17:00.0
+[2023-05-03 16:43:53.797] [1430790] [HailoRT] [info] [device_internal.cpp:56] [configure] Configuring HEF took 10.399219 milliseconds
+[2023-05-03 16:43:53.797] [1430790] [HailoRT] [info] [vdevice.cpp:434] [configure] Configuring HEF on VDevice took 10.808571 milliseconds
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:1682] [create] Created HwWriteElement1_resnet_v1_18/input_layer1
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:1005] [InputVStreamImpl] Creating resnet_v1_18/input_layer1...
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:1964] [create_inputs] Input pipeline 'resnet_v1_18/input_layer1': (HwWriteElement1_resnet_v1_18/input_layer1 | hw_frame_size: 150528) >> HW
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:1506] [create] Created HwReadElement0_resnet_v1_18/fc1
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [pipeline.cpp:1091] [create] Created PullQueueElement_hw_read0_resnet_v1_18/fc1
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:146] [create] Created PostInferElement0_resnet_v1_18/fc1
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [pipeline.cpp:1218] [create] Created UserBufferQueueElement_post_infer0_resnet_v1_18/fc1
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:1297] [OutputVStreamImpl] Creating resnet_v1_18/fc1...
+[2023-05-03 16:43:53.798] [1430790] [HailoRT] [info] [vstream.cpp:2068] [create_outputs] Output pipeline 'resnet_v1_18/fc1': HW >> (HwReadElement0_resnet_v1_18/fc1 | hw_frame_size: 2000) >> (PullQueueElement_hw_read0_resnet_v1_18/fc1) >> (PostInferElement0_resnet_v1_18/fc1 | Quantization - src_type: UINT16, dst_type FLOAT32, qp_scale: 0.000563793, qp_zp: 9077, limvals_min: -5.11755, limvals_max: 13.3563 | Reorder - src_order: NC, src_shape: (1, 1, 1000), dst_order: NC, dst_shape: (1, 1, 1000)) >> (UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 | timeout: 10s)
+[2023-05-03 16:43:53.822] [1430800] [HailoRT] [info] [vstream.cpp:1627] [run_pull] Reading from stream was aborted!
+[2023-05-03 16:43:53.822] [1430801] [HailoRT] [info] [pipeline.cpp:1294] [run_in_thread] Shutdown event was signaled in dequeue of UserBufferQueueElement_post_infer0_resnet_v1_18/fc1!
+[2023-05-03 16:43:53.822] [1430800] [HailoRT] [info] [pipeline.cpp:1168] [run_in_thread] run_pull of queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 was aborted!
+[2023-05-03 16:43:53.822] [1430800] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element PullQueueElement_hw_read0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:43:53.822] [1430790] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element PullQueueElement_hw_read0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction
+[2023-05-03 16:43:53.822] [1430801] [HailoRT] [info] [pipeline.cpp:750] [operator()] Thread in element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 is not running anymore, exiting..
+[2023-05-03 16:43:53.822] [1430790] [HailoRT] [info] [pipeline.cpp:739] [~BaseQueueElement] Queue element UserBufferQueueElement_post_infer0_resnet_v1_18/fc1 has 0 frames in his Queue on destruction

@@ -7,6 +7,8 @@
  * This example demonstrates using virtual streams over c++
  **/
 
+#include "include/infer.hpp"
+
 #include "hailo/hailort.hpp"
 
 #include <iostream>
@@ -177,7 +179,7 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
     return status;
 }
 
-extern "C" int infer_wrapper(const char* hef_path, const char* images_path)
+extern "C" int infer_wrapper(const char* hef_path, const char* images_path, TensorWrapper tensor)
 {
     std::cout << "successfully loaded libinfer.so" << std::endl;
     std::cout << "hef path entered: " << std::string(hef_path) << std::endl;
@@ -195,7 +197,7 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path)
     }
 
     auto input_vstream_params = network_group.value()->make_input_vstream_params(false, HAILO_FORMAT_TYPE_UINT8, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
-    auto output_vstream_params = network_group.value()->make_output_vstream_params(false, HAILO_FORMAT_TYPE_UINT16, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    auto output_vstream_params = network_group.value()->make_output_vstream_params(false, HAILO_FORMAT_TYPE_FLOAT32, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE); // HAILO_FORMAT_TYPE_UINT16
     auto input_vstreams  = VStreamsBuilder::create_input_vstreams(*network_group.value(), input_vstream_params.value());
     auto output_vstreams = VStreamsBuilder::create_output_vstreams(*network_group.value(), output_vstream_params.value());
     if (!input_vstreams or !output_vstreams) {
@@ -203,19 +205,6 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path)
         return input_vstreams.status();
     }
     auto vstreams = std::make_pair(input_vstreams.release(), output_vstreams.release());
-
-    // auto vstreams = VStreamsBuilder::create_vstreams(*network_group.value(), QUANTIZED, FORMAT_TYPE);
-    // if (!vstreams) {
-    //     std::cerr << "Failed creating vstreams " << vstreams.status() << std::endl;
-    //     return vstreams.status();
-    // }
-    // TODO: remove
-    // const hailo_format_type_t a = HAILO_FORMAT_TYPE_UINT8;
-    // const hailo_format_type_t b = HAILO_FORMAT_TYPE_UINT16;
-    // bool ok_in = a == vstreams->first.at(0).get_user_buffer_format().type;
-    // bool ok_out = b == vstreams->second.at(0).get_user_buffer_format().type;
-    // std::cout << "ok_in: " <<  ok_in << std::endl;
-    // std::cout << "ok_out: " <<  ok_out << std::endl;
 
     if (vstreams.first.size() > MAX_LAYER_EDGES || vstreams.second.size() > MAX_LAYER_EDGES) {
         std::cerr << "Trying to infer network with too many input/output virtual streams, Maximum amount is " <<
@@ -229,13 +218,15 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path)
         return status;
     }
 
-    return HAILO_SUCCESS;
-}
+    tensor.array_5[0] = static_cast<float32_t>(0.5);
+    tensor.array_6[0] = static_cast<float32_t>(1.5);
+    tensor.array_7[0] = static_cast<float32_t>(2.5);
 
-extern "C" int infer_wrapper_test(int a) {
-    std::cout << "successfully loaded libinfer.so" << std::endl;
-    (void)a;
-    return 0;
+    tensor.array_5[1] = static_cast<float32_t>(10.5);
+    tensor.array_6[1] = static_cast<float32_t>(11.5);
+    tensor.array_7[1] = static_cast<float32_t>(12.5);
+
+    return HAILO_SUCCESS;
 }
 
 // int main() {

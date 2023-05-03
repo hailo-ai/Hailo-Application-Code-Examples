@@ -1,0 +1,60 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_2d562/fast && /usr/bin/make  -f CMakeFiles/cmTC_2d562.dir/build.make CMakeFiles/cmTC_2d562.dir/build
+make[1]: Entering directory '/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_2d562.dir/src.c.o
+/usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_2d562.dir/src.c.o -c /local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_2d562
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2d562.dir/link.txt --verbose=1
+/usr/bin/cc -rdynamic CMakeFiles/cmTC_2d562.dir/src.c.o -o cmTC_2d562 
+/usr/bin/ld: CMakeFiles/cmTC_2d562.dir/src.c.o: in function `main':
+src.c:(.text+0x46): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5e): undefined reference to `pthread_cancel'
+/usr/bin/ld: src.c:(.text+0x6f): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_2d562.dir/build.make:99: cmTC_2d562] Error 1
+make[1]: Leaving directory '/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_2d562/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+static void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_ccecc/fast && /usr/bin/make  -f CMakeFiles/cmTC_ccecc.dir/build.make CMakeFiles/cmTC_ccecc.dir/build
+make[1]: Entering directory '/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ccecc.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_ccecc.dir/CheckFunctionExists.c.o -c /usr/local/share/cmake-3.23/Modules/CheckFunctionExists.c
+Linking C executable cmTC_ccecc
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ccecc.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create -rdynamic CMakeFiles/cmTC_ccecc.dir/CheckFunctionExists.c.o -o cmTC_ccecc  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_ccecc.dir/build.make:99: cmTC_ccecc] Error 1
+make[1]: Leaving directory '/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_ccecc/fast] Error 2
+
+
+
