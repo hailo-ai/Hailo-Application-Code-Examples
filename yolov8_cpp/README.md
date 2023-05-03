@@ -18,7 +18,7 @@ Prequisites:
 OpenCV 4.2.X
 CMake >= 3.20
 HailoRT >= 4.10.0
-Xtensor
+Xtensor - no installation or build needed as it's complied from the web as an external project
 
 
 To compile the example run `./build.sh`
