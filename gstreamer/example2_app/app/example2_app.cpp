@@ -1,7 +1,3 @@
-/**
- * Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
- * Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
- **/
 // General cpp includes
 #include <chrono>
 #include <condition_variable>
@@ -123,12 +119,23 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
 
 int main(int argc, char *argv[])
 {
+    // Set the GST_DEBUG_DUMP_DOT_DIR environment variable to dump a DOT file
+    setenv("GST_DEBUG_DUMP_DOT_DIR", APP_RUNTIME_DIR.c_str(), 1);
+        
+    // Prepare pipeline components
+    GstBus *bus;
+    GMainLoop *main_loop;
+    std::string src_pipeline_string;
+    
+    gst_init(&argc, &argv); // Initialize Gstreamer
+   
     // build argument parser
     cxxopts::Options options = build_arg_parser();
     // add custom options
     options.add_options()
     ("p, print-pipeline", "Only prints pipeline and exits", cxxopts::value<bool>()->default_value("false"))
-    ("probe-example", "Enables probe example", cxxopts::value<bool>()->default_value("false"));
+    ("probe-example", "Enables probe example", cxxopts::value<bool>()->default_value("false"))
+    ("dump-dot-files", "Enables dumping of dot files", cxxopts::value<bool>()->default_value("false"));
     
     //add aggregator options
     add_aggregator_options(options);
@@ -142,18 +149,19 @@ int main(int argc, char *argv[])
     }
     // print the app runtime directory
     std::cout << "APP_RUNTIME_DIR: " << APP_RUNTIME_DIR << std::endl;
-    
-    // Prepare pipeline components
-    GstBus *bus;
-    GMainLoop *main_loop;
-    std::string src_pipeline_string;
-    gst_init(&argc, &argv); // Initialize Gstreamer
+     
     // Create the main loop
     main_loop = g_main_loop_new(NULL, FALSE);
 
     // Create the pipeline
     std::string pipeline_string = create_pipeline_string(result);
-
+    
+    if (result["print-pipeline"].as<bool>())
+    {
+        std::cout << "Pipeline:" << std::endl;
+        std::cout << "gst-launch-1.0 " << pipeline_string << std::endl;
+        exit(0);
+    }
     // Parse the pipeline string and create the pipeline
     GError *err = nullptr;
     GstElement *pipeline = gst_parse_launch(pipeline_string.c_str(), &err);
@@ -163,10 +171,10 @@ int main(int argc, char *argv[])
     bus = gst_element_get_bus(pipeline);
 
     // Run hailo utils setup for basic run
-    UserData user_data;
+    UserData user_data; // user data to pass to callbacks
     setup_hailo_utils(pipeline, bus, main_loop, &user_data, result);
     
-    // For additional services
+    // Setup aggregator
     user_data.data_aggregator = setup_hailo_data_aggregator(pipeline, main_loop, result);
     
     // Add probe examples
@@ -185,21 +193,30 @@ int main(int argc, char *argv[])
         
     }
 
-    if (true) {
-        // Diagnose example for the filter_post element
-        user_data.elements_to_diagnose.push_back(gst_bin_get_by_name(GST_BIN(pipeline), "filter_post"));
-        // user_data.elements_to_diagnose.push_back(gst_bin_get_by_name(GST_BIN(pipeline), "preproc_convert"));
+    if (result["dump-dot-files"].as<bool>()) {
+        g_print("Dumping dot files\n");
+        // Dump the DOT file after the pipeline has been created this is before caps negotiation
+        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_before_negotiation");
     }
     
-    // Run the pipeline
-    if (not result["print-pipeline"].as<bool>())
-    {
-        // Set the pipeline state to PLAYING
-        std::cout << "Setting pipeline to PLAYING" << std::endl;
-        gst_element_set_state(pipeline, GST_STATE_PLAYING);
-        // Run the main loop this is blocking will run until the main loop is stopped
-        g_main_loop_run(main_loop);
+    // Set the pipeline state to PLAYING
+    std::cout << "Setting pipeline to PLAYING" << std::endl;
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    
+    //wait for the pipeline to finish state change
+    GstStateChangeReturn ret = gst_element_get_state(pipeline, NULL, NULL, GST_CLOCK_TIME_NONE);
+
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        std::cerr << "Failed to start pipeline" << std::endl;
+        exit(1);
     }
+    if (result["dump-dot-files"].as<bool>()) {
+        // Dump the DOT file after the pipeline has been set to PLAYING
+        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_playing");
+    }
+    // Run the main loop this is blocking will run until the main loop is stopped
+    g_main_loop_run(main_loop);
+    
     // Free resources
     gst_element_set_state(pipeline, GST_STATE_NULL);
     gst_deinit();

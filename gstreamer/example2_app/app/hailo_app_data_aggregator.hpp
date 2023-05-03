@@ -1,10 +1,3 @@
-/**
-* Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
-* Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
-**/
-
-//  version 1.0.0
-
 // General cpp includes
 #include <chrono>
 #include <condition_variable>
@@ -224,7 +217,7 @@ double getProcessCpuUsage(int pid) {
 
 double getProcessMemoryUsage(int pid) {
   ///////////////////////////////////////////////////////////////////////////////
-  // Note that the memory usage returned by this function might be entirely wrong
+  // Note that the memory usage returned by this function is the maximum memory used
   ///////////////////////////////////////////////////////////////////////////////
   
   struct rusage usage;

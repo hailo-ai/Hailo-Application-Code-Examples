@@ -1,9 +1,3 @@
-/**
-* Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
-* Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
-* Helper functions based on https://github.com/agrechnev/gst_app_tutorial
-**/
-
 #ifndef HAILO_APP_CPP_UTILS_HPP
 #define HAILO_APP_CPP_UTILS_HPP
 
@@ -120,18 +114,6 @@ class BusWatch {
         }
           break;
       }
-
-      case GST_MESSAGE_STATE_CHANGED: {
-        // check if the message is from one of the elements to be diagnosed
-        for (auto elem : data->elements_to_diagnose) {
-            if (GST_MESSAGE_SRC(message) == GST_OBJECT(elem)) {
-                parse_state_change_message(message);
-                diagnose(elem);
-                break;
-            }
-        }
-        break;
-      }
       // print QOS message
       case GST_MESSAGE_QOS: {
         std::cout << "QOS message detected from " << GST_OBJECT_NAME(message->src) << std::endl;
@@ -211,10 +193,6 @@ inline void checkErr(GError *err) {
  */
 void setup_hailo_utils(GstElement *pipeline, GstBus *bus, GMainLoop *main_loop, UserData* user_data, cxxopts::ParseResult result)
 {
-  gboolean print_fps = result["show-fps"].as<bool>();
-  
-  // user_data = new UserData;
-  
   // Set the pipeline element
   user_data->pipeline = pipeline;
 

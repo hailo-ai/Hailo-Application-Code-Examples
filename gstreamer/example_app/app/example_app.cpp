@@ -1,7 +1,3 @@
-/**
- * Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
- * Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
- **/
 // General cpp includes
 #include <chrono>
 #include <condition_variable>
@@ -141,7 +137,6 @@ int main(int argc, char *argv[])
     // Prepare pipeline components
     GstBus *bus;
     GMainLoop *main_loop;
-    std::string src_pipeline_string;
     gst_init(&argc, &argv); // Initialize Gstreamer
     // Create the main loop
     main_loop = g_main_loop_new(NULL, FALSE);
