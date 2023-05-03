@@ -11,13 +11,16 @@ The example does the following:
 6. Prints the object detected + confidence to the screen
 5. Prints statistics
 
-NOTE: Currently support only devices connected on a PCIe link.
-NOTE: This example was tested with a yolov8m model.
+**NOTE**: Currently support only devices connected on a PCIe link.
+**NOTE**: This example was tested with a yolov8m model.
 
 Prequisites:
 OpenCV 4.2.X
+
 CMake >= 3.20
+
 HailoRT >= 4.10.0
+
 Xtensor - no installation or build needed as it's complied from the web as an external project
 
 
