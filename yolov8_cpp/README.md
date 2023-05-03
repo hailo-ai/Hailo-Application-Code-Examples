@@ -1,4 +1,5 @@
 **Last HailoRT version checked - 4.12.0**
+
 This is a hailort C++ API yolov8 detection example.
 
 The example does the following:
@@ -12,9 +13,12 @@ The example does the following:
 5. Prints statistics
 
 **NOTE**: Currently support only devices connected on a PCIe link.
-**NOTE**: This example was tested with a yolov8m model.
+
+**NOTE**: This example was tested with a yolov8s & a yolov8m model.
+
 
 Prequisites:
+
 OpenCV 4.2.X
 
 CMake >= 3.20
@@ -22,6 +26,7 @@ CMake >= 3.20
 HailoRT >= 4.10.0
 
 Xtensor - no installation or build needed as it's complied from the web as an external project
+
 
 
 To compile the example run `./build.sh`
