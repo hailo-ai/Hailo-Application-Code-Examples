@@ -25,7 +25,7 @@ CMake >= 3.20
 
 HailoRT >= 4.10.0
 
-Xtensor - no installation or build needed as it's complied from the web as an external project
+Xtensor - no installation or build needed as it's complied from the web as an external project. Just run **sudo apt-get install xtensor-dev** before running build
 
 
 
