@@ -203,8 +203,8 @@ def postproc_yolov5_yolov7(height,width, anchors, meta_arch, num_of_classes, raw
                             anchors=anchors,
                             meta_arch=meta_arch, 
                             classes=num_of_classes,
-                            nms_iou_thresh=0.1,
-                            score_threshold=0.45,
+                            nms_iou_thresh=0.6,
+                            score_threshold=0.001,
                             labels_offset=1, 
                             **kwargs)
     
