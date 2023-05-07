@@ -109,16 +109,17 @@ void write_all(InputVStream &input, const char* images_path, hailo_status &statu
 //     return obj.imagenet_labelstring(max_idx) + " (" + std::to_string(softmax_result[max_idx]) + ")";
 // }
 
-void read_all(OutputVStream &output, const char* images_path, hailo_status &status)
+void read_all(OutputVStream &output, const char* images_path, hailo_status &status, float32_t* arr, size_t arr_size)
 {
-    std::vector<uint16_t> data(output.get_frame_size()); // output.get_user_buffer_format().type HAILO_FORMAT_TYPE_UINT16 // TODO: remove uint16_t
+    std::vector<float32_t> data(output.get_frame_size()); // output.get_user_buffer_format().type HAILO_FORMAT_TYPE_UINT16 // TODO: remove uint16_t
     std::vector<cv::String> file_names;
     cv::glob(images_path, file_names, false);
     size_t num_frames = 0;
     for (std::string file : file_names) {
         if (not(ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")))
             continue;
-        auto status = output.read(MemoryView(data.data(), data.size()));
+        // arr[num_frames] because batch-size may be more than one image, and we still need to return a full tensor Nchw or whatever another order
+        auto status = output.read(MemoryView(arr[num_frames], arr_size));
         if (HAILO_SUCCESS != status) {
             std::cout << "failed with status " << status << std::endl;
             return;
@@ -131,7 +132,7 @@ void read_all(OutputVStream &output, const char* images_path, hailo_status &stat
     return;
 }
 
-hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputVStream> &output_streams, const char* images_path)
+hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputVStream> &output_streams, const char* images_path, std::vector<std::pair<float32_t*, size_t>> out_tensors)
 {
 
     hailo_status status = HAILO_SUCCESS; // Success oriented
@@ -143,7 +144,7 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
     size_t output_thread_index = 0;
 
     // Create write threads
-    for (input_thread_index = 0 ; input_thread_index < input_streams.size(); input_thread_index++) { // size_t(1)
+    for (input_thread_index = 0 ; input_thread_index < input_streams.size(); input_thread_index++) {
         input_threads[input_thread_index] = std::make_unique<std::thread>(write_all,
             std::ref(input_streams[input_thread_index]), images_path, std::ref(input_status[input_thread_index]));
     }
@@ -151,7 +152,8 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
     // Create read threads
     for (output_thread_index = 0 ; output_thread_index < output_streams.size(); output_thread_index++) {
         output_threads[output_thread_index] = std::make_unique<std::thread>(read_all,
-            std::ref(output_streams[output_thread_index]), images_path, std::ref(output_status[output_thread_index]));
+            std::ref(output_streams[output_thread_index]), images_path, 
+            std::ref(output_status[output_thread_index]), out_tensors[output_thread_index].first, out_tensors[output_thread_index].seconds);
     }
 
     // Join write threads
@@ -179,7 +181,10 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
     return status;
 }
 
-extern "C" int infer_wrapper(const char* hef_path, const char* images_path, TensorWrapper tensor)
+extern "C" int infer_wrapper(const char* hef_path, const char* images_path, 
+    float32_t* arr1, size_t n1,
+    float32_t* arr2, size_t n2,
+    float32_t* arr3, size_t n3)
 {
     std::cout << "successfully loaded libinfer.so" << std::endl;
     std::cout << "hef path entered: " << std::string(hef_path) << std::endl;
@@ -212,19 +217,23 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, Tens
         return HAILO_INVALID_OPERATION;
     }
 
-    auto status = infer(vstreams.first, vstreams.second, images_path);
+    std::vector<std::pair<float32_t*, size_t>> out_tensors;
+    out_tensors.push_back(std::pair<float32_t*, size_t>(arr1, n1));
+    out_tensors.push_back(std::pair<float32_t*, size_t>(arr2, n2));
+    out_tensors.push_back(std::pair<float32_t*, size_t>(arr3, n3));
+
+    auto status = infer(vstreams.first, vstreams.second, images_path, out_tensors);
     if (HAILO_SUCCESS != status) {
         std::cerr << "Inference failed "  << status << std::endl;
         return status;
     }
+    // arr1[0] = static_cast<float32_t>(0.5);
+    // arr2[0] = static_cast<float32_t>(1.5);
+    // arr3[0] = static_cast<float32_t>(2.5);
 
-    tensor.array_5[0] = static_cast<float32_t>(0.5);
-    tensor.array_6[0] = static_cast<float32_t>(1.5);
-    tensor.array_7[0] = static_cast<float32_t>(2.5);
-
-    tensor.array_5[1] = static_cast<float32_t>(10.5);
-    tensor.array_6[1] = static_cast<float32_t>(11.5);
-    tensor.array_7[1] = static_cast<float32_t>(12.5);
+    // arr1[1] = static_cast<float32_t>(10.5);
+    // arr2[1] = static_cast<float32_t>(11.5);
+    // arr3[1] = static_cast<float32_t>(12.5);
 
     return HAILO_SUCCESS;
 }
