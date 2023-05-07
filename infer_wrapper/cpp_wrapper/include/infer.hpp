@@ -10,6 +10,8 @@
 #ifndef _HAILO_INFER_HPP_
 #define _HAILO_INFER_HPP_
 
+typedef unsigned long size_t;
+
 // class TensorWrapper {
 //     public:
 //     float array_5[5]; // = new float[5];
@@ -18,8 +20,8 @@
 // };
 
 extern "C" int infer_wrapper(const char* hef_path, const char* images_path, 
-    float32_t* arr1, size_t n1,
-    float32_t* arr2, size_t n2,
-    float32_t* arr3, size_t n3);
+    float* arr1, size_t n1,
+    float* arr2, size_t n2,
+    float* arr3, size_t n3);
 
 #endif /* _HAILO_INFER_HPP_ */

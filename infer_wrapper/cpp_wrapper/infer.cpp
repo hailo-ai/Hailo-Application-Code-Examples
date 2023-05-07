@@ -119,7 +119,7 @@ void read_all(OutputVStream &output, const char* images_path, hailo_status &stat
         if (not(ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")))
             continue;
         // arr[num_frames] because batch-size may be more than one image, and we still need to return a full tensor Nchw or whatever another order
-        auto status = output.read(MemoryView(arr[num_frames], arr_size));
+        auto status = output.read(MemoryView(arr, arr_size)); // arr + num_frames // pointer arithmetic
         if (HAILO_SUCCESS != status) {
             std::cout << "failed with status " << status << std::endl;
             return;
@@ -153,7 +153,7 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
     for (output_thread_index = 0 ; output_thread_index < output_streams.size(); output_thread_index++) {
         output_threads[output_thread_index] = std::make_unique<std::thread>(read_all,
             std::ref(output_streams[output_thread_index]), images_path, 
-            std::ref(output_status[output_thread_index]), out_tensors[output_thread_index].first, out_tensors[output_thread_index].seconds);
+            std::ref(output_status[output_thread_index]), out_tensors[output_thread_index].first, out_tensors[output_thread_index].second);
     }
 
     // Join write threads
@@ -182,9 +182,9 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
 }
 
 extern "C" int infer_wrapper(const char* hef_path, const char* images_path, 
-    float32_t* arr1, size_t n1,
-    float32_t* arr2, size_t n2,
-    float32_t* arr3, size_t n3)
+    float* arr1, size_t n1,
+    float* arr2, size_t n2,
+    float* arr3, size_t n3)
 {
     std::cout << "successfully loaded libinfer.so" << std::endl;
     std::cout << "hef path entered: " << std::string(hef_path) << std::endl;
@@ -218,9 +218,9 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path,
     }
 
     std::vector<std::pair<float32_t*, size_t>> out_tensors;
-    out_tensors.push_back(std::pair<float32_t*, size_t>(arr1, n1));
-    out_tensors.push_back(std::pair<float32_t*, size_t>(arr2, n2));
     out_tensors.push_back(std::pair<float32_t*, size_t>(arr3, n3));
+    out_tensors.push_back(std::pair<float32_t*, size_t>(arr2, n2));
+    out_tensors.push_back(std::pair<float32_t*, size_t>(arr1, n1));
 
     auto status = infer(vstreams.first, vstreams.second, images_path, out_tensors);
     if (HAILO_SUCCESS != status) {
