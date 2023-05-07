@@ -31,6 +31,14 @@ class Program {
         float arr1_0 =arr1[0];
         float arr1_1 = arr1[1];
 
+        for (ulong i = 4; i < n1; i=i+5)
+        {
+            if (arr1[i] >= 0.3) {
+                Console.WriteLine(i + ": " + arr1[i]);
+            }
+        }
+
         Console.WriteLine("values: " + arr1_0 + ", " + arr1_1 + ", infer result: " + infer_result);
+        
     }
 }
