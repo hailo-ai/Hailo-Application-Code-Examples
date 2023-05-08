@@ -16,7 +16,7 @@
 class HailoTensor
 {
 private:
-    uint8_t *m_data;                     // Pointer to the data of the tensor.
+    uint16_t *m_data;                     // Pointer to the data of the tensor.
     hailo_vstream_info_t m_vstream_info; // Pointer to vstream info.
     std::string m_name;                  // Name of output tensor.
 public:
@@ -26,7 +26,7 @@ public:
      * @param data - Pointer to the tensor output.
      * @param vstream_info - pointer to info about the output, represented as hailo_vstream_info_t.
      */
-    HailoTensor(uint8_t *data, const hailo_vstream_info_t &vstream_info) : m_data(data), m_vstream_info(vstream_info), m_name(m_vstream_info.name){};
+    HailoTensor(uint16_t *data, const hailo_vstream_info_t &vstream_info) : m_data(data), m_vstream_info(vstream_info), m_name(m_vstream_info.name){};
     // Destructor
     ~HailoTensor() = default;
     // Copy constructor
@@ -43,7 +43,7 @@ public:
     {
         return m_vstream_info;
     }
-    uint8_t *data()
+    uint16_t *data()
     {
         return m_data;
     }
@@ -79,22 +79,22 @@ public:
      * @param row The row of the cell
      * @param col The column of the cell
      * @param channel The channel of the cell
-     * @return uint8_t value of this tensor at the specified place.
+     * @return uint16_t value of this tensor at the specified place.
      * @note number is quantized.
      */
-    uint8_t get(uint row, uint col, uint channel)
+    uint16_t get(uint row, uint col, uint channel)
     {
         uint width = m_vstream_info.shape.width;
         uint features = m_vstream_info.shape.features;
         int pos = (width * features) * row + features * col + channel;
         return m_data[pos];
     }
-    uint16_t get_uint16(uint row, uint col, uint channel)
+    uint8_t get_uint8(uint row, uint col, uint channel)
     {
         uint width = m_vstream_info.shape.width;
         uint features = m_vstream_info.shape.features;
         int pos = (width * features) * row + features * col + channel;
-        uint16_t *data_uint16 = (uint16_t *)m_data;
+        uint8_t *data_uint16 = (uint8_t *)m_data;
         return data_uint16[pos];
     }
 
@@ -109,9 +109,9 @@ public:
     float get_full_percision(uint row, uint col, uint channel, bool is_uint16)
     {
         if (is_uint16)
-            return fix_scale(get_uint16(row, col, channel));
-        else
             return fix_scale(get(row, col, channel));
+        else
+            return fix_scale(get_uint8(row, col, channel));
     }
 };
 
