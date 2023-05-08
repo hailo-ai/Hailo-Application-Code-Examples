@@ -1,35 +1,35 @@
-cmake_minimum_required(VERSION 3.11)
-project(vstream_yolov5_yolov7_example_cpp)
+cmake_minimum_required(VERSION 3.0.0)
 
-set(CMAKE_CXX_STANDARD 20)
+project(infer VERSION 1.0.1 DESCRIPTION "inference on hailo-8")
 
-set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O0 -g -Wno-reorder -std=c++14)
+set(COMPILE_OPTIONS -Wall -std=c++14 -Werror -O3)
 
-set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-set(CMAKE_HAVE_THREADS_LIBRARY 1)
-set(CMAKE_USE_WIN32_THREADS_INIT 0)
-set(CMAKE_USE_PTHREADS_INIT 1)
+add_library(infer SHARED
+    double_buffer.hpp
+    yolo_post_processing.hpp
+    yolo_post_processing.cpp
+    infer.cpp)
+
+set_target_properties(infer PROPERTIES PUBLIC_HEADER include/infer.hpp)
+
+install(TARGETS infer
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-
-find_package(Threads)
-
-find_package(HailoRT REQUIRED)
-
-find_package( OpenCV REQUIRED)
-message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
-
-file(GLOB SOURCES
-    ./*.hpp
-    ./*.cpp
-)
-
-link_libraries(stdc++fs)
-add_executable(${PROJECT_NAME} ${SOURCES})
+find_package(HailoRT 4.14.0 EXACT REQUIRED)
+find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${ONNXRUNTIME_INCLUDE_DIR})
-target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
-target_link_libraries(${PROJECT_NAME} HailoRT::libhailort)
-target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 
+target_link_libraries(infer PRIVATE HailoRT::libhailort Threads::Threads ${OpenCV_LIBS})
+
+if(WIN32)
+    target_compile_options(infer PRIVATE
+        /DWIN32_LEAN_AND_MEAN
+        /DNOMINMAX                  # NOMINMAX is required in order to play nice with std::min/std::max (otherwise Windows.h defines it's own)
+        /wd4201 /wd4251
+    )
+endif()
+
+set_target_properties(infer PROPERTIES CXX_STANDARD 14)

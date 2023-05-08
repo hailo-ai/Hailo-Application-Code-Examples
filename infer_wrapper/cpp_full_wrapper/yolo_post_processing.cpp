@@ -77,7 +77,7 @@ float iou_calc(const DetectionObject &box_1, const DetectionObject &box_2)
 
 
 void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_size,
-		           int* anchors, std::vector<DetectionObject>& objects, float& thr) 
+		           int* anchors, std::vector<DetectionObject>& objects, float& thr, int max_num_detections) 
 {
     float  confidence, x, y, h, w, xmin, ymin, xmax, ymax, conf_max = 0.0f;
     int add = 0, anchor = 0, chosen_row = 0, chosen_col = 0, chosen_cls = -1;
@@ -120,7 +120,7 @@ void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_s
                     xmax = std::min(((x + (w / 2.0f)) * 640), (static_cast<float>(640) - 1));
                     ymax = std::min(((y + (h / 2.0f)) * 640), (static_cast<float>(640) - 1));
 
-                    if (objects.size() < 50)
+                    if (objects.size() < max_num_detections)
 					{
                         objects.push_back(DetectionObject(ymin, xmin, ymax, xmax, conf_max, chosen_cls));
 					}
@@ -132,20 +132,20 @@ void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_s
 
 
 std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, int* anchors1, int* anchors2, int* anchors3,
-    float& qp_zp_1, float& qp_scale_1, float& qp_zp_2, float& qp_scale_2, float& qp_zp_3, float& qp_scale_3, float& thr)
+    float& qp_zp_1, float& qp_scale_1, float& qp_zp_2, float& qp_scale_2, float& qp_zp_3, float& qp_scale_3, float& thr, int max_num_detections)
 {
     size_t num_boxes = 0;
     std::vector<DetectionObject> objects;
-    objects.reserve(50);
+    objects.reserve(max_num_detections);
 
     // feature map1
-    extract_boxes(fm1, qp_zp_1, qp_scale_1, FEATURE_MAP_SIZE1, anchors1, objects, thr);
+    extract_boxes(fm1, qp_zp_1, qp_scale_1, FEATURE_MAP_SIZE1, anchors1, objects, thr, max_num_detections);
 
     // feature map2
-    extract_boxes(fm2,  qp_zp_2, qp_scale_2, FEATURE_MAP_SIZE2, anchors2, objects, thr);
+    extract_boxes(fm2,  qp_zp_2, qp_scale_2, FEATURE_MAP_SIZE2, anchors2, objects, thr, max_num_detections);
 
     // feature map3
-    extract_boxes(fm3,  qp_zp_3, qp_scale_3, FEATURE_MAP_SIZE3, anchors3, objects, thr);
+    extract_boxes(fm3,  qp_zp_3, qp_scale_3, FEATURE_MAP_SIZE3, anchors3, objects, thr, max_num_detections);
 
     num_boxes = objects.size();
 
@@ -167,12 +167,11 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
             }
         }
     }
-
     return objects;
 }
 
 std::vector<DetectionObject> post_processing(
-    std::string &arch,
+    int max_num_detections, float thr, std::string &arch,
     uint8_t *fm1, float qp_zp_1, float qp_scale_1,
     uint8_t *fm2, float qp_zp_2, float qp_scale_2,
     uint8_t *fm3, float qp_zp_3, float qp_scale_3)
@@ -183,10 +182,9 @@ std::vector<DetectionObject> post_processing(
         {"yolov7", {{142, 110, 192, 243, 459, 401}, {36, 75, 76, 55, 72, 146}, {12, 16, 19, 36, 40, 28}}}
     };
 
-    float thr = 0.1f;
-
     auto anchors = arch_to_anchors[arch];
 
     return _decode(fm1, fm2, fm3, &anchors[0][0], &anchors[1][0], &anchors[2][0], qp_zp_1, qp_scale_1,
-        qp_zp_2, qp_scale_2, qp_zp_3, qp_scale_3, thr);
+        qp_zp_2, qp_scale_2, qp_zp_3, qp_scale_3, thr, max_num_detections);
+    
 }
