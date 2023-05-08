@@ -75,11 +75,11 @@ std::pair<std::vector<HailoTensorPtr>, xt::xarray<float>> get_boxes_and_scores(s
     return std::pair<std::vector<HailoTensorPtr>, xt::xarray<float>>( outputs_boxes, scores );
 }
 
-float dequantize_value(uint8_t val, float32_t qp_scale, float32_t qp_zp){
+float dequantize_value(uint16_t val, float32_t qp_scale, float32_t qp_zp){
     return (float(val) - qp_zp) * qp_scale;
 }
 
-void dequantize_box_values(xt::xarray<float>& box, int index, xt::xarray<uint8_t>& quantized_box, size_t dim1, size_t dim2, float32_t qp_scale, float32_t qp_zp){
+void dequantize_box_values(xt::xarray<float>& box, int index, xt::xarray<uint16_t>& quantized_box, size_t dim1, size_t dim2, float32_t qp_scale, float32_t qp_zp){
     for (size_t i = 0; i < dim1; i++){
         for (size_t j = 0; j < dim2; j++){
             box(i, j) = dequantize_value(quantized_box(index, i, j), qp_scale, qp_zp);
@@ -136,7 +136,7 @@ std::vector<HailoDetection> decode_boxes(std::vector<HailoTensorPtr> raw_boxes_o
         auto output_b = common::get_xtensor(raw_boxes_outputs[i]);
         int num_proposals = output_b.shape(0) * output_b.shape(1);
         auto output_boxes = xt::view(output_b, xt::all(), xt::all(), xt::all());
-        xt::xarray<uint8_t> quantized_boxes = xt::reshape_view(output_boxes, {num_proposals, 4, regression_length + 1});
+        xt::xarray<uint16_t> quantized_boxes = xt::reshape_view(output_boxes, {num_proposals, 4, regression_length + 1});
 
         float32_t qp_scale = raw_boxes_outputs[i]->vstream_info().quant_info.qp_scale;
         float32_t qp_zp = raw_boxes_outputs[i]->vstream_info().quant_info.qp_zp;
