@@ -54,9 +54,14 @@ In the example we assume that this is the case.
 Both scores and data dequantization is done manually in the postprocessing functions. 
 This means that you will not get good detection (or detections at all) with a Yolov8 with 8-bit. 
 If you choose to work with your own HEF that is with an 8-bit output, you need to change the code from **uint16_t** to **uint8_t** in the following lines:
->double_buffer.hpp - lines 32, 43, 61, 69, 97
->yolov8_inference.cpp - line 68
->yolov8_postprocess.cpp - lines 78, 82, 139 
->hailo_tensors.hpp - lines 19, 29, 46, 85
->tensors.hpp - lines 24, 27, 43, 
+
+double_buffer.hpp - lines 32, 43, 61, 69, 97
+
+yolov8_inference.cpp - line 68
+
+yolov8_postprocess.cpp - lines 78, 82, 139 
+
+hailo_tensors.hpp - lines 19, 29, 46, 85
+
+tensors.hpp - lines 24, 27, 43
 
