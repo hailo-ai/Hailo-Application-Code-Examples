@@ -21,18 +21,18 @@ namespace common
         return rescaled_data;
     }
 
-    xt::xarray<uint8_t> get_xtensor(HailoTensorPtr &tensor)
+    xt::xarray<uint16_t> get_xtensor(HailoTensorPtr &tensor)
     {
         // Adapt a HailoTensorPtr to an xarray (quantized)
-        xt::xarray<uint8_t> xtensor = xt::adapt(tensor->data(), tensor->size(), xt::no_ownership(), tensor->shape());
+        xt::xarray<uint16_t> xtensor = xt::adapt(tensor->data(), tensor->size(), xt::no_ownership(), tensor->shape());
         return xtensor;
     }
 
-    xt::xarray<uint16_t> get_xtensor_uint16(HailoTensorPtr &tensor)
+    xt::xarray<uint8_t> get_xtensor_uint8(HailoTensorPtr &tensor)
     {
         // Adapt a HailoTensorPtr to an xarray (quantized)
-        uint16_t *data = (uint16_t *)(tensor->data());
-        xt::xarray<uint16_t> xtensor = xt::adapt(data, tensor->size(), xt::no_ownership(), tensor->shape());
+        uint8_t *data = (uint8_t *)(tensor->data());
+        xt::xarray<uint8_t> xtensor = xt::adapt(data, tensor->size(), xt::no_ownership(), tensor->shape());
         return xtensor;
     }
 
@@ -40,7 +40,7 @@ namespace common
     {
         // Adapt a HailoTensorPtr to an xarray (quantized)
         auto vstream_info = tensor->vstream_info();
-        xt::xarray<uint8_t> xtensor = get_xtensor(tensor);
+        xt::xarray<uint16_t> xtensor = get_xtensor(tensor);
         return dequantize(xtensor, vstream_info.quant_info.qp_scale, vstream_info.quant_info.qp_zp);
     }
     /**
