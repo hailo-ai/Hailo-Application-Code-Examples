@@ -19,11 +19,12 @@
 
 #include<stdio.h>
 
-// #define HEF_FILE ("/local/users/batshevak/projects/c_infer_wrapper_b7/resnet_v1_18.hef")
-constexpr size_t FRAMES_COUNT = 100;
-constexpr bool QUANTIZED = true;
-constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;
-constexpr size_t MAX_LAYER_EDGES = 16;
+constexpr int FEATURE_MAP_SIZE1 = 20;
+constexpr int FEATURE_MAP_SIZE2 = 40;
+constexpr int FEATURE_MAP_SIZE3 = 80;
+constexpr int FEATURE_MAP_CHANNELS = 85;
+constexpr int ANCHORS_NUM = 3;
+constexpr int FLOAT = 4;
 
 using namespace hailort;
 
@@ -62,6 +63,7 @@ void write_all(InputVStream &input, const char* images_path, hailo_status &statu
 {
     std::vector<cv::String> file_names;
     cv::glob(images_path, file_names, false);
+    assert(("currently support only 1 frame. For more frames, change c# code to send bigger buffer, and use pointer arithmetics in c++ code.", file_names.size() <= 1));
     
     for (std::string file : file_names) {
         if (not(ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")))
@@ -74,9 +76,6 @@ void write_all(InputVStream &input, const char* images_path, hailo_status &statu
         
         if (rgb_frame.rows != input.get_info().shape.height || rgb_frame.cols != input.get_info().shape.width)
             cv::resize(rgb_frame, rgb_frame, cv::Size(input.get_info().shape.width, input.get_info().shape.height), cv::INTER_AREA);
-        
-        // std::string assert_str = input.get_frame_size() == 224 * 224 * 3 * 1 ? "Great": "Bad!";
-        // std::cout << assert_str << std::endl;
         
         auto status = input.write(MemoryView(rgb_frame.data, input.get_frame_size()));
             if (HAILO_SUCCESS != status) 
@@ -94,24 +93,9 @@ void write_all(InputVStream &input, const char* images_path, hailo_status &statu
     return;
 }
 
-// template <typename T>
-// std::string classification_post_process(std::vector<T>& logits, bool do_softmax=false, float threshold=0.3) 
-// {
-//     int max_idx;
-//     static ImageNetLabels obj;
-//     std::vector<T> softmax_result(logits);
-//     if (do_softmax) {
-// 	softmax_result = softmax(logits);
-//         max_idx = argmax(softmax_result);
-//     } else 
-//         max_idx = argmax(logits);
-//     if (softmax_result[max_idx] < threshold) return "N\\A";
-//     return obj.imagenet_labelstring(max_idx) + " (" + std::to_string(softmax_result[max_idx]) + ")";
-// }
-
 void read_all(OutputVStream &output, const char* images_path, hailo_status &status, float32_t* arr, size_t arr_size)
 {
-    std::vector<float32_t> data(output.get_frame_size()); // output.get_user_buffer_format().type HAILO_FORMAT_TYPE_UINT16 // TODO: remove uint16_t
+    // std::vector<float32_t> data(output.get_frame_size()); // output.get_user_buffer_format().type HAILO_FORMAT_TYPE_UINT16 // TODO: remove uint16_t
     std::vector<cv::String> file_names;
     cv::glob(images_path, file_names, false);
     size_t num_frames = 0;
@@ -119,7 +103,7 @@ void read_all(OutputVStream &output, const char* images_path, hailo_status &stat
         if (not(ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")))
             continue;
         // arr[num_frames] because batch-size may be more than one image, and we still need to return a full tensor Nchw or whatever another order
-        auto status = output.read(MemoryView(arr, arr_size)); // arr + num_frames // pointer arithmetic
+        auto status = output.read(MemoryView(arr, arr_size)); // arr + num_frames // pointer arithmetic // auto status = output.read(MemoryView(arr, arr_size));
         if (HAILO_SUCCESS != status) {
             std::cout << "failed with status " << status << std::endl;
             return;
@@ -136,10 +120,10 @@ hailo_status infer(std::vector<InputVStream> &input_streams, std::vector<OutputV
 {
 
     hailo_status status = HAILO_SUCCESS; // Success oriented
-    hailo_status input_status[MAX_LAYER_EDGES] = {HAILO_UNINITIALIZED};
-    hailo_status output_status[MAX_LAYER_EDGES] = {HAILO_UNINITIALIZED};
-    std::unique_ptr<std::thread> input_threads[MAX_LAYER_EDGES];
-    std::unique_ptr<std::thread> output_threads[MAX_LAYER_EDGES];
+    hailo_status input_status[input_streams.size()] = {HAILO_UNINITIALIZED};
+    hailo_status output_status[output_streams.size()] = {HAILO_UNINITIALIZED};
+    std::unique_ptr<std::thread> input_threads[input_streams.size()];
+    std::unique_ptr<std::thread> output_threads[output_streams.size()];
     size_t input_thread_index = 0;
     size_t output_thread_index = 0;
 
@@ -211,12 +195,6 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path,
     }
     auto vstreams = std::make_pair(input_vstreams.release(), output_vstreams.release());
 
-    if (vstreams.first.size() > MAX_LAYER_EDGES || vstreams.second.size() > MAX_LAYER_EDGES) {
-        std::cerr << "Trying to infer network with too many input/output virtual streams, Maximum amount is " <<
-        MAX_LAYER_EDGES << " (either change HEF or change the definition of MAX_LAYER_EDGES)"<< std::endl;
-        return HAILO_INVALID_OPERATION;
-    }
-
     std::vector<std::pair<float32_t*, size_t>> out_tensors;
     out_tensors.push_back(std::pair<float32_t*, size_t>(arr3, n3));
     out_tensors.push_back(std::pair<float32_t*, size_t>(arr2, n2));
@@ -227,17 +205,19 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path,
         std::cerr << "Inference failed "  << status << std::endl;
         return status;
     }
-    // arr1[0] = static_cast<float32_t>(0.5);
-    // arr2[0] = static_cast<float32_t>(1.5);
-    // arr3[0] = static_cast<float32_t>(2.5);
-
-    // arr1[1] = static_cast<float32_t>(10.5);
-    // arr2[1] = static_cast<float32_t>(11.5);
-    // arr3[1] = static_cast<float32_t>(12.5);
 
     return HAILO_SUCCESS;
 }
 
-// int main() {
-//     infer_wrapper("/local/users/batshevak/projects/infer_wrapper_b7/resnet_v1_18.hef", "images");
-// }
+int main() {
+    size_t n1 = FEATURE_MAP_SIZE1 * FEATURE_MAP_SIZE1 * FEATURE_MAP_CHANNELS * ANCHORS_NUM * FLOAT; // ? * float??
+    std::vector<float32_t> arr1(n1);
+    size_t n2 = FEATURE_MAP_SIZE2 * FEATURE_MAP_SIZE2 * FEATURE_MAP_CHANNELS * ANCHORS_NUM * FLOAT;
+    std::vector<float32_t> arr2(n2);
+    size_t n3 = FEATURE_MAP_SIZE3 * FEATURE_MAP_SIZE3 * FEATURE_MAP_CHANNELS * ANCHORS_NUM * FLOAT;
+    std::vector<float32_t> arr3(n3);
+
+    infer_wrapper("/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/yolov5m_wo_spp_60p.hef", 
+    "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/images", &arr1[0], n1, &arr2[0], n2, &arr3[0], n3);
+    
+}

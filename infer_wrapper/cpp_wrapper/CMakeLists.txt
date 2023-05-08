@@ -1,24 +1,16 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(infer VERSION 1.0.1 DESCRIPTION "inference on hailo-8")
+project(infer)
 
 set(COMPILE_OPTIONS -Wall -std=c++14 -Werror -O3)
 
-add_library(infer SHARED
-    infer.cpp)
-
-set_target_properties(infer PROPERTIES PUBLIC_HEADER include/infer.hpp)
-
-install(TARGETS infer
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(HailoRT 4.13.0 EXACT REQUIRED)
+find_package(HailoRT 4.14.0 EXACT REQUIRED)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+add_executable(infer infer.cpp)
 target_link_libraries(infer PRIVATE HailoRT::libhailort Threads::Threads ${OpenCV_LIBS})
 
 if(WIN32)
