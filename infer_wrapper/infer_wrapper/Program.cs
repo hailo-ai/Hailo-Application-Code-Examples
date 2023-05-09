@@ -47,7 +47,7 @@ class Program {
         Stopwatch stopWatch = new Stopwatch();
         stopWatch.Start();
         for (int i = 0; i < num_frames; i++) {
-           int infer_result = b7ExampleLibrary.infer_wrapper("yolov5m_wo_spp_60p_2.4.hef", "images/zidane_640.jpg", "yolov5", detections, num_detections);
+           int infer_result = b7ExampleLibrary.infer_wrapper("yolov5m_wo_spp_60p.hef", "images/zidane_640.jpg", "yolov5", detections, num_detections);
         }
         stopWatch.Stop();
         TimeSpan ts = stopWatch.Elapsed;

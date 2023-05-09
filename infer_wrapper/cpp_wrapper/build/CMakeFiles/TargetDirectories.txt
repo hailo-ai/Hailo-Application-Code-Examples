@@ -1,7 +1,0 @@
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/infer.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/edit_cache.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/rebuild_cache.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/list_install_components.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/install.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/install/local.dir
-/local/users/batshevak/projects/b7_git/Hailo-Application-Code-Examples/infer_wrapper/cpp_wrapper/build/CMakeFiles/install/strip.dir
