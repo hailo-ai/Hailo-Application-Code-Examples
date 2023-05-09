@@ -6,6 +6,7 @@ set(COMPILE_OPTIONS -Wall -std=c++14 -Werror -O3)
 
 add_library(infer SHARED
     double_buffer.hpp
+    common.h
     yolo_post_processing.hpp
     yolo_post_processing.cpp
     infer.cpp)

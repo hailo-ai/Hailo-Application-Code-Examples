@@ -62,7 +62,7 @@ inline bool ends_with(std::string const & value, std::string const & ending) {
 
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, 
                                 std::chrono::duration<double>& postprocess_time, cv::Mat& frame, std::string arch,
-                                std::vector<float32_t>& detections, int max_num_detections, float thr)
+                                float32_t* detections, int max_num_detections, float thr)
 {
     auto status = HAILO_SUCCESS;   
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
@@ -78,18 +78,18 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         feature->m_buffers.release_read_buffer();
     }
 
-    size_t detections_byte_idx = 0;
+    size_t detections_4_byte_idx = 0;
     for (auto& detection : detections_struct) {
-        if (detection.confidence >= thr && detections_byte_idx < max_num_detections*6) {  // 6 floats that represent 1 detection
+        if (detection.confidence >= thr && detections_4_byte_idx < max_num_detections*6) {  // 6 floats that represent 1 detection
             // std::cout << "Detection: " << get_coco_name_from_int(detection.class_id) << ", Confidence: " << std::fixed << std::setprecision(2) << detection.confidence * 100.0 << "%" << std::endl;
             
             // heavy copy :(
-            detections[detections_byte_idx++] = detection.ymin;
-            detections[detections_byte_idx++] = detection.xmin;
-            detections[detections_byte_idx++] = detection.ymax;
-            detections[detections_byte_idx++] = detection.xmax;
-            detections[detections_byte_idx++] = detection.confidence;
-            detections[detections_byte_idx++] = static_cast<float32_t>(detection.class_id);
+            detections[detections_4_byte_idx++] = detection.ymin;
+            detections[detections_4_byte_idx++] = detection.xmin;
+            detections[detections_4_byte_idx++] = detection.ymax;
+            detections[detections_4_byte_idx++] = detection.xmax;
+            detections[detections_4_byte_idx++] = detection.confidence;
+            detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
         }
     }
     frame.release();
@@ -164,7 +164,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
                     std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch,
-                    std::vector<float32_t>& detections, int max_num_detections) {
+                    float32_t* detections, int max_num_detections) {
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -194,7 +194,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     }
 
     float thr = 0.3f;
-    auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frame), arch, std::ref(detections), max_num_detections, thr));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frame), arch, detections, max_num_detections, thr));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -300,7 +300,7 @@ std::string getCmdOption(int argc, char *argv[], const std::string &option)
     return cmd;
 }
 
-int infer_wrapper(std::string yolov_hef, std::string image_path, std::string arch, std::vector<float32_t>& detections, int max_num_detections) {
+extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const char* arch, float* detections, int max_num_detections) {
 
     hailo_status status = HAILO_UNINITIALIZED;
 
@@ -318,9 +318,9 @@ int infer_wrapper(std::string yolov_hef, std::string image_path, std::string arc
     }
     auto vdevice = vdevice_exp.release();
 
-    auto network_group_exp = configure_network_group(*vdevice, yolov_hef);
+    auto network_group_exp = configure_network_group(*vdevice, hef_path);
     if (!network_group_exp) {
-        std::cerr << "Failed to configure network group " << yolov_hef << std::endl;
+        std::cerr << "Failed to configure network group " << hef_path << std::endl;
         return network_group_exp.status();
     }
     auto network_group = network_group_exp.release();
@@ -350,7 +350,7 @@ int infer_wrapper(std::string yolov_hef, std::string image_path, std::string arc
         return status;
     }
 
-    print_inference_statistics(inference_time, postprocess_time, yolov_hef, 1.f);
+    print_inference_statistics(inference_time, postprocess_time, hef_path, 1.f);
 
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
@@ -361,6 +361,7 @@ int infer_wrapper(std::string yolov_hef, std::string image_path, std::string arc
 }
 
 // int main() {
+
 //     std::string yolov_hef = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/yolov5m_wo_spp_60p.hef";
 //     std::string image_path = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/images/zidane_640.jpg";
 //     std::string arch = "yolov5";
