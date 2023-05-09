@@ -67,7 +67,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
     auto status = HAILO_SUCCESS;   
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
-    std::cout << YELLOW << "\n-I- Starting postprocessing\n" << std::endl << RESET;
+    // // std::cout << YELLOW << "\n-I- Starting postprocessing\n" << std::endl << RESET;
 
     auto detections_struct = post_processing(max_num_detections, thr, arch,
             features[0]->m_buffers.get_read_buffer().data(), features[0]->m_qp_zp, features[0]->m_qp_scale,
@@ -78,6 +78,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         feature->m_buffers.release_read_buffer();
     }
 
+    int num_detections = 0;
     size_t detections_4_byte_idx = 0;
     for (auto& detection : detections_struct) {
         if (detection.confidence >= thr && detections_4_byte_idx < max_num_detections*6) {  // 6 floats that represent 1 detection
@@ -90,12 +91,15 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             detections[detections_4_byte_idx++] = detection.xmax;
             detections[detections_4_byte_idx++] = detection.confidence;
             detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+
+            num_detections++;
         }
     }
-    frame.release();
+    // frame.release(); // not cv::capture, so not sure I should release it...
 
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     postprocess_time = t_end - t_start;
+    // // std::cout << YELLOW << "num detections found: " << num_detections << RESET << std::endl;
 
     return status;
 }
@@ -105,7 +109,7 @@ hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData
                     std::chrono::time_point<std::chrono::system_clock>& read_time_vec) { 
 
     m.lock();
-    std::cout << GREEN << "-I- Started read thread: " << info_to_str(output_vstream.get_info()) << std::endl << RESET;
+    // // std::cout << GREEN << "-I- Started read thread: " << info_to_str(output_vstream.get_info()) << std::endl << RESET;
     m.unlock(); 
 
     auto& buffer = feature->m_buffers.get_write_buffer();
@@ -123,7 +127,7 @@ hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData
 hailo_status write_all(InputVStream& input_vstream, std::string image_path, 
                         std::chrono::time_point<std::chrono::system_clock>& write_time_vec, cv::Mat& frame) {
     m.lock();
-    std::cout << CYAN << "-I- Started write thread: " << info_to_str(input_vstream.get_info()) << std::endl << RESET;
+    // // std::cout << CYAN << "-I- Started write thread: " << info_to_str(input_vstream.get_info()) << std::endl << RESET;
     m.unlock();
 
     hailo_status status = HAILO_SUCCESS;
@@ -139,7 +143,7 @@ hailo_status write_all(InputVStream& input_vstream, std::string image_path,
             cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
         }
         if (frame.rows != height || frame.cols != width) {
-            std::cout << " resizing........." << std::endl;
+            // // std::cout << " resizing........." << std::endl;
             cv::resize(frame, frame, cv::Size(width, height), cv::INTER_AREA);
         }
         status = input_vstream.write(MemoryView(frame.data, input_vstream.get_frame_size()));
@@ -193,7 +197,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], std::ref(read_time_vec[i])));
     }
 
-    float thr = 0.3f;
+    float thr = 0.5f;
     auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frame), arch, detections, max_num_detections, thr));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
@@ -221,7 +225,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
             inference_time = read_time_vec[i] - write_time_vec;
     }
 
-    std::cout << BOLDBLUE << "\n-I- Inference finished successfully" << RESET << std::endl;
+    // // std::cout << BOLDBLUE << "\n-I- Inference finished successfully" << RESET << std::endl;
 
     status = HAILO_SUCCESS;
     return status;
@@ -325,19 +329,26 @@ extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const
     }
     auto network_group = network_group_exp.release();
 
-    auto input_vstream_params = network_group->make_input_vstream_params(false, HAILO_FORMAT_TYPE_UINT8, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
-    auto output_vstream_params = network_group->make_output_vstream_params(false, HAILO_FORMAT_TYPE_FLOAT32, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE); // HAILO_FORMAT_TYPE_UINT16
-    auto input_vstreams  = VStreamsBuilder::create_input_vstreams(*network_group, input_vstream_params.value());
-    auto output_vstreams = VStreamsBuilder::create_output_vstreams(*network_group, output_vstream_params.value());
-    if (!input_vstreams or !output_vstreams) {
-        std::cerr << "-E- Failed creating input: " << input_vstreams.status() << " output status:" << output_vstreams.status() << std::endl;
-        return input_vstreams.status();
+    // auto input_vstream_params = network_group->make_input_vstream_params(false, HAILO_FORMAT_TYPE_UINT8, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    // auto output_vstream_params = network_group->make_output_vstream_params(false, HAILO_FORMAT_TYPE_FLOAT32, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE); // HAILO_FORMAT_TYPE_UINT16
+    // auto input_vstreams  = VStreamsBuilder::create_input_vstreams(*network_group, input_vstream_params.value());
+    // auto output_vstreams = VStreamsBuilder::create_output_vstreams(*network_group, output_vstream_params.value());
+    // if (!input_vstreams or !output_vstreams) {
+    //     std::cerr << "-E- Failed creating input: " << input_vstreams.status() << " output status:" << output_vstreams.status() << std::endl;
+    //     return input_vstreams.status();
+    // }
+    // auto vstreams = std::make_pair(input_vstreams.release(), output_vstreams.release());
+
+    auto vstreams_exp = VStreamsBuilder::create_vstreams(*network_group, QUANTIZED, FORMAT_TYPE);
+    if (!vstreams_exp) {
+        std::cerr << "Failed creating vstreams " << vstreams_exp.status() << std::endl;
+        return vstreams_exp.status();
     }
-    auto vstreams = std::make_pair(input_vstreams.release(), output_vstreams.release());
+    auto vstreams = vstreams_exp.release();
 
     std::vector<std::chrono::time_point<std::chrono::system_clock>> read_time_vec(vstreams.second.size());
 
-    print_net_banner(vstreams);
+    // // print_net_banner(vstreams);
 
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 
@@ -355,21 +366,21 @@ extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
 
-    std::cout << BOLDBLUE << "\n-I- Application run finished successfully" << RESET << std::endl;
-    std::cout << BOLDBLUE << "-I- Total application run time: " << (double)total_time.count() << " sec" << RESET << std::endl;
+    // // std::cout << BOLDBLUE << "\n-I- Application run finished successfully" << RESET << std::endl;
+    // // std::cout << BOLDBLUE << "-I- Total application run time: " << (double)total_time.count() << " sec" << RESET << std::endl;
     return HAILO_SUCCESS;
 }
 
 // int main() {
 
-//     std::string yolov_hef = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/yolov5m_wo_spp_60p.hef";
-//     std::string image_path = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/images/zidane_640.jpg";
-//     std::string arch = "yolov5";
+//     char* yolov_hef = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/yolov5m_wo_spp_60p_2.4.hef";
+//     char* image_path = "/home/batshevak/projects/new_jj/Hailo-Application-Code-Examples/infer_wrapper/infer_wrapper/images/zidane_640.jpg";
+//     char* arch = "yolov5";
 //     // const int FLOAT = 4;
 //     const int NUM_DETECTIONS = 20;
 //     const int SIZE_DETECTION = 6;
 //     size_t detections_size = NUM_DETECTIONS * SIZE_DETECTION;
 //     std::vector<float32_t> detections(detections_size);
 //     int max_num_detections = NUM_DETECTIONS;
-//     return infer_wrapper(yolov_hef, image_path, arch, std::ref(detections), max_num_detections);
+//     return infer_wrapper(yolov_hef, image_path, arch, &detections[0], max_num_detections);
 // }

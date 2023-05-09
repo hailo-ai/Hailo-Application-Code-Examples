@@ -29,13 +29,9 @@
 #define FEATURE_MAP_SIZE2    40
 #define FEATURE_MAP_SIZE3    80
 
-//Custom yolov5s 3 class #define FEATURE_MAP_CHANNELS 7
 #define FEATURE_MAP_CHANNELS 85
-#define IMAGE_SIZE           640
 #define ANCHORS_NUM          3
-#define IOU_THRESHOLD        0.4f
-#define CONFIDENCE_THRESHOLD 0.3f
-#define MAX_BOXES            100
+#define IOU_THRESHOLD        0.6f
 
 #define CONF_CHANNEL_OFFSET  4
 #define CLASS_CHANNEL_OFFSET 5
@@ -46,17 +42,6 @@
 #define CONFIDENCE           4
 #define CLASS_ID             5 
 
-//typedef float float32_t; 
-#if 0
-constexpr int FEATURE_MAP_SIZE1 = 20;
-constexpr int FEATURE_MAP_SIZE2 = 40;
-constexpr int FEATURE_MAP_SIZE3 = 80;
-constexpr int FEATURE_MAP_CHANNELS = 7;
-constexpr int ANCHORS_NUM = 3;
-constexpr float IOU_THRESHOLD = 0.45f;
-constexpr int CONF_CHANNEL_OFFSET = 4;
-constexpr int CLASS_CHANNEL_OFFSET = 5;
-#endif
 
 float fix_scale(uint8_t& input, float &qp_scale, float &qp_zp)
 {
@@ -150,7 +135,6 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
     num_boxes = objects.size();
 
     // filter by overlapping boxes
-    std::vector<DetectionObject> res;
     if (objects.size() > 0) {
         std::sort(objects.begin(), objects.end());
         for (unsigned int i = 0; i < objects.size(); ++i) {
@@ -160,13 +144,14 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
             for (unsigned int j = i + 1; j < objects.size(); ++j) {
                 if ((objects[i].class_id == objects[j].class_id) && (objects[j].confidence >= thr)) {
                     if (iou_calc(objects[i], objects[j]) >= IOU_THRESHOLD) {
-                        objects[j].confidence = 0;
+                        objects[j].confidence = -1.f;
                         num_boxes -= 1;
                     }
                 }
             }
         }
     }
+    std::cout << "num objects found: " << num_boxes << std::endl;
     return objects;
 }
 
