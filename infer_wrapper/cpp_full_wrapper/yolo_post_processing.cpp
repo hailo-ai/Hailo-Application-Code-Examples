@@ -32,6 +32,7 @@
 #define FEATURE_MAP_CHANNELS 85
 #define ANCHORS_NUM          3
 #define IOU_THRESHOLD        0.6f
+#define YOLOV5M_IMAGE_SIZE   640
 
 #define CONF_CHANNEL_OFFSET  4
 #define CLASS_CHANNEL_OFFSET 5
@@ -97,13 +98,13 @@ void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_s
                     x = (fix_scale(fm[add], qp_scale,  qp_zp) * 2.0f - 0.5f + (float)(chosen_col)) / ((float)(feature_map_size));
                     y = (fix_scale(fm[add + 1], qp_scale,  qp_zp) * 2.0f - 0.5f +  (float)(chosen_row)) / (float)(feature_map_size);
                     // box scales
-                    w = (float)pow(2.0f * (fix_scale(fm[add + 2], qp_scale,  qp_zp)), 2.0f) * (float)(anchors[anchor * 2]) / 640;
-                    h = (float)pow(2.0f * (fix_scale(fm[add + 3], qp_scale,  qp_zp)), 2.0f) * (float)(anchors[anchor * 2 + 1]) / 640;
+                    w = (float)pow(2.0f * (fix_scale(fm[add + 2], qp_scale,  qp_zp)), 2.0f) * (float)(anchors[anchor * 2]) / YOLOV5M_IMAGE_SIZE;
+                    h = (float)pow(2.0f * (fix_scale(fm[add + 3], qp_scale,  qp_zp)), 2.0f) * (float)(anchors[anchor * 2 + 1]) / YOLOV5M_IMAGE_SIZE;
                     // x,y,h,w to xmin,ymin,xmax,ymax
-                    xmin = std::max(((x - (w / 2.0f)) * 640), 0.0f);
-                    ymin = std::max(((y - (h / 2.0f)) * 640), 0.0f);
-                    xmax = std::min(((x + (w / 2.0f)) * 640), (static_cast<float>(640) - 1));
-                    ymax = std::min(((y + (h / 2.0f)) * 640), (static_cast<float>(640) - 1));
+                    xmin = std::max(((x - (w / 2.0f)) * YOLOV5M_IMAGE_SIZE), 0.0f);
+                    ymin = std::max(((y - (h / 2.0f)) * YOLOV5M_IMAGE_SIZE), 0.0f);
+                    xmax = std::min(((x + (w / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
+                    ymax = std::min(((y + (h / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
 
                     if (objects.size() < max_num_detections)
 					{
@@ -151,7 +152,6 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
             }
         }
     }
-    std::cout << "num objects found: " << num_boxes << std::endl;
     return objects;
 }
 
