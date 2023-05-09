@@ -19,7 +19,7 @@ dotnet run
 ```
 ## Prerequirements   
 1. OpenCV 4.2.X   
-2. CMake >= 3.20   
+2. CMake >= 3.0.0   
 3. HailoRT   
 
 ## More Info   
