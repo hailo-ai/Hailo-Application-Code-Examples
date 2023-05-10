@@ -19,7 +19,7 @@ install(TARGETS infer
 
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(HailoRT 4.14.0 EXACT REQUIRED)
+find_package(HailoRT REQUIRED)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 

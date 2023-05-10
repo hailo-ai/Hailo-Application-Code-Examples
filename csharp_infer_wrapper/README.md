@@ -5,7 +5,7 @@
 ```
 # build so
 cd cpp_full_wrapper 
-build.sh
+./build.sh
 
 cd ../infer_wrapper
 # get hef file
