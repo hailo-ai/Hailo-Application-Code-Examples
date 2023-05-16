@@ -8,7 +8,6 @@
 #include <chrono>
 #include <mutex>
 #include <future>
-#include <type_traits>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
