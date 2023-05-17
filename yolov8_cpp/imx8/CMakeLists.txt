@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.11)
 project(vstream_yolov8_example_cpp)
 
-set(BASE_DIR /path/to/yolov8/app/dir)
+set(BASE_DIR ~/yolov8/Hailo-Application-Code-Examples/yolov8_cpp)
+set(USR_OPENCV_INCLUDE_DIR /usr/include/opencv4/)
 set(OPENCV_VIDEOIO_LIB /usr/lib/aarch64-linux-gnu/libopencv_videoio.so)
-# In case the find_package(OpenCV REQUIRED) doens't find the relevant opencv includes, define it manually
-set(USR_OPENCV_INCLUDE_DIR /usr/include/opencv4/) 
 
 set(COMPILE_OPTIONS -Wall -Wextra -Wconversion -O3 -DNDEBUG -Wno-conversion -Wno-unused-but-set-parameter -Wno-extra -Wno-reorder -Wno-unused-local-typedefs)
 
@@ -39,8 +38,6 @@ link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 add_dependencies(${PROJECT_NAME} xtl-test xtensor-test)
-include_directories(${OpenCV_INCLUDE_DIRS})
-# If needed:
-include_directories(${USR_OPENCV_INCLUDE_DIR})
+include_directories(${USR_OPENCV_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 target_link_libraries(${PROJECT_NAME} Threads::Threads HailoRT::libhailort ${OpenCV_LIBS} ${OPENCV_VIDEOIO_LIB})
