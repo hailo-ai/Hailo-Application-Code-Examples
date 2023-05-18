@@ -24,6 +24,5 @@ dotnet run
 
 ## More Info   
 - Run full yolov5 inference on hailo-8 including post processing (nms)   
-- libinfer.so get path to one image (jpg / png / jpeg), and return the detections found   
-- Currently supports only one image   
+- libinfer.so get path to images folder (jpg / png / jpeg), and return the detections found      
 - FPS not optimized, supposed for initial demonstration only.   

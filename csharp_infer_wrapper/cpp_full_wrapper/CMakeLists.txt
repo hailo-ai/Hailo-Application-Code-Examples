@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(infer VERSION 1.0.1 DESCRIPTION "yolov5 inference on hailo-8")
 
-set(COMPILE_OPTIONS -Wall -std=c++14 -Werror -O3)
+set(COMPILE_OPTIONS -Wall -std=c++20 -Werror -O3)
+set(CMAKE_CXX_STANDARD 20)
 
 add_library(infer SHARED
     double_buffer.hpp

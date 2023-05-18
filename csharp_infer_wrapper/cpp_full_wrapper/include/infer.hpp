@@ -10,6 +10,6 @@
 #ifndef _HAILO_INFER_HPP_
 #define _HAILO_INFER_HPP_
 
-extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const char* arch, float* detections, int max_num_detections);
+extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, float* detections, int max_num_detections, int* frames_ready, const int buffer_size);
 
 #endif /* _HAILO_INFER_HPP_ */

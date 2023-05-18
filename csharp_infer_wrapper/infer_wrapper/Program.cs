@@ -5,8 +5,8 @@ using System.Diagnostics;
 public static class b7ExampleLibrary {
     [DllImport("../cpp_full_wrapper/build/libinfer.so", 
     CallingConvention = CallingConvention.Cdecl)]
-    public static extern int infer_wrapper(string hef_path, string image_path, string arch,
-    float[] detections, int max_num_detections);
+    public static extern int infer_wrapper(string hef_path, string images_path, string arch,
+    float[] detections, int max_num_detections, int[] frames_ready, int buffer_size);
 }
 
 public struct Detection {
@@ -17,7 +17,7 @@ public struct Detection {
     public float confidence;
     public int class_id;
 
-    public Detection(float[] arr, int offset) {
+    public Detection(float[] arr, long offset) {
         ymin = arr[offset];
         xmin = arr[offset + 1];
         ymax = arr[offset + 2];
@@ -30,31 +30,56 @@ public struct Detection {
 class Program {
     public const int FLOAT = 4;
     public const int MAX_NUM_DETECTIONS = 20;
-    public const int SIZE_DETECTION = 6;
+    public const int DETECTION_SIZE = 6;
+    public const int BUFFER_SIZE = 6; // In case of synchronization issues (c++ produces more that xBUFFER_SIZE faster than c# consumes)- make the buffer bigger.
     public const int CONF_IDX = 4;
     public const float THR = 0.5F; // TODO: parameter to infer_wrapper(). Currently const 0.5F.
+    public const int MILISEC_TO_WAIT = 1; // 0.001 sec
 
-    static void Main() {
+    static unsafe void Main() {
         
-        ulong detections_size = MAX_NUM_DETECTIONS * SIZE_DETECTION;
-        float[] detections = new float[detections_size];
         int max_num_detections = MAX_NUM_DETECTIONS;
-        string imagePath = "images/zidane_640.jpg";
+        long detections_size_per_frame = MAX_NUM_DETECTIONS * DETECTION_SIZE;
+        float[] detections = new float[detections_size_per_frame * BUFFER_SIZE];
+
+        int buffer_size = BUFFER_SIZE;
+        int[] frames_ready = new int[buffer_size];
+        Array.Fill(frames_ready, -1); // all frames weren't processed yet
+    
+        string imagesPath = "images/";
         string hefPath = "yolov5m_wo_spp_60p.hef";
         string arch = "yolov5";
 
-        int infer_result = b7ExampleLibrary.infer_wrapper(hefPath, imagePath, arch, detections, max_num_detections); 
-        // TODO: return num of actual detections. That's important to not read 'junk values' (values should be 0 if not initiallized, but may depend on compiler.)
-        if (infer_result != 0) {
-            Console.WriteLine("Inference failed with error code: " + infer_result);
-            return;
-        }
+        int framesCount = Directory.GetFiles(imagesPath, "*.jpg", SearchOption.TopDirectoryOnly).Length;
+        Console.WriteLine("frames count is " + framesCount);
 
-        for (int idx_detection = 0; idx_detection < max_num_detections; idx_detection++) {
-            if ( detections[ idx_detection*SIZE_DETECTION + CONF_IDX ] >= THR ) { // no need to check after fixing TODO above 
-                Detection detection = new Detection(detections, idx_detection*SIZE_DETECTION);
-                Console.WriteLine("class: " + detection.class_id + ", confidence: " + detection.confidence);
-            } 
+        Thread infer_thread = new Thread(() =>
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int infer_result = b7ExampleLibrary.infer_wrapper(hefPath, imagesPath, arch, detections, max_num_detections, frames_ready, buffer_size);
+            stopwatch.Stop();
+            if (infer_result != 0) {
+                Console.WriteLine("Inference failed with error code: " + infer_result);
+                return;
+            }
+            TimeSpan elapsed = stopwatch.Elapsed;
+            Console.WriteLine("FPS: " + elapsed.TotalMilliseconds/framesCount);
+        });
+        infer_thread.Start();
+
+        for (int frame_idx = 0; frame_idx < framesCount; frame_idx++) {
+            int buffer_idx = frame_idx % buffer_size;
+            while (frames_ready[buffer_idx] == -1) {
+                Thread.Sleep(MILISEC_TO_WAIT);
+            }
+            int num_detections_found = frames_ready[buffer_idx];
+            for (int idx_detection = 0; idx_detection < num_detections_found; idx_detection++) {
+                Detection detection = new Detection(detections, buffer_idx*detections_size_per_frame + idx_detection*DETECTION_SIZE);
+                Console.WriteLine("frame " + frame_idx + ", class: " + detection.class_id + ", confidence: " + detection.confidence);
+            }
+            frames_ready[buffer_idx] = -1; // indicates that we have finished processing frame idx_buffer, and detections[buffer_idxdetections_size_per_frame] can be reused.
         }
+        infer_thread.Join(); // Wait for infer_thread to complete
+        Console.WriteLine(" b7 :)");
     }
 }
