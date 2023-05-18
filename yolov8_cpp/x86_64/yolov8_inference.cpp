@@ -18,6 +18,7 @@ constexpr bool QUANTIZED = true;
 constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;
 std::mutex m;
 
+
 using namespace hailort;
 
 void print_inference_statistics(std::chrono::duration<double> inference_time,
@@ -47,12 +48,11 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
     return result;
 }
 
-
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, double frame_count, 
                                 std::chrono::time_point<std::chrono::system_clock>& postprocess_time, std::vector<cv::Mat>& frames, 
                                 double org_height, double org_width) {
 
-    auto status = HAILO_SUCCESS;   
+    auto status = HAILO_SUCCESS;
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
 
@@ -75,7 +75,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         }
 
         std::vector<HailoDetectionPtr> detections = hailo_common::get_hailo_detections(roi);
-        cv::resize(frames[i], frames[i], cv::Size((int)org_width, (int)org_height), 1);
+        cv::resize(frames[0], frames[0], cv::Size((int)org_width, (int)org_height), 1);
         for (auto &detection : detections) {
             if (detection->get_confidence()==0) {
                 continue;
@@ -83,18 +83,19 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
 
             HailoBBox bbox = detection->get_bbox();
         
-            cv::rectangle(frames[i], cv::Point2f(bbox.xmin() * float(org_width), bbox.ymin() * float(org_height)), 
+            cv::rectangle(frames[0], cv::Point2f(bbox.xmin() * float(org_width), bbox.ymin() * float(org_height)), 
                         cv::Point2f(bbox.xmax() * float(org_width), bbox.ymax() * float(org_height)), 
                         cv::Scalar(0, 0, 255), 1);
             
             std::cout << "Detection: " << detection->get_label() << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
-        // cv::imshow("Display window", frames[i]);
+        // cv::imshow("Display window", frames[0]);
         // cv::waitKey(0);
 
-        // video.write(frames[i]);
-        // cv::imwrite("output_image.jpg", frames[i]);
-        frames[i].release();
+        // video.write(frames[0]);
+        // cv::imwrite("output_image.jpg", frames[0]);
+        frames[0].release();
+        frames.erase(frames.begin());
     }
     postprocess_time = std::chrono::high_resolution_clock::now();
     // video.release();
@@ -134,12 +135,10 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
     int height = input_shape.height;
     int width = input_shape.width;
 
-
     cv::VideoCapture capture(video_path);
     if(!capture.isOpened())
         throw "Unable to read video file";
     
-    int i = 0;
     cv::Mat org_frame;
 
     write_time_vec = std::chrono::high_resolution_clock::now();
@@ -149,12 +148,14 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
             break;
             }
         
-        cv::resize(org_frame, frames[i], cv::Size(height, width), 1);
+        cv::resize(org_frame, org_frame, cv::Size(height, width), 1);
+        frames.push_back(org_frame);
 
-        input_vstream.write(MemoryView(frames[i].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
+        input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
         if (HAILO_SUCCESS != status)
             return status;
-        i++;
+        
+        org_frame.release();
     }
 
     capture.release();
@@ -168,7 +169,6 @@ hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_fra
 
     return HAILO_SUCCESS;
 }
-
 
 hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string video_path,
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
@@ -192,7 +192,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         features.emplace_back(feature);
     }
 
-    std::vector<cv::Mat> frames((int)frame_count);
+    std::vector<cv::Mat> frames;
 
     // Create the write thread
     auto input_thread(std::async(write_all, std::ref(input_vstream[0]), video_path, std::ref(write_time_vec), std::ref(frames)));
@@ -206,6 +206,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
 
     // Create the postprocessing thread
     auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
+
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
     }
@@ -341,7 +342,7 @@ int main(int argc, char** argv) {
                         std::ref(vstreams.second), 
                         video_path, 
                         write_time_vec, inference_time, postprocess_end_time, 
-                        frame_count, org_height, org_width);
+                        frame_count, org_height, org_width);      
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
