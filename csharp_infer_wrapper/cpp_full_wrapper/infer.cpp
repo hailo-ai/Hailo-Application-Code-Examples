@@ -229,7 +229,7 @@ void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<
     for (auto const& value: vstreams.second) {
         std::cout << MAGENTA << "-I-  OUT: " << value.name() <<std::endl << RESET;
     }
-    std::cout << BOLDMAGENTA << "-I-----------------------------------------------\n" << std::endl << RESET;
+    std::cout << BOLDMAGENTA << "-I-----------------------------------------------" << RESET << std::endl;
 }
 
 Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolov_hef)
@@ -293,7 +293,7 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
 
     std::vector<std::chrono::time_point<std::chrono::system_clock>> read_time_vec(vstreams.second.size());
 
-    // print_net_banner(vstreams);
+    print_net_banner(vstreams);
 
     std::vector<cv::String> file_names;
     cv::glob(images_path, file_names, false);
