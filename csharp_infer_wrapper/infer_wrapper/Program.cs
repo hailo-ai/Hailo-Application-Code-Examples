@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
-public static class b7ExampleLibrary {
+public static class InferLibrary {
     [DllImport("../cpp_full_wrapper/build/libinfer.so", 
     CallingConvention = CallingConvention.Cdecl)]
     public static extern int infer_wrapper(string hef_path, string images_path, string arch, float conf_thr,
@@ -61,7 +61,7 @@ class Program {
         Thread infer_thread = new Thread(() =>
         {
             DateTime startTime = DateTime.Now;
-            int infer_result = b7ExampleLibrary.infer_wrapper(hefPath, imagesPath, arch, conf_thr, detections, max_num_detections, frames_ready, buffer_size);
+            int infer_result = InferLibrary.infer_wrapper(hefPath, imagesPath, arch, conf_thr, detections, max_num_detections, frames_ready, buffer_size);
             DateTime endTime = DateTime.Now;
             if (infer_result != 0) {
                 Console.WriteLine("Inference failed with error code: " + infer_result);
@@ -86,6 +86,5 @@ class Program {
             frames_ready[buffer_idx] = -1; // indicates that we have finished processing frame idx_buffer, and detections[buffer_idxdetections_size_per_frame] can be reused.
         }
         infer_thread.Join(); // Wait for infer_thread to complete
-        Console.WriteLine(" b7 :)");
     }
 }
