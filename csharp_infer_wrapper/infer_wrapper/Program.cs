@@ -15,7 +15,7 @@ public struct Detection {
     public float ymax;
     public float xmax;
     public float confidence;
-    public int class_id;
+    public int classId;
 
     public Detection(float[] arr, long offset) {
         ymin = arr[offset];
@@ -23,7 +23,7 @@ public struct Detection {
         ymax = arr[offset + 2];
         xmax = arr[offset + 3];
         confidence = arr[offset + 4];
-        class_id = (int)arr[offset + 5];
+        classId = (int)arr[offset + 5];
     }
 }
 
@@ -80,7 +80,7 @@ class Program {
             int numDetectionsFound = framesReady[bufferIdx];
             for (int idxDetection = 0; idxDetection < numDetectionsFound; idxDetection++) {
                 Detection detection = new Detection(detections, bufferIdx*detectionsSizePerFrame + idxDetection*DETECTION_SIZE);
-                Console.WriteLine("frame " + frameIdx + ", class: " + CocoClasses.CocoEightyClasses.Map[detection.class_id] + ", confidence: " + detection.confidence);
+                Console.WriteLine("frame " + frameIdx + ", class: " + CocoClasses.CocoEightyClasses.Map[detection.classId] + ", confidence: " + detection.confidence);
             }
             framesReady[bufferIdx] = -1; // indicates that we have finished processing the frame frameIdx, and detections[bufferIdx] can be reused.
         }
