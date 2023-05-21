@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
+using CocoClasses;
+
 public static class InferLibrary {
     [DllImport("../cpp_full_wrapper/build/libinfer.so", 
     CallingConvention = CallingConvention.Cdecl)]
