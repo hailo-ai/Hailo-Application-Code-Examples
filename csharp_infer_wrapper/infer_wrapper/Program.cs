@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Diagnostics;
 
 public static class b7ExampleLibrary {
@@ -51,7 +52,10 @@ class Program {
         string arch = "yolov5";
         float conf_thr = CONF_THR;
 
-        int framesCount = Directory.GetFiles(imagesPath, "*.jpg", SearchOption.TopDirectoryOnly).Length;
+        string[] extensions = { ".jpeg", ".jpg", ".png" };
+        Regex regex = new Regex(string.Join("|", extensions.Select(ext => $"^{Regex.Escape(ext)}$")));
+        int framesCount = Directory.GetFiles(imagesPath).Count(file => regex.IsMatch(Path.GetExtension(file)));
+        
         Console.WriteLine("frames count is " + framesCount);
 
         Thread infer_thread = new Thread(() =>
@@ -77,7 +81,7 @@ class Program {
             int num_detections_found = frames_ready[buffer_idx];
             for (int idx_detection = 0; idx_detection < num_detections_found; idx_detection++) {
                 Detection detection = new Detection(detections, buffer_idx*detections_size_per_frame + idx_detection*DETECTION_SIZE);
-                Console.WriteLine("frame " + frame_idx + ", class: " + CocoClasses.CocoEightyClasses.Map[detection.class_id] + ", confidence: " + detection.confidence);
+                // Console.WriteLine("frame " + frame_idx + ", class: " + CocoClasses.CocoEightyClasses.Map[detection.class_id] + ", confidence: " + detection.confidence);
             }
             frames_ready[buffer_idx] = -1; // indicates that we have finished processing frame idx_buffer, and detections[buffer_idxdetections_size_per_frame] can be reused.
         }
