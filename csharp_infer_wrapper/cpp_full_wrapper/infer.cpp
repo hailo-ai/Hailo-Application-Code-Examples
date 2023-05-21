@@ -63,25 +63,39 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
         }
-
+        // TEST ============================
         int num_detections = 0;
         int detection_size = 6;
         int idx_buffer = idx_frame % buffer_size;
         size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == =1
-        for (auto& detection : detections_struct) {
-            if (detection.confidence >= thr && num_detections < max_num_detections) { 
-    
-                detections[detections_4_byte_idx++] = detection.ymin;
-                detections[detections_4_byte_idx++] = detection.xmin;
-                detections[detections_4_byte_idx++] = detection.ymax;
-                detections[detections_4_byte_idx++] = detection.xmax;
-                detections[detections_4_byte_idx++] = detection.confidence;
-                detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+        detections[detections_4_byte_idx++] = 0.f;
+        detections[detections_4_byte_idx++] = 0.f;
+        detections[detections_4_byte_idx++] = 1.f;
+        detections[detections_4_byte_idx++] = 1.f;
+        detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
+        detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
+        num_detections++;
+        
+        // END TEST ========================
 
-                num_detections++;
-            }
-        }
+        // int num_detections = 0;
+        // int detection_size = 6;
+        // int idx_buffer = idx_frame % buffer_size;
+        // size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
+        // // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == =1
+        // for (auto& detection : detections_struct) {
+        //     if (detection.confidence >= thr && num_detections < max_num_detections) { 
+    
+        //         detections[detections_4_byte_idx++] = detection.ymin;
+        //         detections[detections_4_byte_idx++] = detection.xmin;
+        //         detections[detections_4_byte_idx++] = detection.ymax;
+        //         detections[detections_4_byte_idx++] = detection.xmax;
+        //         detections[detections_4_byte_idx++] = detection.confidence;
+        //         detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+
+        //         num_detections++;
+        //     }
+        // }
         
         frames_ready[idx_buffer] = num_detections; // indicates (to c#) that we have finished processing frame idx_buffer, and found num_detections detections.
         frames[idx_frame].release();   
@@ -268,6 +282,7 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevic
 }
 
 extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, float* detections, int max_num_detections, int* frames_ready, const int buffer_size) {
+    auto b7_start = std::chrono::steady_clock::now();
 
     hailo_status status = HAILO_UNINITIALIZED;
 
@@ -321,5 +336,8 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
     total_time = t_end - t_start;
 
     // std::cout << BOLDBLUE << "\n-I- Inference run finished successfully" << RESET << std::endl;
+    auto b7_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(b7_end - b7_start);
+    std::cout << "FPS cpp " << (1000*1000)/duration.count() << std::endl;
     return HAILO_SUCCESS;
 }

@@ -29,9 +29,9 @@ public struct Detection {
 
 class Program {
     public const int FLOAT = 4;
-    public const int MAX_NUM_DETECTIONS = 20;
-    public const int DETECTION_SIZE = 6;
-    public const int BUFFER_SIZE = 6; // In case of synchronization issues (c++ produces more that xBUFFER_SIZE faster than c# consumes)- make the buffer bigger.
+    public const int MAX_NUM_DETECTIONS = 1; // was: 10
+    public const int DETECTION_SIZE = 6; 
+    public const int BUFFER_SIZE = 6; // In case of synchronization issues (c++ produces more that xBUFFER_SIZE faster than c# consumes)- make the buffer bigger. // was: 6; frames count is 1000; FPS: 5.5037127
     public const int CONF_IDX = 4;
     public const float THR = 0.5F; // TODO: parameter to infer_wrapper(). Currently const 0.5F.
     public const int MILISEC_TO_WAIT = 1; // 0.001 sec
@@ -46,7 +46,7 @@ class Program {
         int[] frames_ready = new int[buffer_size];
         Array.Fill(frames_ready, -1); // all frames weren't processed yet
     
-        string imagesPath = "images/";
+        string imagesPath = "images/rand_coco_1000/images/calib_set/"; // was images/random_coco/
         string hefPath = "yolov5m_wo_spp_60p.hef";
         string arch = "yolov5";
 
@@ -55,15 +55,16 @@ class Program {
 
         Thread infer_thread = new Thread(() =>
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            DateTime startTime = DateTime.Now;
             int infer_result = b7ExampleLibrary.infer_wrapper(hefPath, imagesPath, arch, detections, max_num_detections, frames_ready, buffer_size);
-            stopwatch.Stop();
+            DateTime endTime = DateTime.Now;
             if (infer_result != 0) {
                 Console.WriteLine("Inference failed with error code: " + infer_result);
                 return;
             }
-            TimeSpan elapsed = stopwatch.Elapsed;
-            Console.WriteLine("FPS: " + elapsed.TotalMilliseconds/framesCount);
+            TimeSpan elapsedTime = endTime - startTime;
+            long elapsedMilliseconds = (long)elapsedTime.TotalMilliseconds;
+            Console.WriteLine("FPS c#: " + (1000*1000)/elapsedMilliseconds);
         });
         infer_thread.Start();
 
