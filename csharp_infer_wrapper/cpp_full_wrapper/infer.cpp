@@ -63,39 +63,39 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
         }
-        // TEST ============================
-        int num_detections = 0;
-        int detection_size = 6;
-        int idx_buffer = idx_frame % buffer_size;
-        size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        detections[detections_4_byte_idx++] = 0.f;
-        detections[detections_4_byte_idx++] = 0.f;
-        detections[detections_4_byte_idx++] = 1.f;
-        detections[detections_4_byte_idx++] = 1.f;
-        detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
-        detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
-        num_detections++;
-        
-        // END TEST ========================
-
+        // // TEST ============================
         // int num_detections = 0;
         // int detection_size = 6;
         // int idx_buffer = idx_frame % buffer_size;
         // size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        // // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == =1
-        // for (auto& detection : detections_struct) {
-        //     if (detection.confidence >= thr && num_detections < max_num_detections) { 
-    
-        //         detections[detections_4_byte_idx++] = detection.ymin;
-        //         detections[detections_4_byte_idx++] = detection.xmin;
-        //         detections[detections_4_byte_idx++] = detection.ymax;
-        //         detections[detections_4_byte_idx++] = detection.xmax;
-        //         detections[detections_4_byte_idx++] = detection.confidence;
-        //         detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+        // detections[detections_4_byte_idx++] = 0.f;
+        // detections[detections_4_byte_idx++] = 0.f;
+        // detections[detections_4_byte_idx++] = 1.f;
+        // detections[detections_4_byte_idx++] = 1.f;
+        // detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
+        // detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
+        // num_detections++;
+        
+        // // END TEST ========================
 
-        //         num_detections++;
-        //     }
-        // }
+        int num_detections = 0;
+        int detection_size = 6;
+        int idx_buffer = idx_frame % buffer_size;
+        size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
+        // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == =1
+        for (auto& detection : detections_struct) {
+            if (detection.confidence >= thr && num_detections < max_num_detections) { 
+    
+                detections[detections_4_byte_idx++] = detection.ymin;
+                detections[detections_4_byte_idx++] = detection.xmin;
+                detections[detections_4_byte_idx++] = detection.ymax;
+                detections[detections_4_byte_idx++] = detection.xmax;
+                detections[detections_4_byte_idx++] = detection.confidence;
+                detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+
+                num_detections++;
+            }
+        }
         
         frames_ready[idx_buffer] = num_detections; // indicates (to c#) that we have finished processing frame idx_buffer, and found num_detections detections.
         frames[idx_frame].release();   
