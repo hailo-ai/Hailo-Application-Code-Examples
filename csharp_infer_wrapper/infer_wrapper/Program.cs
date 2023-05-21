@@ -33,7 +33,7 @@ class Program {
     public const int FLOAT = 4;
     public const int MAX_NUM_DETECTIONS = 10;
     public const int DETECTION_SIZE = 6; 
-    public const int BUFFER_SIZE = 6; // In case of synchronization issues (c++ produces more that xBUFFER_SIZE faster than c# consumes)- make the buffer bigger.
+    public const int BUFFER_SIZE = 6; // In case of synchronization issues (c++ produces more than xBUFFER_SIZE faster than c# consumes)- make the buffer bigger.
     public const int CONF_IDX = 4;
     public const float CONF_THR = 0.5F;
     public const int MILISEC_TO_WAIT = 1; // 0.001 sec
