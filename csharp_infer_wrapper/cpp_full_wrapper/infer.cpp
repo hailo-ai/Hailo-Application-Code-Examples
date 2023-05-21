@@ -48,7 +48,7 @@ inline bool ends_with(std::string const & value, std::string const & ending) {
 
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, 
                                 std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, int frame_count, std::string arch,
-                                float32_t* detections, int max_num_detections, int* frames_ready, const int buffer_size, float thr)
+                                float32_t* detections, const int max_num_detections, int* frames_ready, const int buffer_size, float thr)
 {
     auto status = HAILO_SUCCESS;
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
@@ -63,20 +63,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
         }
-        // // TEST ============================
-        // int num_detections = 0;
-        // int detection_size = 6;
-        // int idx_buffer = idx_frame % buffer_size;
-        // size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        // detections[detections_4_byte_idx++] = 0.f;
-        // detections[detections_4_byte_idx++] = 0.f;
-        // detections[detections_4_byte_idx++] = 1.f;
-        // detections[detections_4_byte_idx++] = 1.f;
-        // detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
-        // detections[detections_4_byte_idx++] = static_cast<float32_t>(idx_frame);
-        // num_detections++;
-        
-        // // END TEST ========================
 
         int num_detections = 0;
         int detection_size = 6;
@@ -169,8 +155,8 @@ hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_fra
 hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string images_path,
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
-                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch,
-                    float32_t* detections, int max_num_detections, int* frames_ready, const int buffer_size) {
+                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch, const float conf_thr,
+                    float32_t* detections, const int max_num_detections, int* frames_ready, const int buffer_size) {
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -208,9 +194,8 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i])));
     }
 
-    float thr = 0.5f;
     auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frames), frame_count, arch, detections, max_num_detections, 
-        frames_ready, buffer_size, thr));
+        frames_ready, buffer_size, conf_thr));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -281,7 +266,7 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevic
     return std::move(network_groups->at(0));
 }
 
-extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, float* detections, int max_num_detections, int* frames_ready, const int buffer_size) {
+extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, const float conf_thr, float* detections, const int max_num_detections, int* frames_ready, const int buffer_size) {
     auto b7_start = std::chrono::steady_clock::now();
 
     hailo_status status = HAILO_UNINITIALIZED;
@@ -321,7 +306,7 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 
                         images_path, write_time_vec, read_time_vec, 
-                        inference_time, postprocess_time, arch,
+                        inference_time, postprocess_time, arch, conf_thr,
                         detections, max_num_detections, 
                         frames_ready, buffer_size);
 

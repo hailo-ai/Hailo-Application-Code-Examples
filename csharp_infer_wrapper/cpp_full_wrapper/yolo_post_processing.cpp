@@ -63,7 +63,7 @@ float iou_calc(const DetectionObject &box_1, const DetectionObject &box_2)
 
 
 void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_size,
-		           int* anchors, std::vector<DetectionObject>& objects, float& thr, int max_num_detections) 
+		           int* anchors, std::vector<DetectionObject>& objects, float& thr, const int max_num_detections) 
 {
     float  confidence, x, y, h, w, xmin, ymin, xmax, ymax, conf_max = 0.0f;
     int add = 0, anchor = 0, chosen_row = 0, chosen_col = 0, chosen_cls = -1;
@@ -118,7 +118,7 @@ void extract_boxes(uint8_t* fm, float &qp_zp, float &qp_scale, int feature_map_s
 
 
 std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, int* anchors1, int* anchors2, int* anchors3,
-    float& qp_zp_1, float& qp_scale_1, float& qp_zp_2, float& qp_scale_2, float& qp_zp_3, float& qp_scale_3, float& thr, int max_num_detections)
+    float& qp_zp_1, float& qp_scale_1, float& qp_zp_2, float& qp_scale_2, float& qp_zp_3, float& qp_scale_3, float& thr, const int max_num_detections)
 {
     size_t num_boxes = 0;
     std::vector<DetectionObject> objects;
@@ -156,7 +156,7 @@ std::vector<DetectionObject> _decode(uint8_t* fm1, uint8_t* fm2, uint8_t* fm3, i
 }
 
 std::vector<DetectionObject> post_processing(
-    int max_num_detections, float thr, std::string &arch,
+    const int max_num_detections, float thr, std::string &arch,
     uint8_t *fm1, float qp_zp_1, float qp_scale_1,
     uint8_t *fm2, float qp_zp_2, float qp_scale_2,
     uint8_t *fm3, float qp_zp_3, float qp_scale_3)
