@@ -152,7 +152,7 @@ hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_fra
 }
 
 
-hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string images_path,
+hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string images_path, int frame_count,
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
                     std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch, const float conf_thr,
@@ -175,14 +175,6 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         features.emplace_back(feature);
     }
 
-    std::vector<cv::String> file_names;
-    cv::glob(images_path, file_names, false);
-    int frame_count = 0;
-    for (auto& file : file_names) {
-        if (ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")) {
-            frame_count++;
-        }
-    }
     std::vector<cv::Mat> frames(static_cast<size_t>(frame_count));
 
     auto input_thread(std::async(write_all, std::ref(input_vstream[0]), images_path, std::ref(write_time_vec), std::ref(frames)));
@@ -267,7 +259,7 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevic
 }
 
 extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, const float conf_thr, float* detections, const int max_num_detections, int* frames_ready, const int buffer_size) {
-    auto b7_start = std::chrono::steady_clock::now();
+    auto infer_start = std::chrono::steady_clock::now();
 
     hailo_status status = HAILO_UNINITIALIZED;
 
@@ -303,9 +295,18 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
 
     // print_net_banner(vstreams);
 
+    std::vector<cv::String> file_names;
+    cv::glob(images_path, file_names, false);
+    int frame_count = 0;
+    for (auto& file : file_names) {
+        if (ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")) {
+            frame_count++;
+        }
+    }
+
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 
-                        images_path, write_time_vec, read_time_vec, 
+                        images_path, frame_count, write_time_vec, read_time_vec, 
                         inference_time, postprocess_time, arch, conf_thr,
                         detections, max_num_detections, 
                         frames_ready, buffer_size);
@@ -321,8 +322,9 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
     total_time = t_end - t_start;
 
     // std::cout << BOLDBLUE << "\n-I- Inference run finished successfully" << RESET << std::endl;
-    auto b7_end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(b7_end - b7_start);
-    std::cout << "FPS cpp " << (1000*1000)/duration.count() << std::endl;
+    auto infer_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(infer_end - infer_start);
+    
+    std::cout << "FPS cpp " << (frame_count*1000)/duration.count() << std::endl; // 1000: millisecs to secs
     return HAILO_SUCCESS;
 }
