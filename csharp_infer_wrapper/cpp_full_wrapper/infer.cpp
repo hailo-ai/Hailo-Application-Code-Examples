@@ -68,7 +68,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         int detection_size = 6;
         int idx_buffer = idx_frame % buffer_size;
         size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == -1
+        // If you want to check that c# consumed the old detections, check that frames_ready[idx_buffer] == -1 before writing in detections array
         for (auto& detection : detections_struct) {
             if (detection.confidence >= thr && num_detections < max_num_detections) { 
     
