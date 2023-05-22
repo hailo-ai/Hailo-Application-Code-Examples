@@ -232,9 +232,9 @@ void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<
     std::cout << BOLDMAGENTA << "-I-----------------------------------------------" << RESET << std::endl;
 }
 
-Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolov_hef)
+Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string hef_path)
 {
-    auto hef_exp = Hef::create(yolov_hef);
+    auto hef_exp = Hef::create(hef_path);
     if (!hef_exp) {
         return make_unexpected(hef_exp.status());
     }
