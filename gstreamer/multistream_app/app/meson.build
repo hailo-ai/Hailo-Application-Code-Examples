@@ -1,0 +1,26 @@
+################################################
+# multistream_app
+################################################
+multistream_app_sources = [
+'multistream_app.cpp', 'SrcBin.cpp',
+]
+
+
+executable('multistream_app',
+    multistream_app_sources,
+    dependencies : postprocess_dep,
+    gnu_symbol_visibility : 'default',
+    install: true,
+    install_dir: meson.project_source_root(),
+) 
+example_app_sources = [
+'example_app.cpp', 'SrcBin.cpp',
+]
+
+executable('example_app',
+    example_app_sources,
+    dependencies : postprocess_dep,
+    gnu_symbol_visibility : 'default',
+    install: true,
+    install_dir: meson.project_source_root(),
+)    
