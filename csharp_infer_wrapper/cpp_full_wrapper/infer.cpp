@@ -68,7 +68,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         int detection_size = 6;
         int idx_buffer = idx_frame % buffer_size;
         size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
-        // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == =1
+        // TODO: maybe check that c# consumed the old detections. It means to check that frames_ready[idx_buffer] == -1
         for (auto& detection : detections_struct) {
             if (detection.confidence >= thr && num_detections < max_num_detections) { 
     
@@ -316,7 +316,7 @@ extern "C" int infer_wrapper(const char* hef_path, const char* images_path, cons
         return status;
     }
 
-    // print_inference_statistics(inference_time, postprocess_time, hef_path, 23.f); // TODO: num_frames
+    // print_inference_statistics(inference_time, postprocess_time, hef_path, frame_count);
 
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
