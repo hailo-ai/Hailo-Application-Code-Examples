@@ -20,10 +20,9 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
- 
+#include <map>
 
 #include <stdint.h>
-
 
 #define FEATURE_MAP_SIZE1    20
 #define FEATURE_MAP_SIZE2    40
