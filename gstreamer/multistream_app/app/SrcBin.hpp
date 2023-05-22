@@ -1,5 +1,8 @@
 #pragma once
-
+#include <iostream>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <gst/gst.h>
 #include <string>
 
@@ -49,7 +52,8 @@ public:
     // gboolean rebuild_rtspsrc_element();
     gboolean rebuild_rtsp_source();
     gboolean set_bus_handler();
-    gboolean restarting = false;
+    std::atomic<bool> restarting; //used for to indicate that the source is restarting
+    std::atomic<bool> reset_flag; //used for watchdog timer 
 
 private:
     gboolean build_bin();

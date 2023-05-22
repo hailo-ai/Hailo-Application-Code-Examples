@@ -1,6 +1,8 @@
 ################################################
 # multistream_app
 ################################################
+thread_dep = dependency('threads')
+
 multistream_app_sources = [
 'multistream_app.cpp', 'SrcBin.cpp',
 ]
@@ -8,7 +10,7 @@ multistream_app_sources = [
 
 executable('multistream_app',
     multistream_app_sources,
-    dependencies : postprocess_dep,
+    dependencies : [postprocess_dep, thread_dep],
     gnu_symbol_visibility : 'default',
     install: true,
     install_dir: meson.project_source_root(),
@@ -19,7 +21,7 @@ example_app_sources = [
 
 executable('example_app',
     example_app_sources,
-    dependencies : postprocess_dep,
+    dependencies : [postprocess_dep, thread_dep],
     gnu_symbol_visibility : 'default',
     install: true,
     install_dir: meson.project_source_root(),

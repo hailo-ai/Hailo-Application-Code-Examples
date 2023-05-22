@@ -109,11 +109,6 @@ static GstPadProbeReturn pad_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpoint
             // get the segment event
             GstSegment *segment;
             gst_event_parse_segment(event, (const GstSegment **)&segment);
-            // // set the segment base
-            // segment->base = 0;
-            // src_bin->current_base_timestamp = src_bin->next_base_timestamp;
-            // src_bin->next_base_timestamp = +segment->stop;
-            // // print segemnt info
             GST_INFO("Segment event received on source \n");
             GST_INFO("Segment base: %" GST_TIME_FORMAT "\n", GST_TIME_ARGS(segment->base));
             GST_INFO("Segment start: %" GST_TIME_FORMAT "\n", GST_TIME_ARGS(segment->start));
@@ -168,7 +163,7 @@ std::string create_sid_comp_pipelines(int num_of_src)
         result += "sid.src_" + std::to_string(n) + " ! ";
         result += QUEUE + "name=sid_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
         result += "identity name=fps_probe_comp_" + std::to_string(n) + " ! ";
-        result += "comp.sink_" + std::to_string(n) + " ";
+        result += "fpsdisplaysink video-sink=xvimagesink name=hailo_display_" + std::to_string(n) + " sync=false text-overlay=false ";
     }
     return result;
 }
@@ -230,7 +225,7 @@ std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_dat
 
     // Create the pipeline string
     pipeline_string += create_sources(num_of_src, src_names.data(), use_rtsp, app_data);
-    pipeline_string += "hailoroundrobin name=fun ! ";
+    pipeline_string += "hailoroundrobin name=fun funnel-mode=true ! ";
     pipeline_string += "videoconvert name=preproc_convert qos=false ! ";
     pipeline_string += QUEUE + " name=convert_q max-size-buffers=3 ! ";
     // pipeline_string += "identity name=fps_probe_inference ! ";
@@ -247,9 +242,9 @@ std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_dat
     pipeline_string += "videoconvert ! ";
     pipeline_string += "textoverlay name=text_overlay ! ";
     pipeline_string += create_sid_comp_pipelines(num_of_src);
-    pipeline_string += "compositor name=comp start-time-selection=0 " + create_compositor_locations(num_of_src, 640, 640, 2) + " ! ";
+    // pipeline_string += "compositor name=comp start-time-selection=0 " + create_compositor_locations(num_of_src, 640, 640, 2) + " ! ";
     // pipeline_string += "funnel name=comp ! ";
-    pipeline_string += "fpsdisplaysink video-sink=" + video_sink_element + " name=hailo_display sync=" + sync_pipeline + " text-overlay=false signal-fps-measurements=true ";
+    // pipeline_string += "fpsdisplaysink video-sink=" + video_sink_element + " name=hailo_display sync=" + sync_pipeline + " text-overlay=false signal-fps-measurements=true ";
     pipeline_string += stats_pipeline;
     std::cout << "Pipeline:" << std::endl;
     std::cout << "gst-launch-1.0 " << pipeline_string << std::endl;
@@ -332,7 +327,11 @@ int main(int argc, char *argv[])
         // link the source element to the source bin out queue
         gst_element_link(src_elem, src_bin_out_q);
         // run the source bin bus handler
-        //app_data.src_bins[n]->set_bus_handler();
+        // gboolean ret = app_data.src_bins[n]->set_bus_handler();
+        // if (!ret) {
+        //     std::cerr << "Failed to set bus handler for source bin" << std::endl;
+        //     exit(1);
+        // }
     }
 
     // Get the bus
