@@ -44,9 +44,9 @@ arch_dict = {'yolo_v3':
              'yolo_v4': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[142, 110, 192, 243, 459, 401], [36, 75, 76, 55, 72, 146], [12, 16, 19, 36, 40, 28]])},
-             'yolov_4t': 
-                 {'strides': [32,16], 
-                  'sizes': np.array([[81, 82, 135, 169, 344, 319], [23, 27, 37, 58, 81, 82]])},
+             'yolo_v4t': 
+                 {'strides': [16,32], 
+                  'sizes': np.array([[23, 27, 37, 58, 81, 82], [81, 82, 135, 169, 344, 319]])},
              'yolo_v5': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[116, 90, 156, 198, 373, 326], [30, 61, 62, 45, 59, 119], [10, 13, 16, 30, 33, 23]])},
@@ -81,7 +81,7 @@ def draw_detection(draw, d, c, s, color, scale_factor):
     draw.text((xmin * scale_factor + 4, ymin * scale_factor + 4), label, fill=color, font=font)
     return label
 
-def post_process(detections, image, id, output_path, width, height, min_score=0.55, scale_factor=1):
+def post_process(detections, image, id, output_path, width, height, min_score=0.4, scale_factor=1):
     COLORS = np.random.randint(0, 255, size=(100, 3), dtype=np.uint8)
     boxes = np.array(detections['detection_boxes'])[0]
     classes = np.array(detections['detection_classes'])[0].astype(int)
@@ -168,8 +168,8 @@ def postproc_yolov4(height,width, anchors, meta_arch, num_of_classes, raw_detect
                         anchors=anchors,
                         meta_arch=meta_arch, 
                         classes=num_of_classes,
-                        nms_iou_thresh=0.45,
-                        score_threshold=0.01,
+                        nms_iou_thresh=0.3,
+                        score_threshold=0.1,
                         labels_offset=1,
                         **kwargs)
     
@@ -194,7 +194,27 @@ def postproc_yolov4(height,width, anchors, meta_arch, num_of_classes, raw_detect
                     raw_detections[probs[1]]]
     
     return post_proc.postprocessing(detections, **kwargs)
-  
+
+def postproc_yolov4t(height, width, anchors, meta_arch, num_of_classes, raw_detections):
+    raw_detections_keys = list(raw_detections.keys())
+    raw_detections_keys.sort()
+    
+    post_proc = YoloPostProc(img_dims=(height,width), 
+                        anchors=anchors,
+                        meta_arch='yolo_v3', 
+                        classes=num_of_classes,
+                        nms_iou_thresh=0.3,
+                        score_threshold=0.1,
+                        labels_offset=0,
+                        **kwargs)
+    
+    detections = []
+    
+    for raw_det in raw_detections_keys:
+        detections.append(raw_detections[raw_det])
+    
+    return post_proc.postprocessing(detections, **kwargs)
+
 def postproc_yolov5_yolov7(height,width, anchors, meta_arch, num_of_classes, raw_detections):
     raw_detections_keys = list(raw_detections.keys())
     raw_detections_keys.sort()
@@ -255,6 +275,7 @@ def letterbox_image(image, size):
     scaled_w = int(img_w * scale)
     scaled_h = int(img_h * scale)
     image = image.resize((scaled_w, scaled_h), Image.BICUBIC)
+    # new_image = Image.new('RGB', size, (128,128,128))
     new_image = Image.new('RGB', size, (114,114,114))
     new_image.paste(image, ((model_input_w - scaled_w) // 2, (model_input_h - scaled_h) // 2))
     return new_image
@@ -283,7 +304,7 @@ def load_input_images(images_path, images):
 
 func_dict = {'yolo_v3': postproc_yolov3, 
              'yolo_v4': postproc_yolov4,
-             'yolo_v4t': postproc_yolov4,
+             'yolo_v4t': postproc_yolov4t,
              'yolo_v5': postproc_yolov5_yolov7,
              'yolox': postproc_yolox_yolov6,
              'yolo_v6': postproc_yolox_yolov6,
@@ -306,9 +327,7 @@ arch_list = arch_dict.keys()
 
 if arch in arch_list:
     anchors = arch_dict[arch]
-    if arch == 'yolo_v4t':
-        meta_arch = 'yolo_v4'
-    elif arch == 'yolo_v7':
+    if arch == 'yolo_v7':
         meta_arch = 'yolo_v5'
     elif arch == 'yolo_v8':
         meta_arch = 'nanodet_v8'
@@ -359,4 +378,3 @@ with PcieDevice(devices[0]) as target:
                 img = letterbox_image(image, (width,height))
                                             
                 post_process(results, img, i, output_path, width, height)
-      
