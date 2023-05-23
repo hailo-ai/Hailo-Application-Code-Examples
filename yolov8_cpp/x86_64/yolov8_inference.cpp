@@ -148,7 +148,7 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
             break;
             }
         
-        cv::resize(org_frame, org_frame, cv::Size(height, width), 1);
+        cv::resize(org_frame, org_frame, cv::Size(width, height), 1);
         frames.push_back(org_frame);
 
         input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
