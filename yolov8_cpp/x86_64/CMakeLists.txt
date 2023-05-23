@@ -32,9 +32,6 @@ ExternalProject_Add(xtensor-test
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 
-find_package(xtensor REQUIRED)
-message(STATUS "Found xtensor: " ${xtensor_INCLUDE_DIRS})
-
 link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 add_dependencies(${PROJECT_NAME} xtl-test xtensor-test)
