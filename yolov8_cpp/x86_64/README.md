@@ -25,7 +25,7 @@ CMake >= 3.20
 
 HailoRT >= 4.10.0
 
-Xtensor - no installation or build needed as it's complied from the web as an external project. Just run **sudo apt-get install xtensor-dev** before running build
+Xtensor - no installation or build needed as it's complied from the web as an external project.
 
 
 **NOTE**: You need to set the BASE_DIR variable in the CMakeLists.txt to be the folder path to the location of the yolov8_cpp folder.
