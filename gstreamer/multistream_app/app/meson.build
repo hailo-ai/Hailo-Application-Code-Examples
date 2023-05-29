@@ -4,7 +4,7 @@
 thread_dep = dependency('threads')
 
 multistream_app_sources = [
-'multistream_app.cpp', 'SrcBin.cpp',
+'multistream_app.cpp', 'SrcBin.cpp', 'hailo_app_useful_funcs.cpp',
 ]
 
 
@@ -16,7 +16,7 @@ executable('multistream_app',
     install_dir: meson.project_source_root(),
 ) 
 example_app_sources = [
-'example_app.cpp', 'SrcBin.cpp',
+'example_app.cpp', 'SrcBin.cpp', 'hailo_app_useful_funcs.cpp',
 ]
 
 executable('example_app',

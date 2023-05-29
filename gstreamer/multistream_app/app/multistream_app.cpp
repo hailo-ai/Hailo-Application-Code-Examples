@@ -55,6 +55,8 @@
 GST_DEBUG_CATEGORY (app_debug);
 #define GST_CAT_DEFAULT app_debug
 
+// use --gst-debug=*debug:5 to enable debug messages
+// use --fps-probe=true to enable fps probe and debug level INFO to get timestamps
 struct AppData {
     GstElement* pipeline;
     GMainLoop* main_loop;
@@ -84,10 +86,16 @@ const std::string QUEUE = "queue leaky=no max-size-bytes=0 max-size-time=0 ";
 
 const std::string RTSP_SRC_0 = "rtsp://192.168.0.101/axis-media/media.amp/?h264x=4";
 const std::string RTSP_SRC_1 = "rtsp://192.168.0.102/axis-media/media.amp/?h264x=4";
-  
+const std::string RTSP_SRC_2 = "rtsp://192.168.0.103/axis-media/media.amp/?h264x=4";
+const std::string RTSP_SRC_3 = "rtsp://192.168.0.104/axis-media/media.amp/?h264x=4";
+const std::string RTSP_SRC_4 = "rtsp://192.168.0.105/axis-media/media.amp/?h264x=4";
+
+
 const std::string URI_SRC_0 = "file:///local/workspace/tappas/apps/h8/gstreamer/resources/mp4/detection0.mp4";
 const std::string URI_SRC_1 = "file:///local/workspace/tappas/apps/h8/gstreamer/resources/mp4/detection1.mp4";
 const std::string URI_SRC_2 = "file:///local/workspace/tappas/apps/h8/gstreamer/resources/mp4/detection2.mp4";
+const std::string URI_SRC_3 = "file:///local/workspace/tappas/apps/h8/gstreamer/resources/mp4/detection3.mp4";
+const std::string URI_SRC_4 = "file:///local/workspace/tappas/apps/h8/gstreamer/resources/mp4/detection4.mp4";
 
 
 static GstPadProbeReturn pad_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer data)
@@ -142,18 +150,20 @@ std::string create_sources(int num_of_src, std::string src_names[], bool use_rts
         }
         // create additional pipeline elements
         result += QUEUE + "name=src_bin_out_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
+        // result += "videorate name=videorate_" + std::to_string(n) + " ! video/x-raw,framerate=25/1 ! ";
+        result += "queue leaky=downstream max-size-bytes=0 max-size-time=0 name=videorate_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
         result += "hailofilter name=set_id_" + std::to_string(n) + " so-path=" + STREAM_ID_SO + " config-path=SRC_" + std::to_string(n) + " qos=false ! ";
         // result += "identity name=fps_probe_src_" + std::to_string(n) + " ! ";
         result += "videoscale name=videoscale_src_" + std::to_string(n) + " ! ";
         // ADD QUEUE
         result += QUEUE + "name=scale_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
-        // Create the fun sink element
-        result += "fun.sink_" + std::to_string(n) + " ";
+        // Create the roundroubin sink element
+        result += "roundroubin.sink_" + std::to_string(n) + " ";
     }
     return result;
 }
 
-std::string create_sid_comp_pipelines(int num_of_src)
+std::string create_sid_comp_pipelines(int num_of_src, std::string sync_pipeline="false")
 {
     std::string  result = "hailostreamrouter name=sid ";
     for (int n = 0; n < num_of_src; n++) {
@@ -162,29 +172,13 @@ std::string create_sid_comp_pipelines(int num_of_src)
     for (int n = 0; n < num_of_src; n++) {
         result += "sid.src_" + std::to_string(n) + " ! ";
         result += QUEUE + "name=sid_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
-        result += "identity name=fps_probe_comp_" + std::to_string(n) + " ! ";
-        result += "fpsdisplaysink video-sink=xvimagesink name=hailo_display_" + std::to_string(n) + " sync=false text-overlay=false ";
+        // result += "identity name=fps_probe_disp_" + std::to_string(n) + " ! ";
+        // //result += "fpsdisplaysink video-sink=xvimagesink name=hailo_display_" + std::to_string(n) + " sync=false text-overlay=false ";
+        result += "fpsdisplaysink name=hailo_display_" + std::to_string(n) + " sync=" + sync_pipeline + " ";
     }
     return result;
 }
 
-std::string create_compositor_locations(int num_of_src, int width, int height, int row_size)
-{
-    std::string compositor_locations = "";
-    int xpos = 0;
-    int ypos = 0;
-    for (int i = 0; i < num_of_src; i++)
-    {
-        compositor_locations += "sink_" + std::to_string(i) + "::xpos=" + std::to_string(xpos) + " sink_" + std::to_string(i) + "::ypos=" + std::to_string(ypos) + " ";
-        xpos += width;
-        if (xpos >= width * row_size)
-        {
-            xpos = 0;
-            ypos += height;
-        }
-    }
-    return compositor_locations;
-}
 //******************************************************************
 // PIPELINE CREATION
 //******************************************************************
@@ -217,38 +211,39 @@ std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_dat
     }
     if (result["rtsp-src"].as<bool>()) {
         use_rtsp = true;
-        src_names = {RTSP_SRC_0, RTSP_SRC_1};
+        src_names = {RTSP_SRC_0, RTSP_SRC_1, RTSP_SRC_2, RTSP_SRC_3, RTSP_SRC_4};
     } else {
         use_rtsp = false;
-        src_names = {URI_SRC_0, URI_SRC_1, URI_SRC_2};
+        src_names = {URI_SRC_0, URI_SRC_1, URI_SRC_2, URI_SRC_3, URI_SRC_4};
     }
+    // convert result["rr-mode"] from int to string
+    std::string roundrobin_mode = std::to_string(result["rr-mode"].as<int>());
 
     // Create the pipeline string
     pipeline_string += create_sources(num_of_src, src_names.data(), use_rtsp, app_data);
-    pipeline_string += "hailoroundrobin name=fun funnel-mode=true ! ";
-    pipeline_string += "videoconvert name=preproc_convert qos=false ! ";
+    pipeline_string += "hailoroundrobin name=roundroubin mode=" + roundrobin_mode + " ! ";
+    pipeline_string += QUEUE + " name=roundrobin_q max-size-buffers=3 ! ";
+    pipeline_string += "identity sync=true ! ";
+    pipeline_string += QUEUE + " name=buf_q max-size-buffers=30 ! ";
+    pipeline_string += "videoconvert name=preproc_convert qos=false n-threads=3 ! ";
     pipeline_string += QUEUE + " name=convert_q max-size-buffers=3 ! ";
-    // pipeline_string += "identity name=fps_probe_inference ! ";
+    pipeline_string += "identity name=fps_probe_inference sync=true ! ";
     pipeline_string += "videoscale ! ";
     pipeline_string += "video/x-raw,width=640,height=640,pixel-aspect-ratio=1/1,format=RGB ! ";
     pipeline_string += QUEUE + " name=preproc_q max-size-buffers=3 ! ";
     pipeline_string += "hailonet hef-path=" + HEF_PATH + " ! ";
     pipeline_string += QUEUE + " name=postroc_q max-size-buffers=3 ! ";
     pipeline_string += "hailofilter name=filter_post so-path=" + POSTPROCESS_SO + " config-path=" + JSON_CONFIG_PATH + " qos=false ! ";
-    pipeline_string += "identity name=data_probe ! ";
+    // pipeline_string += "identity name=data_probe ! ";
     pipeline_string += QUEUE + " name=overlay_q max-size-buffers=3 ! ";
     pipeline_string += "hailooverlay qos=false ! ";
     pipeline_string += QUEUE + " name=display_convert_q max-size-buffers=3 ! ";
-    pipeline_string += "videoconvert ! ";
+    pipeline_string += "videoconvert name=display_convert n-threads=3 ! ";
     pipeline_string += "textoverlay name=text_overlay ! ";
-    pipeline_string += create_sid_comp_pipelines(num_of_src);
-    // pipeline_string += "compositor name=comp start-time-selection=0 " + create_compositor_locations(num_of_src, 640, 640, 2) + " ! ";
-    // pipeline_string += "funnel name=comp ! ";
-    // pipeline_string += "fpsdisplaysink video-sink=" + video_sink_element + " name=hailo_display sync=" + sync_pipeline + " text-overlay=false signal-fps-measurements=true ";
+    pipeline_string += create_sid_comp_pipelines(num_of_src, sync_pipeline);
     pipeline_string += stats_pipeline;
-    std::cout << "Pipeline:" << std::endl;
-    std::cout << "gst-launch-1.0 " << pipeline_string << std::endl;
-    // Combine and return the pipeline:
+    //print pipeline string
+    GST_ERROR("Pipeline string: %s\n", pipeline_string.c_str());
     return (pipeline_string);
 }
 
@@ -265,26 +260,22 @@ int main(int argc, char *argv[])
     // Prepare pipeline components
     GstBus *bus;
     GMainLoop *main_loop;
-    
     gst_init(&argc, &argv); // Initialize Gstreamer
     
     // Initialize the app debug category
     GST_DEBUG_CATEGORY_INIT (app_debug, "app_debug", 1, "My app debug category");
-
     // build argument parser
     cxxopts::Options options = build_arg_parser();
     // add custom options
     options.add_options()
-    ("p, print-pipeline", "Only prints pipeline and exits", cxxopts::value<bool>()->default_value("false"))
     ("fps-probe", "Enables fps probes", cxxopts::value<bool>()->default_value("false"))
     ("rtsp-src", "Use RTSP sources", cxxopts::value<bool>()->default_value("false"))
     ("n, num-of-src", "Number of sources", cxxopts::value<int>()->default_value("2"))
-    ("q, qos", "Disable QOS on all elements", cxxopts::value<bool>()->default_value("false"))
-    ("mask-eos", "Mask EOS events", cxxopts::value<bool>()->default_value("false"))
+    ("rr-mode", "Hailoroundrobin mode", cxxopts::value<int>()->default_value("2"))
     ("dump-dot-files", "Enables dumping of dot files", cxxopts::value<bool>()->default_value("false"));
     
     //add aggregator options
-    add_aggregator_options(options);
+    //add_aggregator_options(options);
 
     // parse arguments
     auto result = options.parse(argc, argv);
@@ -304,12 +295,6 @@ int main(int argc, char *argv[])
     // Create the pipeline
     std::string pipeline_string = create_pipeline_string(result, &app_data);
     
-    if (result["print-pipeline"].as<bool>())
-    {
-        std::cout << "Pipeline:" << std::endl;
-        std::cout << "gst-launch-1.0 " << pipeline_string << std::endl;
-        exit(0);
-    }
     // Parse the pipeline string and create the pipeline
     GError *err = nullptr;
     GstElement *pipeline = gst_parse_launch(pipeline_string.c_str(), &err);
@@ -326,12 +311,6 @@ int main(int argc, char *argv[])
         GstElement *src_bin_out_q = gst_bin_get_by_name(GST_BIN(pipeline), ("src_bin_out_q_" + std::to_string(n)).c_str());
         // link the source element to the source bin out queue
         gst_element_link(src_elem, src_bin_out_q);
-        // run the source bin bus handler
-        // gboolean ret = app_data.src_bins[n]->set_bus_handler();
-        // if (!ret) {
-        //     std::cerr << "Failed to set bus handler for source bin" << std::endl;
-        //     exit(1);
-        // }
     }
 
     // Get the bus
@@ -342,7 +321,7 @@ int main(int argc, char *argv[])
     setup_hailo_utils(pipeline, bus, main_loop, &user_data, result);
     
     // Setup aggregator
-    user_data.data_aggregator = setup_hailo_data_aggregator(pipeline, main_loop, result);
+    //user_data.data_aggregator = setup_hailo_data_aggregator(pipeline, main_loop, result);
     
     // Add probe examples
     if (result["fps-probe"].as<bool>())
@@ -367,57 +346,33 @@ int main(int argc, char *argv[])
         gst_iterator_free(it);
     }
 
-    // Disable qos
-    // if (result["qos"].as<bool>())
-    //     disable_qos(pipeline);
-
-    // Mask EOS
-    // if (result["mask-eos"].as<bool>())
-    // {
-    //     g_print("Masking EOS\n");
-    //     // get element by name get all elements which start with decode_q 
-    //     std::string element_prefix = "decode_q";
-    //     // Iterate over all elements in the pipeline recursively
-    //     GstIterator* it = gst_bin_iterate_recurse(GST_BIN(pipeline));
-    //     GValue item = G_VALUE_INIT;
-    //     while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
-    //         GstElement* element = GST_ELEMENT(g_value_get_object(&item));
-    //         // Check if the element name starts with the specified prefix
-    //         std::string element_name = GST_ELEMENT_NAME(element);
-    //         if (element_name.compare(0, element_prefix.length(), element_prefix) == 0) {
-    //             // Element name starts with the prefix
-    //             GstPad *pad = gst_element_get_static_pad(element, "sink");
-    //             gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, eos_remove_pad_probe_cb, NULL, NULL);
-    //             gst_object_unref(pad);
-    //         }
-    //         g_value_unset(&item);
-    //     }
-    //     gst_iterator_free(it);
-    // }
-
     if (result["dump-dot-files"].as<bool>()) {
         g_print("Dumping dot files\n");
         // Dump the DOT file after the pipeline has been created this is before caps negotiation
         gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_before_negotiation");
     }
-    //TBD
-    // get fps_probe_comp_0 sink pad
-    GstPad *pad = gst_element_get_static_pad(gst_bin_get_by_name(GST_BIN(pipeline), "fps_probe_comp_0"), "sink");
-    // add probe to fps_probe_comp_0 sink pad
-    gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_BOTH, pad_probe_cb, NULL, NULL);
-    gst_object_unref(pad);
-
+    
     // Set the pipeline state to PLAYING
-    std::cout << "Setting pipeline to PLAYING" << std::endl;
+    g_print("Setting pipeline to PLAYING");
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
     
     //wait for the pipeline to finish state change
     GstStateChangeReturn ret = gst_element_get_state(pipeline, NULL, NULL, GST_CLOCK_TIME_NONE);
 
     if (ret == GST_STATE_CHANGE_FAILURE) {
-        std::cerr << "Failed to start pipeline" << std::endl;
+        GST_ERROR("Failed to start pipeline");
         exit(1);
     }
+
+    // Set watchdog timers for each source (RTSP only) and start bus sync handler
+    for (int n = 0; n < num_of_src; n++) {
+        if (app_data.src_bins[n]->type == SrcBin::SrcType::RTSP) {
+            app_data.src_bins[n]->start_watchdog_thread();
+        }
+        // app_data.src_bins[n]->start_bus_sync_handler();
+    }
+    
+    // gst_bus_set_sync_handler(bus, (GstBusSyncHandler)SrcBin::bus_sync_handler, NULL, NULL);
     if (result["dump-dot-files"].as<bool>()) {
         // Dump the DOT file after the pipeline has been set to PLAYING
         gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_playing");

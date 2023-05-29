@@ -6,11 +6,12 @@
 #include <string>
 
 #include "SrcBin.hpp"
+#include "hailo_app_useful_funcs.hpp"
 
-GST_DEBUG_CATEGORY (src_bin_debug);
+GST_DEBUG_CATEGORY(src_bin_debug);
 #define GST_CAT_DEFAULT src_bin_debug
 
-guint SrcBin::bin_cnt = 0;
+guint SrcBin::bin_cnt = 0; // initialize static variable keeping track of number of bins
 
 // Declare a static pad template for the source pad of the bin
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE(
@@ -18,77 +19,11 @@ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE(
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS_ANY);
-#include <gst/gst.h>
 
-void disable_qos_in_bin(GstBin *bin) {
-    GstIterator *it;
-    GValue item = G_VALUE_INIT;
-    gboolean done = FALSE;
-
-    g_return_if_fail(GST_IS_BIN(bin));
-
-    it = gst_bin_iterate_elements(bin);
-    while (!done) {
-        switch (gst_iterator_next(it, &item)) {
-        case GST_ITERATOR_OK: {
-            GstElement *element = GST_ELEMENT(g_value_get_object(&item));
-
-            if (g_object_class_find_property(G_OBJECT_GET_CLASS(element), "qos")) {
-                g_object_set(G_OBJECT(element), "qos", FALSE, NULL);
-            }
-
-            g_value_reset(&item);
-            break;
-        }
-
-        case GST_ITERATOR_RESYNC:
-            gst_iterator_resync(it);
-            break;
-
-        case GST_ITERATOR_ERROR:
-        case GST_ITERATOR_DONE:
-            done = TRUE;
-            break;
-        }
-    }
-    g_value_unset(&item);
-    gst_iterator_free(it);
-}
-
-// a function to set queue properties
-static void set_queue_properties(GstElement *queue, gboolean leaky = false, guint max_size_buffers = 3)
-{
-    g_object_set(G_OBJECT(queue), "leaky", leaky, NULL);
-    g_object_set(G_OBJECT(queue), "max-size-buffers", max_size_buffers, NULL);
-    g_object_set(G_OBJECT(queue), "max-size-bytes", 0, NULL);
-    g_object_set(G_OBJECT(queue), "max-size-time", 0, NULL);
-}
-
-// Probe callback debug events
-
-static GstPadProbeReturn
-debug_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-{
-  GstEvent *event = GST_PAD_PROBE_INFO_EVENT(info);
-  const gchar *event_name = GST_EVENT_TYPE_NAME(event);
-  GstPadDirection direction = gst_pad_get_direction(pad);
-  const gchar *direction_name = (direction == GST_PAD_SRC) ? "src" : "sink";
-  GstElement *parent = gst_pad_get_parent_element(pad);
-
-  GST_DEBUG("Event '%s' on %s pad '%s', parent element '%s'\n",
-    event_name,
-    direction_name,
-    GST_PAD_NAME(pad),
-    GST_ELEMENT_NAME(parent));
-
-  gst_object_unref(parent);
-
-  return GST_PAD_PROBE_OK;
-}
-
-// define seek_to_start() function
+// this function is used to seek a video file to the start (used for loopping files)
 static gboolean seek_to_start(gpointer data)
 {
+    GST_DEBUG("Seeking to start...\n");
     GstElement *bin = static_cast<GstElement *>(data);
     // pause the pipeline
     gst_element_set_state(bin, GST_STATE_PAUSED);
@@ -105,8 +40,11 @@ static gboolean seek_to_start(gpointer data)
     return FALSE;
 }
 
+// This function is used to restart the RTSP source
+// It will move the src_bin to NULL state and then to PLAYING state
 static gboolean restart_source(gpointer data)
 {
+    GST_DEBUG("Restarting source...\n");
     SrcBin *src_bin = static_cast<SrcBin *>(data);
     src_bin->restarting.store(true);
     // pause the pipeline
@@ -118,41 +56,34 @@ static gboolean restart_source(gpointer data)
         GST_ERROR("ERROR: Failed to set state to NULL\n");
         return true;
     }
-    // // for each element in the bin make sure that the state is NULL
-    // GstIterator *it = gst_bin_iterate_elements(GST_BIN(src_bin->bin));
-    // GValue item = G_VALUE_INIT;
-    // while (gst_iterator_next(it, &item) == GST_ITERATOR_OK)
-    // {
-    //     GstElement *element = static_cast<GstElement *>(g_value_get_object(&item));
-    //     gst_element_set_state(element, GST_STATE_NULL);
-    //     gst_element_get_state(element, NULL, NULL, GST_CLOCK_TIME_NONE);
-    //     g_debug("Element %s state set to NULL\n", GST_OBJECT_NAME(element));
-    // }
     GST_WARNING("Restarting source...\n");
-    //src_bin->rebuild_rtsp_source();
-    
-    //wait for 1 sec
-    // GST_INFO("Waiting for 1 sec\n");
-    // g_usleep(1000000);
     // resume the pipeline
     gst_element_set_state(src_bin->bin, GST_STATE_PLAYING);
     // wait for state change to complete
     ret = gst_element_get_state(src_bin->bin, NULL, NULL, GST_CLOCK_TIME_NONE);
+    // reset watchdog timer
+    src_bin->reset_flag.store(true);
+    
     if (ret == GST_STATE_CHANGE_FAILURE)
     {
         GST_ERROR("ERROR: Failed to set state to PLAYING\n");
-        return true;
+        return true; // keep the timer running
     }
     GST_INFO("Source restarted\n");
-    src_bin->restarting.store(false);
-    return false;
+    src_bin->restarting.store(false); // clean the restarting flag
+    return false; // stop the timer
 }
-// Probe callback to enable loop on the source
+
+// Pad probe callback to enable looping and masking events
+// This callback is connected to the tee sink pad
+// It will mask EOS and SEGMENT events and will schedule a seek to the start of the file if EOS is received
+// It will also align the buffer PTS to the current base timestamp and will update it on every SEGMENT event
+// It is also used to detect if the stream has stalled, a watchdog timer is used to monitor the reset_flag.
 static GstPadProbeReturn tee_sink_loop_pad_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer data)
 {
+    GST_DEBUG("Tee sink pad probe CB\n");
     GstEvent *event = GST_PAD_PROBE_INFO_EVENT(info);
     SrcBin *src_bin = static_cast<SrcBin *>(data);
-    static int cnt = 0;
     // if this is a buffer align the PTS
     if ((info->type & GST_PAD_PROBE_TYPE_BUFFER))
     {
@@ -187,8 +118,6 @@ static GstPadProbeReturn tee_sink_loop_pad_probe_cb(GstPad *pad, GstPadProbeInfo
                 // schedule a pipeline restart
                 g_timeout_add(2000, (GSourceFunc)restart_source, src_bin);
             }
-            cnt++;
-            GST_INFO("cnt: %d\n", cnt);
         }
         // if this is a segment event
         if (GST_EVENT_TYPE(event) == GST_EVENT_SEGMENT)
@@ -229,16 +158,23 @@ static GstPadProbeReturn tee_sink_loop_pad_probe_cb(GstPad *pad, GstPadProbeInfo
     return GST_PAD_PROBE_OK;
 }
 
-void watchdog_thread(gpointer data, uint32_t timeout=5)
+// watchdog thread to monitor if the stream has stalled
+// if the stream has stalled, the source will be restarted
+// monitoring is done by setting the reset_flag to true on every buffer received
+void watchdog_thread(gpointer data, uint32_t timeout = 5)
 {
     SrcBin *src_bin = static_cast<SrcBin *>(data);
-    while (true) {
+    GST_WARNING("Watchdog thread started for source %s\n", src_bin->name.c_str());
+    while (true)
+    {
         std::this_thread::sleep_for(std::chrono::seconds(timeout));
-        if (src_bin->restarting.load() == true) {
+        if (src_bin->restarting.load() == true)
+        {
             continue;
         }
         // If the flag hasn't been reset, we assume the stream has stalled
-        if (src_bin->reset_flag.exchange(false) == false) {
+        if (src_bin->reset_flag.exchange(false) == false)
+        {
             GST_WARNING("Stream stalled, restarting source\n");
             src_bin->restarting.store(true);
             // schedule a pipeline restart
@@ -247,83 +183,79 @@ void watchdog_thread(gpointer data, uint32_t timeout=5)
     }
 }
 
+// bus sync handler callback
+// this callback is used to mask src_bin related bus messages 
 static GstBusSyncReply bus_sync_handler(GstBus *bus, GstMessage *message, gpointer data)
 {
-    SrcBin *src_bin = static_cast<SrcBin *>(data);
-    const GstStructure *structure;
+    return GST_BUS_PASS;
     GError *err = NULL;
-    gchar *debuGST_INFO = NULL;
-    // print message type and source in one line
-    // GST_INFO("Message source: %s, type: %s\n", GST_OBJECT_NAME(message->src), GST_MESSAGE_TYPE_NAME(message));
+    gchar *debug_info = NULL;
+    GST_DEBUG("Message source: %s, type: %s\n", GST_OBJECT_NAME(message->src), GST_MESSAGE_TYPE_NAME(message));
     switch (GST_MESSAGE_TYPE(message))
     {
     case GST_MESSAGE_EOS:
         GST_INFO("EOS event received source: %s\n", GST_OBJECT_NAME(message->src));
-        break;
+        // unref the message
+        gst_message_unref(message);
+        // not passing the message downstream
+        return GST_BUS_DROP;
     case GST_MESSAGE_ERROR:
-        gst_message_parse_error(message, &err, &debuGST_INFO);
+        gst_message_parse_error(message, &err, &debug_info);
         GST_ERROR("ERROR event received source: %s error %s\n", GST_OBJECT_NAME(message->src), GST_STR_NULL(err->message));
-        break;
-    case GST_MESSAGE_ELEMENT:
-        // get structure from the message
-        structure = gst_message_get_structure(message);
-        // print structure name
-        GST_INFO("Structure name: %s\n", gst_structure_get_name(structure));
-        // if this is a GstBinForwarded message get the childs message
-        if (gst_structure_has_name(structure, "GstBinForwarded"))
+        // if the message came from a src_bin
+        if (g_str_has_prefix(GST_OBJECT_NAME(message->src), "src_bin_"))
         {
-            GstMessage *child_msg;
-            gst_structure_get(structure, "message", GST_TYPE_MESSAGE, &child_msg, NULL);
-            // print child message type and source
-            GST_INFO("Child message source: %s, type: %s\n", GST_OBJECT_NAME(child_msg->src), GST_MESSAGE_TYPE_NAME(child_msg));
-            // if this is an EOS message
-            if (GST_MESSAGE_TYPE(child_msg) == GST_MESSAGE_EOS)
-            {
-                GST_INFO("EOS event received source: %s\n", GST_OBJECT_NAME(child_msg->src));
-            }
-            // if this is an ERROR message
-            if (GST_MESSAGE_TYPE(child_msg) == GST_MESSAGE_ERROR)
-            {
-                gst_message_parse_error(child_msg, &err, &debuGST_INFO);
-                GST_ERROR("ERROR event received source: %s error %s\n", GST_OBJECT_NAME(child_msg->src), GST_STR_NULL(err->message));
-            }
-            // if this is a GST_MESSAGE_ASYNC_DONE set play state
-            if (GST_MESSAGE_TYPE(child_msg) == GST_MESSAGE_ASYNC_DONE)
-            {
-                GST_INFO("ASYNC_DONE event received source: %s\n", GST_OBJECT_NAME(child_msg->src));
-                // set the state to playing
-                src_bin->set_state_playing();
-                src_bin->restarting.store(false);
-            }
-            gst_message_unref(child_msg);
+            // unref the message
+            gst_message_unref(message);
+            // not passing the message downstream
+            return GST_BUS_DROP;
         }
+        g_print("ERROR from element %s: %s passing downstream\n", GST_OBJECT_NAME(message->src), err->message);
         break;
     default:
         break;
     }
-    // TBD
     return GST_BUS_PASS;
+}
 
-    // // unref the message
-    // gst_message_unref(message);
-    // // not passing the message downstream
-    // return GST_BUS_DROP;
+void SrcBin::start_watchdog_thread()
+{
+    std::thread watchdog([this]()
+                         { watchdog_thread(this); });
+    watchdog.detach();
+}
+
+// This function is used to set the bus sync handler
+void SrcBin::start_bus_sync_handler()
+{
+    // static bool handler_set = false;
+    // if (handler_set == false)
+    // {
+        bus = gst_element_get_bus(bin);
+        gst_bus_set_sync_handler(bus, (GstBusSyncHandler)bus_sync_handler, NULL, NULL);
+        // handler_set = true;
+    // }
 }
 
 // Constructor
-SrcBin::SrcBin(SrcType type, const std::string &uri, bool live_src, bool loop_enable, gint64 max_latency)
+SrcBin::SrcBin(SrcType type, const std::string &uri, bool loop_enable, gint64 max_latency, const std::string &rtsp_user, const std::string &rtsp_pass)
 {
-    // Initialize the app debug category
-    GST_DEBUG_CATEGORY_INIT (src_bin_debug, "src_bin_debug", 2, "src_bin debug category");
-    gst_debug_set_threshold_for_name("src_bin_debug", GST_LEVEL_WARNING);
+    static bool init = false;
+    if (init == false)
+    {
+        // Initialize the app debug category
+        GST_DEBUG_CATEGORY_INIT(src_bin_debug, "src_bin_debug", 2, "src_bin debug category");
+        init = true;
+    }
     this->name = "src_bin_" + std::to_string(bin_cnt++);
     this->id = bin_cnt;
     this->uri = uri;
-    this->live_src = live_src;
     this->max_latency = max_latency;
     this->type = type;
-  
-    this->restarting.store(false); // TBD when the pipeline starts, the source is restarting
+    this->rtsp_user = rtsp_user;
+    this->rtsp_pass = rtsp_pass;
+
+    this->restarting.store(false);
     this->reset_flag = false; // used for watchdog timer
     // if the URI is file:// then enable loop
     if (uri.find("file://") != std::string::npos)
@@ -389,24 +321,6 @@ SrcBin::SrcBin(SrcType type, const std::string &uri, bool live_src, bool loop_en
         }
     }
     disable_qos_in_bin(GST_BIN(bin));
-    std::thread watchdog([this]() { watchdog_thread(this); });
-    watchdog.detach();
-}
-
-gboolean SrcBin::set_bus_handler()
-{
-    // get the bus
-    bus = gst_element_get_bus(bin);
-    if (!bus)
-    {
-        GST_INFO("ERROR: Failed to get bus\n");
-        return FALSE;
-    }
-    // add bus callback for errors
-    //  g_signal_connect(bus, "message::error", G_CALLBACK(bus_error_cb), NULL);
-    gst_bus_set_sync_handler(bus, bus_sync_handler, this, NULL);
-    gst_object_unref(bus);
-    return TRUE;
 }
 
 GstElement *SrcBin::get() const { return bin; }
@@ -435,12 +349,12 @@ static void rtspsrc_on_pad_added(GstElement *element, GstPad *pad, gpointer data
         g_error("ERROR: Failed to link rtspsrc pad to rtph264depay sink pad\n");
     }
     gst_object_unref(sinkpad);
-    //connect debug_probe_cb to pad
-    //gulong probe_id = gst_pad_add_probe(pad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_EVENT_BOTH), debug_probe_cb, NULL, NULL);
+    // connect debug_probe_cb to pad
+    // gulong probe_id = gst_pad_add_probe(pad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_EVENT_BOTH), debug_probe_cb, NULL, NULL);
 }
 static gboolean rtspsrc_select_stream(GstElement *element, guint stream_id, GstCaps *caps, gpointer data)
 {
-    GST_INFO("rtspsrc select stream CB\n");
+    GST_DEBUG("rtspsrc select stream CB\n");
     GstStructure *str = gst_caps_get_structure(caps, 0);
     const gchar *name = gst_structure_get_name(str);
     const gchar *media = gst_structure_get_string(str, "media");
@@ -455,7 +369,7 @@ static gboolean rtspsrc_select_stream(GstElement *element, guint stream_id, GstC
 
 static void decodebin_on_pad_added(GstElement *decodebin, GstPad *pad, gpointer data)
 {
-    GST_INFO("Decodebin pad added CB\n");
+    GST_DEBUG("Decodebin pad added CB\n");
     // check if this is a video pad
     GstCaps *caps = gst_pad_get_current_caps(pad);
     GstStructure *str = gst_caps_get_structure(caps, 0);
@@ -474,8 +388,8 @@ static void decodebin_on_pad_added(GstElement *decodebin, GstPad *pad, gpointer 
         g_error("ERROR: Failed to link decodebin pad to tee sink pad\n");
     }
     src_bin->decodebin_src_pad = pad;
-    //add pad probe
-    // gulong probe_id = gst_pad_add_probe(pad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_EVENT_BOTH), debug_probe_cb, NULL, NULL);
+    // add pad probe
+    //  gulong probe_id = gst_pad_add_probe(pad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_EVENT_BOTH), debug_probe_cb, NULL, NULL);
     gst_caps_unref(caps);
 }
 
@@ -532,7 +446,6 @@ gboolean SrcBin::build_rtspsrc_element()
     source = gst_element_factory_make("rtspsrc", ("source_" + std::to_string(id)).c_str());
     if (!source)
     {
-        // GST_INFOerr("ERROR: Failed to create rtspsrc element.\n");
         g_error("Failed to create rtspsrc element SrcBin %d.\n", id);
         return FALSE;
     }
@@ -544,8 +457,7 @@ gboolean SrcBin::build_rtspsrc_element()
     // g_object_set(G_OBJECT(source), "ntp-sync", true, NULL);
     // g_object_set(G_OBJECT(source), "buffer-mode", 0, NULL);
     g_object_set(G_OBJECT(source), "message-forward", true, NULL);
-    // g_object_set(G_OBJECT(source), "drop-on-latency", true, NULL);
-    
+    g_object_set(G_OBJECT(source), "drop-on-latency", true, NULL);
 
     gst_bin_add(GST_BIN(bin), source);
 
@@ -555,53 +467,7 @@ gboolean SrcBin::build_rtspsrc_element()
 
     return TRUE;
 }
-gboolean SrcBin::rebuild_rtsp_source(){
-    // remove rtspsrc element
-    gst_bin_remove(GST_BIN(bin), source);
-    gst_element_set_state(source, GST_STATE_NULL);
-    // unref all callbacks
-    g_signal_handler_disconnect(source, handler_id_rtspsrc_on_pad_added);
-    g_signal_handler_disconnect(source, handler_id_rtspsrc_select_stream);
-    // unref rtspsrc element
-    gst_object_unref(source);
-    
-    // remove depay from bin
-    gst_bin_remove(GST_BIN(bin), depay);
-    // unref depay
-    gst_object_unref(depay);
-    // remove depay_q from bin
-    gst_bin_remove(GST_BIN(bin), depay_q);
-    // unref depay_q
-    gst_object_unref(depay_q);
 
-    // remove decodebin from bin
-    // remove callbacks
-    g_signal_handler_disconnect(decodebin, handler_id_decodebin_on_pad_added);
-    // unlink decodebin from tee
-    gst_element_unlink(decodebin, tee);
-    // remove decodebin from bin
-    gst_bin_remove(GST_BIN(bin), decodebin);
-    // unref decodebin
-    gst_object_unref(decodebin);
-
-    //remove pad probe
-    gst_pad_remove_probe(tee_sinkpad, handler_id_sink_loop_pad_probe);
-    // build rtsp source
-    return build_rtsp_source();
-}
-// gboolean SrcBin::rebuild_rtspsrc_element()
-// {
-//     // remove old rtspsrc element
-//     gst_bin_remove(GST_BIN(bin), source);
-//     gst_element_set_state(source, GST_STATE_NULL);
-//     // unref all callbacks
-//     g_signal_handler_disconnect(source, handler_id_rtspsrc_on_pad_added);
-//     g_signal_handler_disconnect(source, handler_id_rtspsrc_select_stream);
-//     // unref rtspsrc element
-//     gst_object_unref(source);
-//     // build new rtspsrc element
-//     return build_rtspsrc_element();
-// }
 gboolean SrcBin::build_rtsp_source()
 {
 

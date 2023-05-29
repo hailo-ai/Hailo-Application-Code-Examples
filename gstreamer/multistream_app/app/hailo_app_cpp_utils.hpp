@@ -114,7 +114,7 @@ class BusWatch {
       }
       // print QOS message
       case GST_MESSAGE_QOS: {
-        //std::cout << "QOS message detected from " << GST_OBJECT_NAME(message->src) << std::endl;
+        std::cout << "QOS message detected from " << GST_OBJECT_NAME(message->src) << std::endl;
         break;
       }
       default:

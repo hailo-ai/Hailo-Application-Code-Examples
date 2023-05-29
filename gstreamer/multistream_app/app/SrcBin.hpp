@@ -16,9 +16,8 @@ public:
 
     SrcType type = SrcType::URI;
     std::string uri = "";
-    std::string rtsp_user = "root";
-    std::string rtsp_pass = "hailo";
-    bool live_src = false;
+    std::string rtsp_user = "";
+    std::string rtsp_pass = "";
     bool loop_enable = false;
     gint64 max_latency = 33;
 
@@ -42,16 +41,16 @@ public:
     GstPad *tee_sinkpad;
     GstBus *bus;
 
-    SrcBin(SrcType type = SrcType::URI, const std::string& uri = "", bool live_src = false, bool loop_enable = false, gint64 max_latency = 0);
+    SrcBin(SrcType type = SrcType::URI, const std::string& uri = "", bool loop_enable = false, gint64 max_latency = 0, const std::string& rtsp_user = "root", const std::string& rtsp_pass = "hailo");
 
     ~SrcBin();
     GstElement* get() const;
     gboolean set_state_playing();
     gboolean set_state_paused();
     gboolean set_state_null();
-    // gboolean rebuild_rtspsrc_element();
     gboolean rebuild_rtsp_source();
-    gboolean set_bus_handler();
+    void start_watchdog_thread();
+    void start_bus_sync_handler();
     std::atomic<bool> restarting; //used for to indicate that the source is restarting
     std::atomic<bool> reset_flag; //used for watchdog timer 
 
