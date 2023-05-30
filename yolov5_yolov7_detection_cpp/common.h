@@ -45,8 +45,8 @@
 
 class FeatureData {
 public:
-    FeatureData(uint32_t buffers_size, float32_t qp_zp, float32_t qp_scale, uint32_t width) :
-    m_buffers(buffers_size), m_qp_zp(qp_zp), m_qp_scale(qp_scale), m_width(width)
+    FeatureData(uint32_t buffers_size, float32_t qp_zp, float32_t qp_scale, uint32_t width, hailo_vstream_info_t vstream_info) :
+    m_buffers(buffers_size), m_qp_zp(qp_zp), m_qp_scale(qp_scale), m_width(width), m_vstream_info(vstream_info)
     {}
     static bool sort_tensors_by_size (std::shared_ptr<FeatureData> i, std::shared_ptr<FeatureData> j) { return i->m_width < j->m_width; };
 
@@ -54,6 +54,7 @@ public:
     float32_t m_qp_zp;
     float32_t m_qp_scale;
     uint32_t m_width;
+    hailo_vstream_info_t m_vstream_info;
 };
 
 std::string get_coco_name_from_int(int cls)
