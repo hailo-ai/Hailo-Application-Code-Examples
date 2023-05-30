@@ -18,7 +18,9 @@ Prequisites:
 OpenCV 4.2.X
 CMake >= 3.20
 HailoRT >= 4.10.0
+git - to clone the rapidjson repository
 
+NOTICE: you need to set the BASE_DIR variable in the CMakeLists.txt file to be the path of the yolov5-yolov7 example folder
 
 To compile the example run `./build.sh`
 
