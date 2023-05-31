@@ -15,14 +15,3 @@ executable('multistream_app',
     install: true,
     install_dir: meson.project_source_root(),
 ) 
-example_app_sources = [
-'example_app.cpp', 'SrcBin.cpp', 'hailo_app_useful_funcs.cpp',
-]
-
-executable('example_app',
-    example_app_sources,
-    dependencies : [postprocess_dep, thread_dep],
-    gnu_symbol_visibility : 'default',
-    install: true,
-    install_dir: meson.project_source_root(),
-)    

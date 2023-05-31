@@ -1,10 +1,82 @@
 #include "hailo_app_useful_funcs.hpp"
 
-// A simple assertion function
-inline void myAssert(bool b, const std::string &s = "MYASSERT ERROR !") {
-    if (!b)
-        throw std::runtime_error(s);
-}
+
+//******************************************************************
+// BUS CALLBACK function
+//******************************************************************
+
+gboolean async_bus_callback(GstBus *bus, GstMessage *message, gpointer user_data)
+  {
+    UserData *data = static_cast<UserData *>(user_data);
+    switch (GST_MESSAGE_TYPE(message))
+    {
+    case GST_MESSAGE_ERROR:
+    {
+      // An error occurred in the pipeline
+      GError *error = nullptr;
+      gchar *debug_info = nullptr;
+      gst_message_parse_error(message, &error, &debug_info);
+      // check if the error is a resource error, it might happen when trying to restart the src_bin and failing
+      // we can ignore this error and let the pipeline try to restart again
+      if (g_error_matches(error, GST_RESOURCE_ERROR, GST_RESOURCE_ERROR_OPEN_READ_WRITE)) {
+          g_printerr("The source failed to start, trying to restart it\n");
+          g_clear_error(&error);
+          g_free(debug_info);
+          break;
+      }
+      g_printerr("Error received from element %s: %s\n", GST_OBJECT_NAME(message->src), error->message);
+      g_printerr("Debugging info: %s\n", debug_info ? debug_info : "none");
+      g_clear_error(&error);
+      g_free(debug_info);
+      // stop main loop
+      g_main_loop_quit(data->main_loop);
+      break;
+    }
+    case GST_MESSAGE_EOS:
+      // The pipeline has reached the end of the stream
+      g_print("End-Of-Stream reached.\n");
+      // stop main loop
+      g_main_loop_quit(data->main_loop);
+      break;
+    case GST_MESSAGE_ELEMENT:
+    {
+      const GstStructure *structure = gst_message_get_structure(message);
+      // if structure name is HailoDeviceStatsMessage
+      if (gst_structure_has_name(structure, "HailoDeviceStatsMessage"))
+      {
+        // get the temperature
+        const GValue *temperature = gst_structure_get_value(structure, "temperature");
+        // get the temperature as a float
+        gfloat temperature_float = g_value_get_float(temperature);
+        // get the power
+        const GValue *power = gst_structure_get_value(structure, "power");
+        // get the power as a float
+        gfloat power_float = g_value_get_float(power);
+        // convert the temperature and power to strings with 2 decimal places
+        std::stringstream power_stream;
+        power_stream << std::fixed << std::setprecision(2) << power_float;
+        std::stringstream temperature_stream;
+        temperature_stream << std::fixed << std::setprecision(2) << temperature_float;
+        std::string text = "Temperature: " + temperature_stream.str() + " Power: " + power_stream.str();
+        std::cout << text << std::endl;
+      }
+      break;
+    }
+    // print QOS message
+    case GST_MESSAGE_QOS:
+    {
+      std::cout << "QOS message detected from " << GST_OBJECT_NAME(message->src) << std::endl;
+      break;
+    }
+    default:
+      // Print a message for other message types
+      // g_print("Received message of type %s\n", GST_MESSAGE_TYPE_NAME(message));
+      break;
+    }
+    // We want to keep receiving messages
+    return TRUE;
+  }
+
 
 //******************************************************************
 // PROBE CALLBACK examples
@@ -41,9 +113,20 @@ void fps_probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_da
         framecount_map[element_name] = 0;
         last_time_map[element_name] = current_time;
     }
-    //print buffer PTS
-    GST_INFO("Buffer PTS: %s: %" GST_TIME_FORMAT, element_name.c_str(), GST_TIME_ARGS(GST_BUFFER_PTS(buffer)));
 } 
+void pts_probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_data)
+{
+    // get element name
+    std::string element_name = gst_element_get_name(element);
+    // get buffer PTS
+    GstClockTime pts = GST_BUFFER_PTS(buffer);
+    if (GST_CLOCK_TIME_IS_VALID(pts)) {
+        double seconds = pts / 1e9;  // convert nanoseconds to seconds
+        g_print("Buffer PTS: %s: %.9f seconds\n", element_name.c_str(), seconds);
+    } else {
+        g_print("Buffer PTS: %s: undefined\n", element_name.c_str());
+    }
+}
 
 void probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_data)
 {
@@ -136,3 +219,46 @@ void disable_qos_in_bin(GstBin *bin) {
     gst_iterator_free(it);
 }
 
+//******************************************************************
+// MAIN utility functions
+//******************************************************************
+/**
+ * @brief Build command line arguments.
+ *
+ * @return cxxopts::Options
+ *         The available user arguments.
+ */
+cxxopts::Options build_arg_parser()
+{
+  cxxopts::Options options("Hailo App");
+  options.allow_unrecognised_options();
+  options.add_options()
+  ("h, help", "Show this help")
+  ("s, hailo-stats", "Enable displaying Hailo stats", cxxopts::value<bool>()->default_value("false"))
+  ("sync-pipeline", "Enable to sync to video framerate otherwise runs as fast as possible", cxxopts::value<bool>()->default_value("false"));
+  return options;
+}
+
+/**
+ * @brief Get the executable path.
+ *
+ * @return std::string
+ */
+std::string getexepath()
+{
+  char result[PATH_MAX];
+  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+  if (count != -1)
+  {
+    // remove the executable name
+    for (int i = count; i >= 0; i--)
+    {
+      if (result[i] == '/')
+      {
+        result[i + 1] = '\0';
+        break;
+      }
+    }
+  }
+  return std::string(result);
+}

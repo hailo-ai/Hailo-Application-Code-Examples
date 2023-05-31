@@ -187,8 +187,7 @@ void watchdog_thread(gpointer data, uint32_t timeout = 5)
 // this callback is used to mask src_bin related bus messages 
 static GstBusSyncReply bus_sync_handler(GstBus *bus, GstMessage *message, gpointer data)
 {
-    return GST_BUS_PASS;
-    GError *err = NULL;
+    GError *error = NULL;
     gchar *debug_info = NULL;
     GST_DEBUG("Message source: %s, type: %s\n", GST_OBJECT_NAME(message->src), GST_MESSAGE_TYPE_NAME(message));
     switch (GST_MESSAGE_TYPE(message))
@@ -200,8 +199,8 @@ static GstBusSyncReply bus_sync_handler(GstBus *bus, GstMessage *message, gpoint
         // not passing the message downstream
         return GST_BUS_DROP;
     case GST_MESSAGE_ERROR:
-        gst_message_parse_error(message, &err, &debug_info);
-        GST_ERROR("ERROR event received source: %s error %s\n", GST_OBJECT_NAME(message->src), GST_STR_NULL(err->message));
+        gst_message_parse_error(message, &error, &debug_info);
+        GST_ERROR("ERROR event received source: %s error %s\n", GST_OBJECT_NAME(message->src), GST_STR_NULL(error->message));
         // if the message came from a src_bin
         if (g_str_has_prefix(GST_OBJECT_NAME(message->src), "src_bin_"))
         {
@@ -210,7 +209,7 @@ static GstBusSyncReply bus_sync_handler(GstBus *bus, GstMessage *message, gpoint
             // not passing the message downstream
             return GST_BUS_DROP;
         }
-        g_print("ERROR from element %s: %s passing downstream\n", GST_OBJECT_NAME(message->src), err->message);
+        g_print("ERROR from element %s: %s passing downstream\n", GST_OBJECT_NAME(message->src), error->message);
         break;
     default:
         break;

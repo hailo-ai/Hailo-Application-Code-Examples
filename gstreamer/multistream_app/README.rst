@@ -1,25 +1,13 @@
-Example app 2
+Multistream example
 =============
 
-| This example is a bit more complicated than example 1 and showcase more features you can implement with Gstreamer with C++ on top.
-| It uses the TAPPAS environment to build the app and for the required Gstreamer plugins.
-
-Features
-========
-- Instantiate a Gstreamer pipeline with Hailo plugins running full detection pipeline.
-- Attaching a callback to the pipeline bus to receive messages from the pipeline.
-- Example code for selecting input source (camera, video file, URI).
-   - For camera input example /dev/video0
-   - For video file input example file:///home/user/video.mp4 (URI file prefix file://)
-   - For online URI example try http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
-- Example code for getting Hailo statistics from the pipeline bus messages.
-- Example code for adding a custom overlay to the video stream.
-- Data aggregation and statistics calculation to be added as overlay on the video stream.
-   - Includes, FPS, Hailo stats, and Host stats (memory and CPU usage).
-   - Note the the memory usage represents the maximum resident set size (RSS) used by the process since the start of the process.
-   - See getrusage() documentation for more information.
-- Attach callback to element to get FPS on the element.
-- Attach callback to element to print detections (--probe-example)
+| This example code is showcasing a use case of running multiple streams on the same pipeline.
+| The example code is using the Hailo plugins to run a full detection pipeline on each stream.
+| The main changes employed here are:
+| The RTSP and video sources are added to a source bin which is then added to the pipeline.
+| The source bin can be seeked back or move to NULL state to reset the stream. While the main pipeline is still running.
+| New hailoroundrobin implementation that allows to run arbitration on multiple streams. with the option to skip a stream after a timeout.
+| Adding CPP on top allows for better control and debugging of the pipeline.
 
 Requirements
 ============
@@ -27,6 +15,20 @@ Requirements
    - TAPPAS Docker (tested on TAPPAS 3.24.0)
    - Halio Suite Docker (tested on hailo_sw_suite_2023-04)
 - Hailo device
+
+Patching the hailoroundrobin plugin
+===================================
+- backup current hailoroundrobin plugin
+   - cp  /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.cpp /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.cpp.backup
+   - cp /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.hpp /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.hpp.backup
+   - cp /local/workspace/tappas/core/hailo/plugins/meson.build /local/workspace/tappas/core/hailo/plugins/meson.build.bkp
+- copy new files from patch directory
+   - cp patch/gsthailoroundrobin.cpp /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.cpp
+   - cp patch/gsthailoroundrobin.hpp /local/workspace/tappas/core/hailo/plugins/muxer/gsthailoroundrobin.hpp
+   - cp patch/meson.build /local/workspace/tappas/core/hailo/plugins/meson.build
+- build hailo plugins by running this script
+   - /local/workspace/tappas/scripts/gstreamer/install_hailo_gstreamer.sh 
+- NOTE: this may cause cause problems withe other TAPPAS examples using this plugin.
 
 Building
 ========
@@ -40,40 +42,17 @@ Building
 | To debug code from TAPPAS you should compile TAPPAS with debug symbols (see TAPPAS documentation). 
 | The meson script is using /opt/hailo/tappas/pkgconfig/hailo_tappas.pc to find the TAPPAS libraries and so files.
 
+Configuring
+===========
+| set youe RTSP source in multistream_app.cpp 
+| const std::string RTSP_SRC_0 = ....
+| const std::string RTSP_SRC_1 = ....
+| the rtsp_user and rtsp_pass can be passed as argument to src_bin consturctor. Or is all are the same can be set as default in SrcBin.hpp constructor definition.
+| currently set to const std::string& rtsp_user = "root", const std::string& rtsp_pass = "hailo"
+
 Running
 =======
-| Run ./example2_app to start the app.
-| Run ./example2_app -h to see the available options.
-| online URI example: ./example2_app --sync-pipeline -i http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4
-
-Install dependencies
-====================
-Interpipe
-https://developer.ridgerun.com/wiki/index.php/GstInterpipe_-_Building_and_Installation_Guide
-git clone https://github.com/RidgeRun/gst-interpipe.git
-sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gtk-doc-tools
-cd gst-interpipe/
-./autogen.sh --libdir /usr/lib/x86_64-linux-gnu/ 
-make
-make check
-sudo make install
-gst-inspect-1.0 interpipe
-
-GstD
-https://developer.ridgerun.com/wiki/index.php/GStreamer_Daemon_-_Building_GStreamer_Daemon
-sudo apt-get install \
-automake \
-libtool \
-pkg-config \
-libgstreamer1.0-dev \
-libgstreamer-plugins-base1.0-dev \
-libglib2.0-dev \
-libjson-glib-dev \
-gtk-doc-tools \
-libreadline-dev \
-libncursesw5-dev \
-libdaemon-dev \
-libjansson-dev \
-libsoup2.4-dev \
-python3-pip \
-libedit-dev
+| Run ./multistream_app -n 2  --rtsp-src --gst-debug=*debug:4
+| The application code and the src_bin code got their own debug categories. app_debug and src_bin_debug.
+| You can set them from cli by using --gst-debug=app_debug:4,src_bin_debug:4
+| You enable fps and timestaps debug by using the --fps-probe and --pts-probe optins.

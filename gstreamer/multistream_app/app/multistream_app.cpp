@@ -45,8 +45,6 @@
 #include <opencv2/core.hpp>
 
 // Hailo app cpp utils include
-#include "hailo_app_data_aggregator.hpp" // if used should be included before hailo_app_cpp_utils.hpp
-#include "hailo_app_cpp_utils.hpp"
 #include "hailo_app_useful_funcs.hpp"
 
 
@@ -55,14 +53,9 @@
 GST_DEBUG_CATEGORY (app_debug);
 #define GST_CAT_DEFAULT app_debug
 
-// use --gst-debug=*debug:5 to enable debug messages
+// use --gst-debug=*debug:4 to enable info messages (5 for debug messages)
 // use --fps-probe=true to enable fps probe and debug level INFO to get timestamps
-struct AppData {
-    GstElement* pipeline;
-    GMainLoop* main_loop;
-    // a vector of src bins
-    std::vector<SrcBin*> src_bins;
-};
+
 
 //******************************************************************
 // Pipeline Macros
@@ -78,11 +71,6 @@ const std::string POSTPROCESS_SO = TAPPAS_WORKSPACE + "/apps/h8/gstreamer/libs/p
 const std::string STREAM_ID_SO = TAPPAS_WORKSPACE + "/apps/h8/gstreamer/libs/post_processes/libstream_id_tool.so";
 const std::string HEF_PATH = TAPPAS_WORKSPACE + "/apps/h8/gstreamer/resources/hef/yolov5m_wo_spp_60p.hef";
 const std::string QUEUE = "queue leaky=no max-size-bytes=0 max-size-time=0 ";
-
-
-// sudo ifconfig enx08920489ee65 192.168.0.100 netmask 255.255.255.0
-// const std::string RTSP_SRC_0 = "rtsp://192.168.0.101/axis-media/media.amp/?h264x=4 user-id=root user-pw=hailo";
-// const std::string RTSP_SRC_1 = "rtsp://192.168.0.102/axis-media/media.amp/?h264x=4 user-id=root user-pw=hailo";
 
 const std::string RTSP_SRC_0 = "rtsp://192.168.0.101/axis-media/media.amp/?h264x=4";
 const std::string RTSP_SRC_1 = "rtsp://192.168.0.102/axis-media/media.amp/?h264x=4";
@@ -135,25 +123,24 @@ static GstPadProbeReturn pad_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpoint
 }
 
 
-std::string create_sources(int num_of_src, std::string src_names[], bool use_rtsp=true, AppData* app_data=nullptr) {
+std::string create_sources(int num_of_src, std::string src_names[], bool use_rtsp=true, UserData* user_data=nullptr) {
     std::string result = "";
     for (int n = 0; n < num_of_src; n++) {
         // create the src bins
         if (!use_rtsp) {
             // input source is a video file
             // Create the SrcBin and add it to the vector
-            app_data->src_bins.push_back(new SrcBin(SrcBin::SrcType::URI, src_names[n]));
+            user_data->src_bins.push_back(new SrcBin(SrcBin::SrcType::URI, src_names[n]));
         } else {
             // input source is a rtsp stream
             // Create the SrcBin and add it to the vector
-            app_data->src_bins.push_back(new SrcBin(SrcBin::SrcType::RTSP, src_names[n]));
+            user_data->src_bins.push_back(new SrcBin(SrcBin::SrcType::RTSP, src_names[n]));
         }
         // create additional pipeline elements
         result += QUEUE + "name=src_bin_out_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
-        // result += "videorate name=videorate_" + std::to_string(n) + " ! video/x-raw,framerate=25/1 ! ";
         result += "queue leaky=downstream max-size-bytes=0 max-size-time=0 name=videorate_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
         result += "hailofilter name=set_id_" + std::to_string(n) + " so-path=" + STREAM_ID_SO + " config-path=SRC_" + std::to_string(n) + " qos=false ! ";
-        // result += "identity name=fps_probe_src_" + std::to_string(n) + " ! ";
+        result += "identity name=fps_probe_src_" + std::to_string(n) + " ! ";
         result += "videoscale name=videoscale_src_" + std::to_string(n) + " ! ";
         // ADD QUEUE
         result += QUEUE + "name=scale_q_" + std::to_string(n) + " max-size-buffers=3 ! ";
@@ -193,7 +180,7 @@ std::string create_sid_comp_pipelines(int num_of_src, std::string sync_pipeline=
  * @return std::string
  *         The full pipeline string.
  */
-std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_data=nullptr)
+std::string create_pipeline_string(cxxopts::ParseResult result, UserData* user_data=nullptr)
 {
     std::string stats_pipeline = "";
     std::string pipeline_string = "";
@@ -220,7 +207,7 @@ std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_dat
     std::string roundrobin_mode = std::to_string(result["rr-mode"].as<int>());
 
     // Create the pipeline string
-    pipeline_string += create_sources(num_of_src, src_names.data(), use_rtsp, app_data);
+    pipeline_string += create_sources(num_of_src, src_names.data(), use_rtsp, user_data);
     pipeline_string += "hailoroundrobin name=roundroubin mode=" + roundrobin_mode + " ! ";
     pipeline_string += QUEUE + " name=roundrobin_q max-size-buffers=3 ! ";
     pipeline_string += "identity sync=true ! ";
@@ -242,8 +229,6 @@ std::string create_pipeline_string(cxxopts::ParseResult result, AppData* app_dat
     pipeline_string += "textoverlay name=text_overlay ! ";
     pipeline_string += create_sid_comp_pipelines(num_of_src, sync_pipeline);
     pipeline_string += stats_pipeline;
-    //print pipeline string
-    GST_ERROR("Pipeline string: %s\n", pipeline_string.c_str());
     return (pipeline_string);
 }
 
@@ -263,12 +248,13 @@ int main(int argc, char *argv[])
     gst_init(&argc, &argv); // Initialize Gstreamer
     
     // Initialize the app debug category
-    GST_DEBUG_CATEGORY_INIT (app_debug, "app_debug", 1, "My app debug category");
+    GST_DEBUG_CATEGORY_INIT (app_debug, "app_debug", 2, "My app debug category");
     // build argument parser
     cxxopts::Options options = build_arg_parser();
     // add custom options
     options.add_options()
     ("fps-probe", "Enables fps probes", cxxopts::value<bool>()->default_value("false"))
+    ("pts-probe", "Enables pts probes", cxxopts::value<bool>()->default_value("false"))
     ("rtsp-src", "Use RTSP sources", cxxopts::value<bool>()->default_value("false"))
     ("n, num-of-src", "Number of sources", cxxopts::value<int>()->default_value("2"))
     ("rr-mode", "Hailoroundrobin mode", cxxopts::value<int>()->default_value("2"))
@@ -291,20 +277,23 @@ int main(int argc, char *argv[])
     main_loop = g_main_loop_new(NULL, FALSE);
 
     // create app data struct
-    AppData app_data;
+    UserData user_data;
     // Create the pipeline
-    std::string pipeline_string = create_pipeline_string(result, &app_data);
+    std::string pipeline_string = create_pipeline_string(result, &user_data);
     
     // Parse the pipeline string and create the pipeline
     GError *err = nullptr;
     GstElement *pipeline = gst_parse_launch(pipeline_string.c_str(), &err);
-    checkErr(err);
+    if (err){
+        GST_ERROR("Failed to create pipeline: %s", err->message);
+        exit(1);
+    }
 
     //connect source bins to the pipeline
     int num_of_src = result["num-of-src"].as<int>();
     for (int n = 0; n < num_of_src; n++) {
         // get the source element
-        GstElement *src_elem = app_data.src_bins[n]->get();
+        GstElement *src_elem = user_data.src_bins[n]->get();
         // add the source element to the pipeline
         gst_bin_add(GST_BIN(pipeline), src_elem);
         // get the source bin out queue
@@ -315,16 +304,18 @@ int main(int argc, char *argv[])
 
     // Get the bus
     bus = gst_element_get_bus(pipeline);
-
-    // Run hailo utils setup for basic run
-    UserData user_data; // user data to pass to callbacks
-    setup_hailo_utils(pipeline, bus, main_loop, &user_data, result);
     
-    // Setup aggregator
-    //user_data.data_aggregator = setup_hailo_data_aggregator(pipeline, main_loop, result);
+    // Set the pipeline element
+    user_data.pipeline = pipeline;
+
+    // Set the main loop element
+    user_data.main_loop = main_loop;
+
+    // Extract closing messages
+    gst_bus_add_watch(bus, async_bus_callback, &user_data);
     
     // Add probe examples
-    if (result["fps-probe"].as<bool>())
+    if (result["fps-probe"].as<bool>() || result["pts-probe"].as<bool>())
     {
         g_print("Enabling fps probe\n");
         // get fps_probe element by name get all elements which start with fps_probe
@@ -338,8 +329,14 @@ int main(int argc, char *argv[])
             std::string element_name = GST_ELEMENT_NAME(element);
             if (element_name.compare(0, element_prefix.length(), element_prefix) == 0) {
                 // Element name starts with the prefix
-                g_signal_connect(element, "handoff", G_CALLBACK(fps_probe_callback), &user_data);
-                // g_signal_connect(element, "handoff", G_CALLBACK(timestamp_probe_callback), &user_data);
+                if (result["fps-probe"].as<bool>())
+                {
+                    g_signal_connect(element, "handoff", G_CALLBACK(fps_probe_callback), &user_data);
+                }
+                if (result["pts-probe"].as<bool>())
+                {
+                    g_signal_connect(element, "handoff", G_CALLBACK(pts_probe_callback), &user_data);
+                }
             }
             g_value_unset(&item);
         }
@@ -366,10 +363,10 @@ int main(int argc, char *argv[])
 
     // Set watchdog timers for each source (RTSP only) and start bus sync handler
     for (int n = 0; n < num_of_src; n++) {
-        if (app_data.src_bins[n]->type == SrcBin::SrcType::RTSP) {
-            app_data.src_bins[n]->start_watchdog_thread();
+        if (user_data.src_bins[n]->type == SrcBin::SrcType::RTSP) {
+            user_data.src_bins[n]->start_watchdog_thread();
         }
-        // app_data.src_bins[n]->start_bus_sync_handler();
+        // user_data.src_bins[n]->start_bus_sync_handler();
     }
     
     // gst_bus_set_sync_handler(bus, (GstBusSyncHandler)SrcBin::bus_sync_handler, NULL, NULL);
