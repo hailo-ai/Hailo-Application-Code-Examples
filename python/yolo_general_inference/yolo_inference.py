@@ -26,7 +26,7 @@ class device_pre_post_layers():
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolo_v4t (tiny-yolov4), yolo_v5, yolox, yolo_v6, yolo_v7 or yolo_v8.")
+parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolo_v5_nms, yolox, yolo_v6, yolo_v7 or yolo_v8.")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
 args = parser.parse_args()
@@ -56,6 +56,7 @@ arch_dict = {'yolo_v3':
              'yolo_v7': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[142, 110, 192, 243, 459, 401], [36, 75, 76, 55, 72, 146], [12, 16, 19, 36, 40, 28]])},
+             'yolo_v5_nms': {},
              'yolo_v8': {}}
 
 
@@ -71,6 +72,8 @@ def draw_detection(draw, d, c, s, color, scale_factor):
     if args.labels is not None:
         if args.arch == 'yolo_v8':
             label = get_label(c+1) + ": " + "{:.2f}".format(s) + '%'
+        elif args.arch == 'yolo_v5_nms':
+            label = get_label(c+2) + ": " + "{:.2f}".format(s) + '%'
         else:
             label = get_label(c) + ": " + "{:.2f}".format(s) + '%'
     else:
@@ -97,6 +100,37 @@ def post_process(detections, image, id, output_path, width, height, min_score=0.
             if args.labels is not None:
                 print(label)
     image.save(f'{output_path}/output_image{id}.jpg', 'JPEG')
+
+# -------------- NMS on-chip\on-cpu functions --------------- #
+
+def extract_detections(input, boxes, scores, classes, num_detections, threshold=0.5):   
+    for i, detection in enumerate(input):
+        if len(detection) == 0:
+            continue
+        for j in range(len(detection)):
+            bbox = np.array(detection)[j][:4]
+            score = np.array(detection)[j][4]
+            if score < threshold:
+                continue
+            else:
+                boxes.append(bbox)
+                scores.append(score)
+                classes.append(i)
+                num_detections = num_detections + 1
+    return {'detection_boxes': [boxes], 
+              'detection_classes': [classes], 
+             'detection_scores': [scores],
+             'num_detections': [num_detections]}
+
+def post_nms_infer(raw_detections, input_name):
+    boxes = []
+    scores = []
+    classes = []
+    num_detections = 0
+    
+    detections = extract_detections(raw_detections[input_name][0], boxes, scores, classes, num_detections)
+    
+    return detections
 
 # ---------------- Architecture functions ----------------- #
 
@@ -345,13 +379,16 @@ else:
 devices = PcieDevice.scan_devices()
 hef = HEF(args.hef)
 
+inputs = hef.get_input_vstream_infos()
+outputs = hef.get_output_vstream_infos()
+
 with PcieDevice(devices[0]) as target:
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
     network_group = target.configure(hef, configure_params)[0]
     network_group_params = network_group.create_params()
 
-    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in hef.get_input_vstream_infos()]
-    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in hef.get_output_vstream_infos()]
+    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in inputs]
+    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in outputs]
 
     height, width, _ = hef.get_input_vstream_infos()[0].shape
 
@@ -369,8 +406,11 @@ with PcieDevice(devices[0]) as target:
             with network_group.activate(network_group_params):
                 raw_detections = infer_pipeline.infer(input_data)
                 
-                results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
-                                    
+                if args.arch == 'yolo_v5_nms':
+                    results = post_nms_infer(raw_detections, outputs[0].name)
+                else:
+                    results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
+                                        
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
