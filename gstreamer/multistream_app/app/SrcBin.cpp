@@ -329,23 +329,27 @@ GstElement *SrcBin::get() const { return bin; }
 static void rtspsrc_on_pad_added(GstElement *element, GstPad *pad, gpointer data)
 {
     GST_INFO("rtspsrc pad added CB\n");
-    // check if this is a x-rtp pad
-    // GstCaps *caps = gst_pad_get_current_caps(pad);
-    // GstStructure *str = gst_caps_get_structure(caps, 0);
-    // const gchar *name = gst_structure_get_name(str);
-    // if (!g_str_has_prefix(name, "application/x-rtp"))
-    // {
-    //     GST_INFO("rtspsrc pad ignored, not a x-rtp stream\n");
-    //     GST_INFO("rtspsrc pad ignored, not a x-rtp stream %s\n", name);
-    //     gst_caps_unref(caps);
-    //     return;
-    // }
+    //check if this is a x-rtp pad
+    GstCaps *caps = gst_pad_get_current_caps(pad);
+    GstStructure *str = gst_caps_get_structure(caps, 0);
+    const gchar *name = gst_structure_get_name(str);
+    const gchar *media = gst_structure_get_string(str, "media");
+    
+    if (!g_str_has_prefix(media, "video"))
+    {
+        GST_INFO("rtspsrc pad ignored, not video stream, type %s\n", media);
+        gst_caps_unref(caps);
+        return;
+    }
     GstElement *depay = static_cast<GstElement *>(data);
     GstPad *sinkpad = gst_element_get_static_pad(depay, "sink");
     GstPadLinkReturn ret = gst_pad_link(pad, sinkpad);
     if (ret != GST_PAD_LINK_OK)
     {
         g_error("ERROR: Failed to link rtspsrc pad to rtph264depay sink pad\n");
+        if (ret == GST_PAD_LINK_WAS_LINKED){
+            g_error("ERROR: rtph264depay sink pad was already linked, maybe 2 video streams are available?\n");
+        }
     }
     gst_object_unref(sinkpad);
     // connect debug_probe_cb to pad
@@ -357,13 +361,14 @@ static gboolean rtspsrc_select_stream(GstElement *element, guint stream_id, GstC
     GstStructure *str = gst_caps_get_structure(caps, 0);
     const gchar *name = gst_structure_get_name(str);
     const gchar *media = gst_structure_get_string(str, "media");
-    GST_INFO("Selecting stream %d (%s) (%s)\n", stream_id, name, media);
     // select only video streams
-    if (g_str_has_prefix(name, "video"))
+    if (g_str_has_prefix(media, "video"))
     {
+        GST_INFO("Selecting stream %d (%s) (%s)\n", stream_id, name, media);
         return true;
     }
-    return false;
+    GST_INFO("Stream not used %d (%s) (%s)\n", stream_id, name, media);
+    return FALSE;
 }
 
 static void decodebin_on_pad_added(GstElement *decodebin, GstPad *pad, gpointer data)

@@ -67,7 +67,7 @@ static size_t get_pad_num(GstPad *pad)
 {
     gchar *name = gst_pad_get_name(pad);
     std::string pad_name_str(name);
-    std::string pad_num_str = pad_name_str.substr(pad_name_str.find("_") + 1);
+    std::string pad_num_str = pad_name_str.substr(pad_name_str.find_first_of("0123456789"));
     size_t pad_num = stoi(pad_num_str);
     g_free(name);
     return pad_num;
@@ -239,7 +239,18 @@ void schedule(GstHailoRoundRobin *hailo_round_robin)
                             continue;
                         }
                         hailo_round_robin->condition_vars[i]->notify_one();
+
                         GstPad *pad = gst_element_get_static_pad(GST_ELEMENT_CAST(hailo_round_robin), ("sink_" + std::to_string(i)).c_str());
+
+                        if (pad == NULL) // not found, will try different method - maybe the pad names are hailoroundrobinpad0, hailoroundrobinpad1, etc.
+                        {
+                            pad = gst_element_get_static_pad(GST_ELEMENT_CAST(hailo_round_robin), ("hailoroundrobinpad" + std::to_string(i)).c_str());
+                            if (pad == NULL)
+                            {
+                                GST_ERROR_OBJECT(hailo_round_robin, "Failed to get pad %d", i);
+                                continue;
+                            }
+                        }
                         gchar *pad_name = gst_pad_get_name(pad);
                         gchar *stream_id = gst_pad_get_stream_id(pad);
 
@@ -340,7 +351,7 @@ gst_hailo_round_robin_dispose(GObject *object)
 {
     GstHailoRoundRobin *hailo_round_robin = GST_HAILO_ROUND_ROBIN_CAST(object);
     hailo_round_robin->srcpad = NULL;
-    hailo_round_robin->current_pad_num = 0;
+    hailo_round_robin->current_pad_num = 0;pad_queues
     hailo_round_robin->pad_queues.clear();
     hailo_round_robin->mutexes.clear();
     hailo_round_robin->condition_vars.clear();

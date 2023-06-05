@@ -131,16 +131,9 @@ void pts_probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_da
 void probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_data)
 {
     HailoROIPtr roi;
-    std::vector<HailoDetectionPtr> detections;
-    std::vector<HailoDetectionPtr> sub_detections;
     roi = get_hailo_main_roi(buffer, true);
-    detections = hailo_common::get_hailo_detections(roi);
-    
-    //print detections
-    for (auto detection : detections)
-    {
-        std::cout << "Probe Detection: " << detection->get_label() << " " << detection->get_confidence() << std::endl; 
-    }
+    std::string stream_id = roi->get_stream_id();
+    g_print("Stream ID: %s\n", stream_id.c_str());
 }
 
 // Probe callback debug events

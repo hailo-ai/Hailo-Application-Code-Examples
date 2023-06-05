@@ -210,7 +210,7 @@ std::string create_pipeline_string(cxxopts::ParseResult result, UserData* user_d
     pipeline_string += create_sources(num_of_src, src_names.data(), use_rtsp, user_data);
     pipeline_string += "hailoroundrobin name=roundroubin mode=" + roundrobin_mode + " ! ";
     pipeline_string += QUEUE + " name=roundrobin_q max-size-buffers=3 ! ";
-    pipeline_string += "identity sync=true ! ";
+    pipeline_string += "identity name=roundrobin_probe sync=true ! ";
     pipeline_string += QUEUE + " name=buf_q max-size-buffers=30 ! ";
     pipeline_string += "videoconvert name=preproc_convert qos=false n-threads=3 ! ";
     pipeline_string += QUEUE + " name=convert_q max-size-buffers=3 ! ";
@@ -255,6 +255,7 @@ int main(int argc, char *argv[])
     options.add_options()
     ("fps-probe", "Enables fps probes", cxxopts::value<bool>()->default_value("false"))
     ("pts-probe", "Enables pts probes", cxxopts::value<bool>()->default_value("false"))
+    ("pre-infer-probe", "Enables pre infer probe", cxxopts::value<bool>()->default_value("false"))
     ("rtsp-src", "Use RTSP sources", cxxopts::value<bool>()->default_value("false"))
     ("n, num-of-src", "Number of sources", cxxopts::value<int>()->default_value("2"))
     ("rr-mode", "Hailoroundrobin mode", cxxopts::value<int>()->default_value("2"))
@@ -341,6 +342,12 @@ int main(int argc, char *argv[])
             g_value_unset(&item);
         }
         gst_iterator_free(it);
+    }
+
+    if (result["pre-infer-probe"].as<bool>()){
+        // get roundrobin_probe element by name
+        GstElement *roundrobin_probe = gst_bin_get_by_name(GST_BIN(pipeline), "roundrobin_probe");
+        g_signal_connect(roundrobin_probe, "handoff", G_CALLBACK(probe_callback), &user_data);
     }
 
     if (result["dump-dot-files"].as<bool>()) {
