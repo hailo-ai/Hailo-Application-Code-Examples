@@ -70,10 +70,8 @@ def get_label(class_id):
 def draw_detection(draw, d, c, s, color, scale_factor):
     """Draw box and label for 1 detection."""
     if args.labels is not None:
-        if args.arch == 'yolo_v8':
+        if args.arch == 'yolo_v8' or  args.arch == 'yolo_v5_nms':
             label = get_label(c+1) + ": " + "{:.2f}".format(s) + '%'
-        elif args.arch == 'yolo_v5_nms':
-            label = get_label(c+2) + ": " + "{:.2f}".format(s) + '%'
         else:
             label = get_label(c) + ": " + "{:.2f}".format(s) + '%'
     else:
