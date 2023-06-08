@@ -12,15 +12,15 @@
 #include <opencv2/core/matx.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+using namespace hailort;
 
 constexpr bool QUANTIZED = true;
 constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;
 
-using namespace hailort;
-
 void print_inference_statistics(std::chrono::duration<double> inference_time,
                                 std::chrono::duration<double> postprocess_time, 
-                                std::string hef_file, double frame_count){
+                                std::string hef_file, double frame_count) 
+{
     std::cout << BOLDGREEN << "\n-I-----------------------------------------------" << std::endl;
     std::cout << "-I- " << hef_file.substr(0, hef_file.find(".")) << std::endl;
     std::cout << "-I-----------------------------------------------" << std::endl;
@@ -40,109 +40,128 @@ void print_inference_statistics(std::chrono::duration<double> inference_time,
     std::cout << "-I-----------------------------------------------" << std::endl << RESET;
 }
 
-inline bool ends_with(std::string const & value, std::string const & ending) {
+inline bool ends_with(std::string const & value, std::string const & ending) 
+{
     if (ending.size() > value.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
 
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &features, 
-                                std::chrono::duration<double>& postprocess_time, cv::Mat& frame, std::string arch,
-                                float32_t* detections, int max_num_detections, float thr)
+                                std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, int frame_count, std::string arch,
+                                float32_t* detections, const int max_num_detections, int* frames_ready, const int buffer_size, float thr)
 {
-    auto status = HAILO_SUCCESS;
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
-    auto detections_struct = post_processing(max_num_detections, thr, arch,
+    for (int idx_frame = 0; idx_frame < frame_count; idx_frame++) {
+        auto detections_struct = post_processing(max_num_detections, thr, arch,
             features[0]->m_buffers.get_read_buffer().data(), features[0]->m_qp_zp, features[0]->m_qp_scale,
             features[1]->m_buffers.get_read_buffer().data(), features[1]->m_qp_zp, features[1]->m_qp_scale,
             features[2]->m_buffers.get_read_buffer().data(), features[2]->m_qp_zp, features[2]->m_qp_scale);
     
-    for (auto &feature : features) {
-        feature->m_buffers.release_read_buffer();
-    }
-
-    int num_detections = 0;
-    int bytes_in_float = 6;
-    size_t detections_4_byte_idx = 0;
-    for (auto& detection : detections_struct) {
-        if (detection.confidence >= thr && detections_4_byte_idx < max_num_detections * bytes_in_float) { 
- 
-            detections[detections_4_byte_idx++] = detection.ymin;
-            detections[detections_4_byte_idx++] = detection.xmin;
-            detections[detections_4_byte_idx++] = detection.ymax;
-            detections[detections_4_byte_idx++] = detection.xmax;
-            detections[detections_4_byte_idx++] = detection.confidence;
-            detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
-
-            num_detections++;
+        for (auto &feature : features) {
+            feature->m_buffers.release_read_buffer();
         }
+
+        int num_detections = 0;
+        int detection_size = 6;
+        int idx_buffer = idx_frame % buffer_size;
+        size_t detections_4_byte_idx = idx_buffer * detection_size * max_num_detections;
+        // If you want to check that c# consumed the old detections, check that frames_ready[idx_buffer] == -1 before writing in detections array
+        for (auto& detection : detections_struct) {
+            if (detection.confidence >= thr && num_detections < max_num_detections) { 
+    
+                detections[detections_4_byte_idx++] = detection.ymin;
+                detections[detections_4_byte_idx++] = detection.xmin;
+                detections[detections_4_byte_idx++] = detection.ymax;
+                detections[detections_4_byte_idx++] = detection.xmax;
+                detections[detections_4_byte_idx++] = detection.confidence;
+                detections[detections_4_byte_idx++] = static_cast<float32_t>(detection.class_id);
+
+                num_detections++;
+            }
+        }
+        
+        frames_ready[idx_buffer] = num_detections; // indicates (to c#) that we have finished processing frame idx_buffer, and found num_detections detections.
+        frames[idx_frame].release();   
     }
 
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     postprocess_time = t_end - t_start;
 
-    return status;
+    return HAILO_SUCCESS;
 }
 
 
-hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData> feature,
-                    std::chrono::time_point<std::chrono::system_clock>& read_time_vec) { 
-
-    auto& buffer = feature->m_buffers.get_write_buffer();
-    hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
-    feature->m_buffers.release_write_buffer();
-    if (HAILO_SUCCESS != status) {
-        std::cerr << "Failed reading with status = " <<  status << std::endl;
-        return status;
+hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData> feature, int frame_count, std::chrono::time_point<std::chrono::system_clock>& read_time_vec) 
+{
+    hailo_status status = HAILO_UNINITIALIZED;
+    for (int i = 0; i < frame_count; i++) {
+        auto& buffer = feature->m_buffers.get_write_buffer();
+        status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
+        feature->m_buffers.release_write_buffer();
+        if (HAILO_SUCCESS != status) {
+            std::cerr << "Failed reading with status = " <<  status << std::endl;
+            return status;
+        }
     }
 
     read_time_vec = std::chrono::high_resolution_clock::now();
     return HAILO_SUCCESS;
 }
 
-hailo_status write_all(InputVStream& input_vstream, std::string image_path, 
-                        std::chrono::time_point<std::chrono::system_clock>& write_time_vec, cv::Mat& frame) {
-
-    hailo_status status = HAILO_SUCCESS;
+hailo_status write_all(InputVStream& input_vstream, std::string images_path, std::chrono::time_point<std::chrono::system_clock>& write_time_vec, std::vector<cv::Mat>& frames) 
+{
+    hailo_status status = HAILO_UNINITIALIZED;
     
     auto input_shape = input_vstream.get_info().shape;
     int height = input_shape.height;
     int width = input_shape.width;
 
+    std::vector<cv::String> file_names;
+    cv::glob(images_path, file_names, false);
+
     write_time_vec = std::chrono::high_resolution_clock::now();
-    if (ends_with(image_path, ".jpg") || ends_with(image_path, ".png") || ends_with(image_path, ".jpeg")) {
-        frame = cv::imread(image_path,  cv::IMREAD_COLOR);
-        if (frame.channels() == 3) {
-            cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-        }
-        if (frame.rows != height || frame.cols != width) {
-            cv::resize(frame, frame, cv::Size(width, height), cv::INTER_AREA);
-        }
-        status = input_vstream.write(MemoryView(frame.data, input_vstream.get_frame_size()));
-        if (HAILO_SUCCESS != status) {
-            return status;
+    int idx_frame = 0;
+    for (std::string file : file_names) {
+        if (ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")) {
+            frames[idx_frame] = cv::imread(file,  cv::IMREAD_COLOR);
+            if (frames[idx_frame].channels() == 3) {
+                cv::cvtColor(frames[idx_frame], frames[idx_frame], cv::COLOR_BGR2RGB);
+            }
+            if (frames[idx_frame].rows != height || frames[idx_frame].cols != width) {
+                cv::resize(frames[idx_frame], frames[idx_frame], cv::Size(width, height), cv::INTER_AREA);
+            }
+            status = input_vstream.write(MemoryView(frames[idx_frame].data, input_vstream.get_frame_size()));
+            if (HAILO_SUCCESS != status) {
+                return status;
+            }
         }
     }
-    status = HAILO_SUCCESS;
-    return status;
-}
-
-
-hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_frame_size, std::shared_ptr<FeatureData> &feature) {
-    feature = std::make_shared<FeatureData>(static_cast<uint32_t>(output_frame_size), vstream_info.quant_info.qp_zp,
-        vstream_info.quant_info.qp_scale, vstream_info.shape.width);
-
     return HAILO_SUCCESS;
 }
 
 
-hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string image_path,
+hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_frame_size, std::shared_ptr<FeatureData> &feature) 
+{
+    hailo_status status = HAILO_UNINITIALIZED;
+    feature = std::make_shared<FeatureData>(static_cast<uint32_t>(output_frame_size), vstream_info.quant_info.qp_zp,
+        vstream_info.quant_info.qp_scale, vstream_info.shape.width);
+    if (!feature) {
+        status = HAILO_OUT_OF_HOST_MEMORY;
+        return status;
+    }
+    return HAILO_SUCCESS;
+}
+
+
+hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector<OutputVStream>& output_vstreams, std::string images_path, int frame_count,
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
-                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch,
-                    float32_t* detections, int max_num_detections) {
+                    std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, std::string arch, const float conf_thr,
+                    float32_t* detections, const int max_num_detections, int* frames_ready, const int buffer_size) 
+{
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -161,21 +180,26 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         features.emplace_back(feature);
     }
 
-    cv::Mat frame;
-    auto input_thread(std::async(write_all, std::ref(input_vstream[0]), image_path, std::ref(write_time_vec), std::ref(frame)));
+    std::vector<cv::Mat> frames(static_cast<size_t>(frame_count));
+
+    auto input_thread(std::async(write_all, std::ref(input_vstream[0]), images_path, std::ref(write_time_vec), std::ref(frames)));
 
     // Create read threads
     std::vector<std::future<hailo_status>> output_threads;
     output_threads.reserve(output_vstreams_size);
     for (size_t i = 0; i < output_vstreams_size; i++) {
-        output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], std::ref(read_time_vec[i])));
+        output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i])));
     }
 
-    float thr = 0.5f;
-    auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frame), arch, detections, max_num_detections, thr));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), std::ref(postprocess_time), std::ref(frames), frame_count, arch, detections, max_num_detections, 
+        frames_ready, buffer_size, conf_thr));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
+        if (HAILO_SUCCESS != status) {
+            std::cerr << "Read failed with status " << status << std::endl;
+            return status;
+        }
     }
     auto input_status = input_thread.get();
     auto pp_status = pp_thread.get();
@@ -183,10 +207,6 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     if (HAILO_SUCCESS != input_status) {
         std::cerr << "Write thread failed with status " << input_status << std::endl;
         return input_status; 
-    }
-    if (HAILO_SUCCESS != status) {
-        std::cerr << "Read failed with status " << status << std::endl;
-        return status;
     }
     if (HAILO_SUCCESS != pp_status) {
         std::cerr << "Post-processing failed with status " << pp_status << std::endl;
@@ -199,11 +219,11 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
             inference_time = read_time_vec[i] - write_time_vec;
     }
 
-    status = HAILO_SUCCESS;
-    return status;
+    return HAILO_SUCCESS;
 }
 
-void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<hailort::OutputVStream>> &vstreams) {
+void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<hailort::OutputVStream>> &vstreams) 
+{
     std::cout << BOLDMAGENTA << "-I-----------------------------------------------" << std::endl << RESET;
     std::cout << BOLDMAGENTA << "-I-  Network  Name                                     " << std::endl << RESET;
     std::cout << BOLDMAGENTA << "-I-----------------------------------------------" << std::endl << RESET;
@@ -214,12 +234,12 @@ void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<
     for (auto const& value: vstreams.second) {
         std::cout << MAGENTA << "-I-  OUT: " << value.name() <<std::endl << RESET;
     }
-    std::cout << BOLDMAGENTA << "-I-----------------------------------------------\n" << std::endl << RESET;
+    std::cout << BOLDMAGENTA << "-I-----------------------------------------------" << RESET << std::endl;
 }
 
-Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolov_hef)
+Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string hef_path)
 {
-    auto hef_exp = Hef::create(yolov_hef);
+    auto hef_exp = Hef::create(hef_path);
     if (!hef_exp) {
         return make_unexpected(hef_exp.status());
     }
@@ -243,7 +263,9 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevic
     return std::move(network_groups->at(0));
 }
 
-extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const char* arch, float* detections, int max_num_detections) {
+extern "C" int infer_wrapper(const char* hef_path, const char* images_path, const char* arch, const float conf_thr, float* detections, const int max_num_detections, int* frames_ready, const int buffer_size) 
+{
+    auto infer_start = std::chrono::steady_clock::now();
 
     hailo_status status = HAILO_UNINITIALIZED;
 
@@ -268,6 +290,7 @@ extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const
     }
     auto network_group = network_group_exp.release();
 
+    // quantized=true for input vstreams is ok for this specific yolov5 network, where qp_zp=0, qp_scale=1. In general, use for input vstreams quantized=false.
     auto vstreams_exp = VStreamsBuilder::create_vstreams(*network_group, QUANTIZED, FORMAT_TYPE);
     if (!vstreams_exp) {
         std::cerr << "Failed creating vstreams " << vstreams_exp.status() << std::endl;
@@ -279,22 +302,37 @@ extern "C" int infer_wrapper(const char* hef_path, const char* image_path, const
 
     print_net_banner(vstreams);
 
+    std::vector<cv::String> file_names;
+    cv::glob(images_path, file_names, false);
+    int frame_count = 0;
+    for (auto& file : file_names) {
+        if (ends_with(file, ".jpg") || ends_with(file, ".png") || ends_with(file, ".jpeg")) {
+            frame_count++;
+        }
+    }
+
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 
-                        image_path, write_time_vec, read_time_vec, 
-                        inference_time, postprocess_time, arch,
-                        detections, max_num_detections);
+                        images_path, frame_count, write_time_vec, read_time_vec, 
+                        inference_time, postprocess_time, arch, conf_thr,
+                        detections, max_num_detections, 
+                        frames_ready, buffer_size);
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
         return status;
     }
 
-    print_inference_statistics(inference_time, postprocess_time, hef_path, 1.f);
+    // print_inference_statistics(inference_time, postprocess_time, hef_path, frame_count);
 
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
 
-    std::cout << BOLDBLUE << "\n-I- Inference run finished successfully" << RESET << std::endl;
-    return HAILO_SUCCESS;
+    // std::cout << BOLDBLUE << "\n-I- Inference run finished successfully" << RESET << std::endl;
+    auto infer_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(infer_end - infer_start);
+    
+    std::cout << "FPS cpp " << (frame_count*1000)/duration.count() << std::endl; // 1000: millisecs to secs
+    status = HAILO_SUCCESS;
+    return status;
 }
