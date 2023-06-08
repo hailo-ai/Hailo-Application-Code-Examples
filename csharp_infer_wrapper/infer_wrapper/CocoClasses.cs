@@ -94,6 +94,14 @@ namespace CocoClasses
     {
         { 0, "unlabeled" },
         { 1, "person" },
+        { 2, "bicycle" },
+        { 3, "car" },
+        { 4, "motorcycle" },
+        { 5, "airplane" },
+        { 6, "bus" },
+        { 7, "train" },
+        { 8, "truck" },
+        { 9, "boat" },
         { 10, "traffic light" },
         { 11, "fire hydrant" },
         { 13, "stop sign" },
@@ -104,7 +112,6 @@ namespace CocoClasses
         { 18, "dog" },
         { 19, "horse" },
         { 20, "sheep" },
-        { 2, "bicycle" },
         { 21, "cow" },
         { 22, "elephant" },
         { 23, "bear" },
@@ -115,7 +122,6 @@ namespace CocoClasses
         { 31, "handbag" },
         { 32, "tie" },
         { 33, "suitcase" },
-        { 3, "car" },
         { 34, "frisbee" },
         { 35, "skis" },
         { 36, "snowboard" },
@@ -126,7 +132,6 @@ namespace CocoClasses
         { 41, "skateboard" },
         { 42, "surfboard" },
         { 43, "tennis racket" },
-        { 4, "motorcycle" },
         { 44, "bottle" },
         { 46, "wine glass" },
         { 47, "cup" },
@@ -137,7 +142,6 @@ namespace CocoClasses
         { 52, "banana" },
         { 53, "apple" },
         { 54, "sandwich" },
-        { 5, "airplane" },
         { 55, "orange" },
         { 56, "broccoli" },
         { 57, "carrot" },
@@ -148,7 +152,6 @@ namespace CocoClasses
         { 62, "chair" },
         { 63, "couch" },
         { 64, "potted plant" },
-        { 6, "bus" },
         { 65, "bed" },
         { 67, "dining table" },
         { 70, "toilet" },
@@ -159,7 +162,6 @@ namespace CocoClasses
         { 76, "keyboard" },
         { 77, "cellphone" },
         { 78, "microwave" },
-        { 7, "train" },
         { 79, "oven" },
         { 80, "toaster" },
         { 81, "sink" },
@@ -170,9 +172,7 @@ namespace CocoClasses
         { 87, "scissors" },
         { 88, "teddy bear" },
         { 89, "hair drier" },
-        { 8, "truck" },
-        { 90, "tooth brush" },
-        { 9, "boat" }
+        { 90, "tooth brush" }
     };
 }
 
