@@ -1,4 +1,4 @@
-project('example2_app', 'c', 'cpp',
+project('example_cpp_app', 'c', 'cpp',
         version : '1.1.1',
         default_options : [ 'warning_level=1',
                             'buildtype=release',
