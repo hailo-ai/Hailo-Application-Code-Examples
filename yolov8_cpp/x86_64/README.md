@@ -1,4 +1,5 @@
-**Last HailoRT version checked - 4.12.0**
+**Last HailoRT version checked - 4.13.0**
+
 This is a hailort C++ API yolov8 detection example.
 
 The example does the following:
@@ -11,15 +12,23 @@ The example does the following:
 6. Prints the object detected + confidence to the screen
 5. Prints statistics
 
-NOTE: Currently support only devices connected on a PCIe link.
-NOTE: This example was tested with a yolov8m model.
+**NOTE**: Currently support only devices connected on a PCIe link.
+
+**NOTE**: This example was tested with a yolov8s & a yolov8m model.
+
 
 Prequisites:
-OpenCV 4.2.X
-CMake >= 3.20
-HailoRT >= 4.10.0
-Xtensor
 
+OpenCV 4.2.X
+
+CMake >= 3.20
+
+HailoRT >= 4.10.0
+
+Xtensor - no installation or build needed as it's complied from the web as an external project.
+
+
+**NOTE**: You need to set the BASE_DIR variable in the CMakeLists.txt to be the folder path to the location of the yolov8_cpp folder.
 
 To compile the example run `./build.sh`
 
@@ -41,8 +50,19 @@ For a video:
 **NOTE**: In case you prefer to perform the Sigmoid on host, you can comment in the relevant line to do that. Please notice that you'll need a HEF file that does not have an on-chip sigmoid if you choose to use the example in such a way. 
 
 
-**IMPORTANT NOTE**: The pre-compiled Yolov8 HEF files Hailo Model Zoo are compiled with normalization and sigmoid activation on-chip and have a 16-bit output layer.
-In the example we assume that the the *entire model is 8-bit*.
+**IMPORTANT NOTE**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled with a 16-bit output layer.
+In the example we assume that this is the case.
 Both scores and data dequantization is done manually in the postprocessing functions. 
-This means that you will not get good detection with this example using the Yolov8 Hailo Model Zoo HEFs. 
-To perform inference & postprocess for the Yolov8 HEFs in Hailo Model Zoo, you can use the Hailo Model Zoo eval function. 
+This means that you will not get good detection (or detections at all) with a Yolov8 with 8-bit. 
+If you choose to work with your own HEF that is with an 8-bit output, you need to change the code from **uint16_t** to **uint8_t** in the following lines:
+
+double_buffer.hpp - lines 32, 43, 61, 69, 97
+
+yolov8_inference.cpp - line 68
+
+yolov8_postprocess.cpp - lines 78, 82, 139 
+
+hailo_tensors.hpp - lines 19, 29, 46, 85
+
+tensors.hpp - lines 24, 27, 43
+
