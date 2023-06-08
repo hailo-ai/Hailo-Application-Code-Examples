@@ -132,7 +132,7 @@ hailo_status write_all(InputVStream& input_vstream, const std::string input_path
     if (!cmd_num_frames.empty()){
         capture >> org_frame;
         capture.release();
-        cv::resize(org_frame, org_frame, cv::Size(height, width), 1);
+        cv::resize(org_frame, org_frame, cv::Size(width, height), 1);
         status = use_single_frame(input_vstream, write_time_vec, frames, std::ref(org_frame), std::stoi(cmd_num_frames));
         if (HAILO_SUCCESS != status)
             return status;

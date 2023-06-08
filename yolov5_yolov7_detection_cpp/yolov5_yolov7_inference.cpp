@@ -1,6 +1,7 @@
 #include "hailo/hailort.hpp"
 #include "common.h"
-#include "yolo_post_processing.hpp"
+#include "yolo_postprocess.hpp"
+#include "yolo_output.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -18,6 +19,7 @@ constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;
 std::mutex m;
 
 using namespace hailort;
+
 
 void print_inference_statistics(std::chrono::duration<double> inference_time,
                                 std::chrono::duration<double> postprocess_time, 
@@ -69,33 +71,40 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
 
     std::cout << YELLOW << "\n-I- Starting postprocessing\n" << std::endl << RESET;
 
+    std::string config = arch + ".json";
+
+    YoloParams *init_params = init(config, arch);
+
     for (int i = 0; i < (int)frame_count; i++){
-        
-        auto detections = post_processing(arch,
-            features[0]->m_buffers.get_read_buffer().data(), features[0]->m_qp_zp, features[0]->m_qp_scale,
-            features[1]->m_buffers.get_read_buffer().data(), features[1]->m_qp_zp, features[1]->m_qp_scale,
-            features[2]->m_buffers.get_read_buffer().data(), features[2]->m_qp_zp, features[2]->m_qp_scale);
-    
-        for (auto &feature : features) {
+        HailoROIPtr roi = std::make_shared<HailoROI>(HailoROI(HailoBBox(0.0f, 0.0f, 1.0f, 1.0f)));
+        for (uint j = 0; j < features.size(); j++)
+            roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint8_t *>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
+
+        yolov5(roi, init_params);
+
+        for (auto &feature : features)
+        {
             feature->m_buffers.release_read_buffer();
         }
+        
+        std::vector<HailoDetectionPtr> detections = hailo_common::get_hailo_detections(roi);
 
         for (auto &detection : detections) {
-            if (detection.confidence==0) {
+            if (detection->get_confidence() == 0) {
                 continue;
             }
-        
-	        {
-                cv::resize(frames[i], frames[i], cv::Size((int)org_width, (int)org_height), 1);
-                cv::rectangle(frames[i], cv::Point2f(float(detection.xmin / 640.0 * float(org_width)), float(detection.ymin / 640.0 * float(org_height))), 
-                            cv::Point2f(float(detection.xmax / 640.0 * float(org_width)), float(detection.ymax / 640.0 * float(org_height))), 
-                            cv::Scalar(0, 0, 255), 1);
-            }
-            std::cout << "Detection: " << get_coco_name_from_int(detection.class_id) << ", Confidence: " << std::fixed << std::setprecision(2) << detection.confidence * 100.0 << "%" << std::endl;
+
+            auto detection_box = detection->get_bbox();
+
+            cv::resize(frames[i], frames[i], cv::Size((int)org_width, (int)org_height), 1);
+            cv::rectangle(frames[i], cv::Point2f(float(detection_box.xmin() * float(org_width)), float(detection_box.ymin() * float(org_height))), 
+                        cv::Point2f(float(detection_box.xmax() * float(org_width)), float(detection_box.ymax() * float(org_height))), 
+                        cv::Scalar(0, 0, 255), 1);
+
+            std::cout << "Detection: " << get_coco_name_from_int(detection->get_class_id()) << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
         // cv::imshow("Display window", frames[i]);
         // cv::waitKey(0);
-
         // video.write(frames[i]);
         frames[i].release();
     }
@@ -170,7 +179,7 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
 
 hailo_status create_feature(hailo_vstream_info_t vstream_info, size_t output_frame_size, std::shared_ptr<FeatureData> &feature) {
     feature = std::make_shared<FeatureData>(static_cast<uint32_t>(output_frame_size), vstream_info.quant_info.qp_zp,
-        vstream_info.quant_info.qp_scale, vstream_info.shape.width);
+        vstream_info.quant_info.qp_scale, vstream_info.shape.width, vstream_info);
 
     return HAILO_SUCCESS;
 }

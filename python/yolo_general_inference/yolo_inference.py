@@ -26,7 +26,7 @@ class device_pre_post_layers():
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: yolov3, yolov4, yolov4t (tiny-yolov4), yolov5, yolox, yolov6 or yolov7.")
+parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolo_v5_nms, yolox, yolo_v6, yolo_v7 or yolo_v8.")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
 args = parser.parse_args()
@@ -44,9 +44,9 @@ arch_dict = {'yolo_v3':
              'yolo_v4': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[142, 110, 192, 243, 459, 401], [36, 75, 76, 55, 72, 146], [12, 16, 19, 36, 40, 28]])},
-             'yolov_4t': 
-                 {'strides': [32,16], 
-                  'sizes': np.array([[81, 82, 135, 169, 344, 319], [23, 27, 37, 58, 81, 82]])},
+             'yolo_v4t': 
+                 {'strides': [16,32], 
+                  'sizes': np.array([[23, 27, 37, 58, 81, 82], [81, 82, 135, 169, 344, 319]])},
              'yolo_v5': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[116, 90, 156, 198, 373, 326], [30, 61, 62, 45, 59, 119], [10, 13, 16, 30, 33, 23]])},
@@ -56,6 +56,7 @@ arch_dict = {'yolo_v3':
              'yolo_v7': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[142, 110, 192, 243, 459, 401], [36, 75, 76, 55, 72, 146], [12, 16, 19, 36, 40, 28]])},
+             'yolo_v5_nms': {},
              'yolo_v8': {}}
 
 
@@ -69,7 +70,7 @@ def get_label(class_id):
 def draw_detection(draw, d, c, s, color, scale_factor):
     """Draw box and label for 1 detection."""
     if args.labels is not None:
-        if args.arch == 'yolo_v8':
+        if args.arch == 'yolo_v8' or  args.arch == 'yolo_v5_nms':
             label = get_label(c+1) + ": " + "{:.2f}".format(s) + '%'
         else:
             label = get_label(c) + ": " + "{:.2f}".format(s) + '%'
@@ -81,7 +82,7 @@ def draw_detection(draw, d, c, s, color, scale_factor):
     draw.text((xmin * scale_factor + 4, ymin * scale_factor + 4), label, fill=color, font=font)
     return label
 
-def post_process(detections, image, id, output_path, width, height, min_score=0.55, scale_factor=1):
+def post_process(detections, image, id, output_path, width, height, min_score=0.4, scale_factor=1):
     COLORS = np.random.randint(0, 255, size=(100, 3), dtype=np.uint8)
     boxes = np.array(detections['detection_boxes'])[0]
     classes = np.array(detections['detection_classes'])[0].astype(int)
@@ -97,6 +98,37 @@ def post_process(detections, image, id, output_path, width, height, min_score=0.
             if args.labels is not None:
                 print(label)
     image.save(f'{output_path}/output_image{id}.jpg', 'JPEG')
+
+# -------------- NMS on-chip\on-cpu functions --------------- #
+
+def extract_detections(input, boxes, scores, classes, num_detections, threshold=0.5):   
+    for i, detection in enumerate(input):
+        if len(detection) == 0:
+            continue
+        for j in range(len(detection)):
+            bbox = np.array(detection)[j][:4]
+            score = np.array(detection)[j][4]
+            if score < threshold:
+                continue
+            else:
+                boxes.append(bbox)
+                scores.append(score)
+                classes.append(i)
+                num_detections = num_detections + 1
+    return {'detection_boxes': [boxes], 
+              'detection_classes': [classes], 
+             'detection_scores': [scores],
+             'num_detections': [num_detections]}
+
+def post_nms_infer(raw_detections, input_name):
+    boxes = []
+    scores = []
+    classes = []
+    num_detections = 0
+    
+    detections = extract_detections(raw_detections[input_name][0], boxes, scores, classes, num_detections)
+    
+    return detections
 
 # ---------------- Architecture functions ----------------- #
 
@@ -168,8 +200,8 @@ def postproc_yolov4(height,width, anchors, meta_arch, num_of_classes, raw_detect
                         anchors=anchors,
                         meta_arch=meta_arch, 
                         classes=num_of_classes,
-                        nms_iou_thresh=0.45,
-                        score_threshold=0.01,
+                        nms_iou_thresh=0.3,
+                        score_threshold=0.1,
                         labels_offset=1,
                         **kwargs)
     
@@ -194,7 +226,27 @@ def postproc_yolov4(height,width, anchors, meta_arch, num_of_classes, raw_detect
                     raw_detections[probs[1]]]
     
     return post_proc.postprocessing(detections, **kwargs)
-  
+
+def postproc_yolov4t(height, width, anchors, meta_arch, num_of_classes, raw_detections):
+    raw_detections_keys = list(raw_detections.keys())
+    raw_detections_keys.sort()
+    
+    post_proc = YoloPostProc(img_dims=(height,width), 
+                        anchors=anchors,
+                        meta_arch='yolo_v3', 
+                        classes=num_of_classes,
+                        nms_iou_thresh=0.3,
+                        score_threshold=0.1,
+                        labels_offset=0,
+                        **kwargs)
+    
+    detections = []
+    
+    for raw_det in raw_detections_keys:
+        detections.append(raw_detections[raw_det])
+    
+    return post_proc.postprocessing(detections, **kwargs)
+
 def postproc_yolov5_yolov7(height,width, anchors, meta_arch, num_of_classes, raw_detections):
     raw_detections_keys = list(raw_detections.keys())
     raw_detections_keys.sort()
@@ -255,6 +307,7 @@ def letterbox_image(image, size):
     scaled_w = int(img_w * scale)
     scaled_h = int(img_h * scale)
     image = image.resize((scaled_w, scaled_h), Image.BICUBIC)
+    # new_image = Image.new('RGB', size, (128,128,128))
     new_image = Image.new('RGB', size, (114,114,114))
     new_image.paste(image, ((model_input_w - scaled_w) // 2, (model_input_h - scaled_h) // 2))
     return new_image
@@ -283,7 +336,7 @@ def load_input_images(images_path, images):
 
 func_dict = {'yolo_v3': postproc_yolov3, 
              'yolo_v4': postproc_yolov4,
-             'yolo_v4t': postproc_yolov4,
+             'yolo_v4t': postproc_yolov4t,
              'yolo_v5': postproc_yolov5_yolov7,
              'yolox': postproc_yolox_yolov6,
              'yolo_v6': postproc_yolox_yolov6,
@@ -306,9 +359,7 @@ arch_list = arch_dict.keys()
 
 if arch in arch_list:
     anchors = arch_dict[arch]
-    if arch == 'yolo_v4t':
-        meta_arch = 'yolo_v4'
-    elif arch == 'yolo_v7':
+    if arch == 'yolo_v7':
         meta_arch = 'yolo_v5'
     elif arch == 'yolo_v8':
         meta_arch = 'nanodet_v8'
@@ -326,13 +377,16 @@ else:
 devices = PcieDevice.scan_devices()
 hef = HEF(args.hef)
 
+inputs = hef.get_input_vstream_infos()
+outputs = hef.get_output_vstream_infos()
+
 with PcieDevice(devices[0]) as target:
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
     network_group = target.configure(hef, configure_params)[0]
     network_group_params = network_group.create_params()
 
-    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in hef.get_input_vstream_infos()]
-    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in hef.get_output_vstream_infos()]
+    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in inputs]
+    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in outputs]
 
     height, width, _ = hef.get_input_vstream_infos()[0].shape
 
@@ -350,8 +404,11 @@ with PcieDevice(devices[0]) as target:
             with network_group.activate(network_group_params):
                 raw_detections = infer_pipeline.infer(input_data)
                 
-                results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
-                                    
+                if args.arch == 'yolo_v5_nms':
+                    results = post_nms_infer(raw_detections, outputs[0].name)
+                else:
+                    results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
+                                        
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
@@ -359,4 +416,3 @@ with PcieDevice(devices[0]) as target:
                 img = letterbox_image(image, (width,height))
                                             
                 post_process(results, img, i, output_path, width, height)
-      

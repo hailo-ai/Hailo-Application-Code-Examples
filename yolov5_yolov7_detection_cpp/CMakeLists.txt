@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.11)
-project(vstream_yolov5_yolov7_example_cpp)
+project(vstream_yolov7_example_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O0 -g -Wno-reorder -std=c++11)
+set(BASE_DIR /path/to/example/folder)
+
+set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -Wno-reorder -std=c++11 -Wno-error=ignored-qualifiers -Wno-error=extra -Wno-error=unused-parameter)
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -20,7 +22,6 @@ find_package( OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
-    ./*.hpp
     ./*.cpp
 )
 
@@ -28,8 +29,6 @@ link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+include_directories(${BASE_DIR}/rapidjson/include)
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
-target_link_libraries(${PROJECT_NAME} HailoRT::libhailort)
-target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-
+target_link_libraries(${PROJECT_NAME} HailoRT::libhailort ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS})

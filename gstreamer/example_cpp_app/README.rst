@@ -1,7 +1,7 @@
-Example app
-===========
+Example app 2
+=============
 
-| This example is a bare bones app that shows how to use Gstreamer with C++ on top.
+| This example is a bit more complicated than example 1 and showcase more features you can implement with Gstreamer with C++ on top.
 | It uses the TAPPAS environment to build the app and for the required Gstreamer plugins.
 
 Features
@@ -13,7 +13,21 @@ Features
    - For video file input example file:///home/user/video.mp4 (URI file prefix file://)
    - For online URI example try http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
 - Example code for getting Hailo statistics from the pipeline bus messages.
-
+- Example code for adding a custom overlay to the video stream.
+- Data aggregation and statistics calculation to be added as overlay on the video stream.
+   - Includes, FPS, Hailo stats, and Host stats (memory and CPU usage).
+   - Note the the memory usage represents the maximum resident set size (RSS) used by the process since the start of the process.
+   - See getrusage() documentation for more information.
+- Attach callback to element to get FPS on the element.
+- Attach callback to element to print detections (--probe-example)
+- To dump the pipeline to a dot file use (--dump-dot-files)
+   - The dot files will be saved in the current directory.
+   - There are two dot files, one before setting the pipeline to play and one after play state is reached.
+   - To see the full pipeline after caps negotiation and auto-plugging use the dot file after play state is reached.
+   - To view the dot files use the dot command from graphviz. You can display to screen or create a png file.
+      - dot -Tpng -o pipeline_playing.png pipeline_playing.dot
+      - dot -T x11 pipeline_playing.dot
+      
 
 Requirements
 ============
