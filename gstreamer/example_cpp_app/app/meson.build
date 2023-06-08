@@ -1,12 +1,12 @@
 ################################################
-# example2_app
+# example_app
 ################################################
-example2_app_sources = [
-'example2_app.cpp',
+example_app_sources = [
+'example_app.cpp', 'hailo_app_data_aggregator.cpp', 'hailo_app_useful_funcs.cpp',
 ]
 
-executable('example2_app',
-    example2_app_sources,
+executable('example_app',
+    example_app_sources,
     dependencies : postprocess_dep,
     gnu_symbol_visibility : 'default',
     install: true,

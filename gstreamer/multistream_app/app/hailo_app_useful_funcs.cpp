@@ -212,6 +212,64 @@ void disable_qos_in_bin(GstBin *bin) {
     gst_iterator_free(it);
 }
 
+/**
+ * Function: check_pipeline_state
+ * ------------------------------
+ * This function checks if all elements in a GStreamer pipeline have reached a target state within a specified timeout period.
+ *
+ * Parameters:
+ * - pipeline: A pointer to a GstElement representing the GStreamer pipeline.
+ * - target_state: The GstState that all elements in the pipeline should have reached.
+ * - timeout: The maximum amount of time to wait for the state change, specified in nanoseconds.
+ *
+ * Returns:
+ * - A boolean value indicating whether all elements in the pipeline have reached the target state within the timeout period.
+ *   Returns TRUE if all elements are in the target state, FALSE otherwise.
+ *
+ * The function works by iterating over all elements in the pipeline and checking their state individually.
+ * If it encounters an element that hasn't reached the target state within the timeout period, it returns FALSE immediately.
+ * If all elements are in the target state, or if the pipeline doesn't contain any elements, the function returns TRUE.
+ *
+ * Note:
+ * The timeout is applied to each element individually, so the total amount of time the function can block is the timeout multiplied
+ * by the number of elements in the pipeline.
+ */
+
+gboolean check_pipeline_state(GstElement* pipeline, GstState target_state, GstClockTime timeout) {
+    GstStateChangeReturn ret;
+    GstIterator *it = gst_bin_iterate_elements(GST_BIN(pipeline));
+    GValue item = G_VALUE_INIT;
+    gboolean done = FALSE, result = TRUE;
+    GstElement *element;
+
+    while (!done) {
+        switch (gst_iterator_next(it, &item)) {
+        case GST_ITERATOR_OK:
+            element = GST_ELEMENT(g_value_get_object(&item));
+            GstState state;
+            ret = gst_element_get_state(element, &state, NULL, timeout);
+            if (ret != GST_STATE_CHANGE_SUCCESS || state != target_state) {
+                g_warning("Element %s is not in %s state", GST_ELEMENT_NAME(element), gst_element_state_get_name(target_state));
+                result = FALSE;
+                done = TRUE; // Stop checking as soon as we find one element that hasn't reached the target state
+            }
+            g_value_reset(&item);
+            break;
+        case GST_ITERATOR_RESYNC:
+            gst_iterator_resync(it);
+            break;
+        case GST_ITERATOR_ERROR:
+        case GST_ITERATOR_DONE:
+            done = TRUE;
+            break;
+        }
+    }
+    g_value_unset(&item);
+    gst_iterator_free(it);
+
+    return result;
+}
+
 //******************************************************************
 // MAIN utility functions
 //******************************************************************

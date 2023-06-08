@@ -245,6 +245,8 @@ int main(int argc, char *argv[])
     // Prepare pipeline components
     GstBus *bus;
     GMainLoop *main_loop;
+    GstStateChangeReturn ret;
+
     gst_init(&argc, &argv); // Initialize Gstreamer
     
     // Initialize the app debug category
@@ -350,22 +352,32 @@ int main(int argc, char *argv[])
         g_signal_connect(roundrobin_probe, "handoff", G_CALLBACK(probe_callback), &user_data);
     }
 
+    // Set the pipeline to PAUSED
+    g_print("Setting pipeline to PAUSED\n");
+    gst_element_set_state(pipeline, GST_STATE_PAUSED);
+    // Check that all elements in the pipeline have reached the PAUSED state
+    if (!check_pipeline_state(pipeline, GST_STATE_PAUSED, 10 * GST_SECOND)) {
+        GST_ERROR("Failed to set all elements to PAUSED");
+        // continue to allow dumping of dot files
+    }
+
     if (result["dump-dot-files"].as<bool>()) {
-        g_print("Dumping dot files\n");
-        // Dump the DOT file after the pipeline has been created this is before caps negotiation
-        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_before_negotiation");
+        // Dump the DOT file after the pipeline has been set to PAUSED
+        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_paused");
+    }
+
+    // Set the pipeline state to PLAYING
+    g_print("Setting pipeline to PLAYING\n");
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    // Check that all elements in the pipeline have reached the PLAYING state
+    if (!check_pipeline_state(pipeline, GST_STATE_PLAYING, 5 * GST_SECOND)) {
+        GST_ERROR("Failed to set all elements to PLAYING");
+        exit(1);
     }
     
-    // Set the pipeline state to PLAYING
-    g_print("Setting pipeline to PLAYING");
-    gst_element_set_state(pipeline, GST_STATE_PLAYING);
-    
-    //wait for the pipeline to finish state change
-    GstStateChangeReturn ret = gst_element_get_state(pipeline, NULL, NULL, GST_CLOCK_TIME_NONE);
-
-    if (ret == GST_STATE_CHANGE_FAILURE) {
-        GST_ERROR("Failed to start pipeline");
-        exit(1);
+    if (result["dump-dot-files"].as<bool>()) {
+        // Dump the DOT file after the pipeline has been set to PLAYING
+        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_playing");
     }
 
     // Set watchdog timers for each source (RTSP only) and start bus sync handler
@@ -373,14 +385,8 @@ int main(int argc, char *argv[])
         if (user_data.src_bins[n]->type == SrcBin::SrcType::RTSP) {
             user_data.src_bins[n]->start_watchdog_thread();
         }
-        // user_data.src_bins[n]->start_bus_sync_handler();
     }
     
-    // gst_bus_set_sync_handler(bus, (GstBusSyncHandler)SrcBin::bus_sync_handler, NULL, NULL);
-    if (result["dump-dot-files"].as<bool>()) {
-        // Dump the DOT file after the pipeline has been set to PLAYING
-        gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_playing");
-    }
     // Run the main loop this is blocking will run until the main loop is stopped
     g_main_loop_run(main_loop);
     

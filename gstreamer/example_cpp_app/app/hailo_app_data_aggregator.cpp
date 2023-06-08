@@ -1,140 +1,97 @@
-// General cpp includes
-#include <chrono>
-#include <condition_variable>
-#include <cxxopts.hpp>
-#include <gst/gst.h>
-#include <gst/video/video.h>
-#include <gst/app/gstappsink.h>
-#include <iostream>
-#include <mutex>
-#include <chrono>
-#include <ctime>
-#include <shared_mutex>
-#include <stdio.h>
-#include <thread>
-#include <unistd.h>
-#include <glib.h>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <sys/resource.h>
-#include <limits.h>
-
-// Tappas includes
-#include "hailo_objects.hpp"
-#include "hailo_common.hpp"
-
-#define DataAggregator_H
-
-//******************************************************************
-// DATA TYPES
-//******************************************************************
-
-struct AggData {
-  GstElement* pipeline;
-  GMainLoop* main_loop;
-  GstElement* text_overlay;
-  gboolean print_fps;
-  gboolean print_hailo_stats;
-  gboolean print_host_stats;
-  gboolean print_required;
-  gboolean print_to_terminal;
-};
-
-
 //******************************************************************
 // DATA Aggregator
 //******************************************************************
+#include "hailo_app_data_aggregator.hpp"
 
-class DataAggregator {
-public:
-  // constructor
-  DataAggregator(){}; // Default constructor
-  DataAggregator(gpointer agg_data) {
-    this->initilize_agg_data(agg_data);
+DataAggregator::DataAggregator(gpointer agg_data)
+{
+  this->initilize_agg_data(agg_data);
+}
+
+void DataAggregator::initilize_agg_data(gpointer agg_data)
+{
+  std::cout << "Initializing aggregator data" << std::endl;
+  this->data_ = static_cast<AggData *>(agg_data);
+}
+
+void DataAggregator::set_power(double power)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  power_ = power;
+  update_string();
+}
+
+void DataAggregator::set_fps(double fps)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  fps_ = fps;
+  update_string();
+}
+
+void DataAggregator::set_temp(double temp)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  temp_ = temp;
+  update_string();
+}
+
+void DataAggregator::set_cpu(double cpu)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  cpu_ = cpu;
+  update_string();
+}
+
+void DataAggregator::set_mem(double mem)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  mem_ = mem;
+  update_string();
+}
+
+std::string DataAggregator::get_string()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  return data_string_;
+}
+void DataAggregator::display_string()
+{
+  if (data_->print_to_terminal)
+  {
+    std::cout << get_string().c_str() << std::endl;
   }
-
-  void initilize_agg_data(gpointer agg_data) {
-    std::cout << "Initializing aggregator data" << std::endl;
-     this->data_ = static_cast<AggData*>(agg_data);
+  else
+  {
+    // set the text on the display
+    g_object_set(G_OBJECT(data_->text_overlay), "text", get_string().c_str(), NULL);
   }
+}
 
-  void set_power(double power) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    power_ = power;
-    update_string();
+pid_t DataAggregator::get_pid()
+{
+  return data_->pid;
+}
+
+// private:
+void DataAggregator::update_string()
+{
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2);
+  if (data_->print_fps)
+  {
+    ss << "FPS: " << fps_ << " ";
   }
-
-  void set_fps(double fps) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    fps_ = fps;
-    update_string();
+  if (data_->print_hailo_stats)
+  {
+    ss << "Power: " << power_ << "W, Temp: " << temp_ << "C ";
   }
-
-  void set_temp(double temp) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    temp_ = temp;
-    update_string();
+  if (data_->print_host_stats)
+  {
+    ss << "CPU: " << cpu_ << "%, MEM: " << mem_ << "MB ";
   }
+  data_string_ = ss.str();
+}
 
-  void set_cpu(double cpu) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    cpu_ = cpu;
-    update_string();
-  }
-
-  void set_mem(double mem) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    mem_ = mem;
-    update_string();
-  }
-
-  std::string get_string() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return data_string_;
-  }
-  void display_string(){
-    if (data_->print_to_terminal) {
-      std::cout << get_string().c_str() << std::endl;
-    } else {
-      // set the text on the display
-      g_object_set(G_OBJECT(data_->text_overlay), "text", get_string().c_str() , NULL);
-    }
-  }
-
-private:
-  void update_string() {
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2);
-    if (data_->print_fps) {
-      ss << "FPS: " << fps_ << " ";
-    }
-    if (data_->print_hailo_stats) {
-      ss << "Power: " << power_ << "W, Temp: " << temp_ << "C ";
-    }
-    if (data_->print_host_stats) {
-      ss << "CPU: " << cpu_ << "%, MEM: " << mem_ << "MB ";
-    }
-    data_string_ = ss.str();
-  }
-
-  std::mutex mutex_;
-  double power_ = 0.0;
-  double fps_ = 0.0;
-  double temp_ = 0.0;
-  double cpu_ = 0.0;
-  double mem_ = 0.0;
-  std::string data_string_;
-  AggData *data_;
-};
-
-//******************************************************************
-// GLOBALS
-//******************************************************************
-pid_t pid;
-DataAggregator data_aggregator;
-AggData *agg_data;
 //******************************************************************
 // PIPELINE UTILITIES
 //******************************************************************
@@ -153,12 +110,14 @@ static void fps_measurements_callback(GstElement *fpsdisplaysink,
                                       gdouble avgfps,
                                       gpointer udata)
 {
-    data_aggregator.set_fps(fps);
+  DataAggregator *data_aggregator = static_cast<DataAggregator *>(udata);
+  data_aggregator->set_fps(fps);
 }
 
-double getProcessCpuUsage(int pid) {
-  static double prev_cpu_usage = 0.0;  // Static variable to store previous measurement
-  static double prev_sys_cpu_usage = 0.0;  // Static variable to store previous system CPU usage
+double getProcessCpuUsage(int pid)
+{
+  static double prev_cpu_usage = 0.0;     // Static variable to store previous measurement
+  static double prev_sys_cpu_usage = 0.0; // Static variable to store previous system CPU usage
 
   // Open the stat file for the process
   std::ifstream procStat("/proc/" + std::to_string(pid) + "/stat");
@@ -169,7 +128,8 @@ double getProcessCpuUsage(int pid) {
   std::vector<std::string> fields;
   std::stringstream lineStream(line);
   std::string field;
-  while (std::getline(lineStream, field, ' ')) {
+  while (std::getline(lineStream, field, ' '))
+  {
     fields.push_back(field);
   }
 
@@ -190,7 +150,8 @@ double getProcessCpuUsage(int pid) {
   fields.clear();
   lineStream.str(line);
   lineStream.clear();
-  while (std::getline(lineStream, field, ' ')) {
+  while (std::getline(lineStream, field, ' '))
+  {
     fields.push_back(field);
   }
 
@@ -215,89 +176,95 @@ double getProcessCpuUsage(int pid) {
   return cpu_usage_percent;
 }
 
-double getProcessMemoryUsage(int pid) {
+double getProcessMemoryUsage(int pid)
+{
   ///////////////////////////////////////////////////////////////////////////////
   // Note that the memory usage returned by this function is the maximum memory used
   ///////////////////////////////////////////////////////////////////////////////
-  
+
   struct rusage usage;
   getrusage(RUSAGE_SELF, &usage);
   // Convert the memory usage from KB to MB
-  return  usage.ru_maxrss / 1024.0;
+  return usage.ru_maxrss / 1024.0;
 }
 
-bool display_stats_callback(){
-  data_aggregator.display_string();
+bool display_stats_callback(gpointer udata)
+{
+  DataAggregator *data_aggregator = static_cast<DataAggregator *>(udata);
+  data_aggregator->display_string();
   return true;
 }
 
-bool update_host_stats_callback()
+bool update_host_stats_callback(gpointer udata)
 {
-  try {
+  DataAggregator *data_aggregator = static_cast<DataAggregator *>(udata);
+  try
+  {
     // Get CPU usage
-    double cpu_usage = getProcessCpuUsage(pid);
-    data_aggregator.set_cpu(cpu_usage);
+    double cpu_usage = getProcessCpuUsage(data_aggregator->get_pid());
+    data_aggregator->set_cpu(cpu_usage);
     // Get memory usage
-    double memory_usage = getProcessMemoryUsage(pid);
-    data_aggregator.set_mem(memory_usage);
-  } catch (const std::exception &e) {
+    double memory_usage = getProcessMemoryUsage(data_aggregator->get_pid());
+    data_aggregator->set_mem(memory_usage);
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "Error on update_host_stats_callback: " << e.what() << std::endl;
     return false;
   }
   return true;
 }
 
-
-void add_aggregator_options(cxxopts::Options &options) {
+void add_aggregator_options(cxxopts::Options &options)
+{
   options.add_options()
-  // ("f, show-fps", "Enable displaying FPS", cxxopts::value<bool>()->default_value("false"))
-  ("host-stats", "Enable displaying host stats", cxxopts::value<bool>()->default_value("false"))
-  ("print-to-terminal", "When set will print to terminal not overlay video", cxxopts::value<bool>()->default_value("false"));
+      // ("f, show-fps", "Enable displaying FPS", cxxopts::value<bool>()->default_value("false"))
+      ("host-stats", "Enable displaying host stats", cxxopts::value<bool>()->default_value("false"))("print-to-terminal", "When set will print to terminal not overlay video", cxxopts::value<bool>()->default_value("false"));
 }
 
 /**
  * @brief Setup the Hailo utils.
  *        This function shoud be called from main to setup Bus Watch and User Data
- * @param pipeline 
+ * @param pipeline
  *        The GStreamer pipeline.
- * @param bus 
+ * @param bus
  *        The GStreamer bus.
- * @param main_loop 
+ * @param main_loop
  *        The GStreamer main loop.
- * @param print_fps 
+ * @param print_fps
  *        Enable displaying FPS.
- * @param print_hailo_stats 
+ * @param print_hailo_stats
  *        Enable displaying Hailo stats.
- * @param print_host_stats 
+ * @param print_host_stats
  *        Enable displaying host stats.
- * @param print_to_terminal 
+ * @param print_to_terminal
  *        When set will print to terminal not overlay video.
- * @return AggData 
+ * @return AggData
  *         The user data.
  */
 // void setup_hailo_data_aggregator(gpointer user_data, cxxopts::ParseResult result)
-DataAggregator* setup_hailo_data_aggregator(GstElement *pipeline, GMainLoop *main_loop, cxxopts::ParseResult result)
+DataAggregator *setup_hailo_data_aggregator(GstElement *pipeline, GMainLoop *main_loop, cxxopts::ParseResult result)
 {
   gboolean print_fps = result["show-fps"].as<bool>();
   gboolean print_hailo_stats = result["hailo-stats"].as<bool>();
   gboolean print_host_stats = result["host-stats"].as<bool>();
   gboolean print_to_terminal = result["print-to-terminal"].as<bool>();
- 
-  // UserData* data = static_cast<UserData*>(user_data);
-  // data->data_aggregator = &data_aggregator;
 
-  agg_data = new AggData();
   // get process id
-  pid = getpid();
+  pid_t pid = getpid();
   std::cout << "Parent process id: " << pid << std::endl;
   
+  // get new data aggregator
+  DataAggregator *data_aggregator = new DataAggregator();
+
   // set agg_data
+  AggData *agg_data = new AggData();
+  agg_data->pid = pid;
+
   // Set the pipeline element
-  // agg_data->pipeline = data->pipeline;
   agg_data->pipeline = pipeline;
 
   // Set the main loop element
-  // agg_data->main_loop = data->main_loop;
   agg_data->main_loop = main_loop;
 
   // Set additional options
@@ -306,56 +273,71 @@ DataAggregator* setup_hailo_data_aggregator(GstElement *pipeline, GMainLoop *mai
   agg_data->print_host_stats = print_host_stats;
   agg_data->print_to_terminal = print_to_terminal;
   agg_data->print_required = print_fps || print_hailo_stats || print_host_stats;
- 
-  data_aggregator.initilize_agg_data(agg_data);
+
+  data_aggregator->initilize_agg_data(agg_data);
   // set callbacks
-  if (agg_data->print_fps) {
-    try {   
+  if (agg_data->print_fps)
+  {
+    try
+    {
       // set fps-measurements signal callback to print the measurements
-      std::cout << "Setting fps-measurements signal callback" << std::endl;   
+      std::cout << "Setting fps-measurements signal callback" << std::endl;
       GstElement *display_0 = gst_bin_get_by_name(GST_BIN(agg_data->pipeline), "hailo_display");
-      g_signal_connect(display_0, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
+      g_signal_connect(display_0, "fps-measurements", G_CALLBACK(fps_measurements_callback), data_aggregator);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e)
+    {
       std::cout << "Could not set fps-measurements signal callback make sure your display element name is hailo_display" << std::endl;
     }
   }
 
-  if (agg_data->print_required) {
+  if (agg_data->print_required)
+  {
     // set timer to print stats
-    g_timeout_add_seconds(1, (GSourceFunc)display_stats_callback, NULL);
-  }
-  
-  if (agg_data->print_host_stats) {
-    // set timer to update host stats
-    g_timeout_add_seconds(1, (GSourceFunc)update_host_stats_callback, NULL);
+    g_timeout_add_seconds(1, (GSourceFunc)display_stats_callback, data_aggregator);
   }
 
-  if (agg_data->print_hailo_stats) {
+  if (agg_data->print_host_stats)
+  {
+    // set timer to update host stats
+    g_timeout_add_seconds(1, (GSourceFunc)update_host_stats_callback, data_aggregator);
+  }
+
+  if (agg_data->print_hailo_stats)
+  {
     // set timer to update hailo stats
     std::cout << "Setting hailo stats" << std::endl;
-    try {
+    try
+    {
       GstElement *hailostats = gst_bin_get_by_name(GST_BIN(agg_data->pipeline), "hailo_stats");
-      if (hailostats == nullptr) {
+      if (hailostats == nullptr)
+      {
         throw std::runtime_error("Could not set hailo stats make sure your hailodevicestats element name is hailo_stats");
       }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
       std::cout << "Error: " << e.what() << std::endl;
       std::cout << "You should add this to your pipeline: hailodevicestats name=hailo_stats silent=false " << std::endl;
     }
   }
   // Set the text overlay element
-  if (not agg_data->print_to_terminal){
-    try {
+  if (not agg_data->print_to_terminal)
+  {
+    try
+    {
       GstElement *text_overlay = gst_bin_get_by_name(GST_BIN(agg_data->pipeline), "text_overlay");
-      if (text_overlay == nullptr) {
+      if (text_overlay == nullptr)
+      {
         throw std::runtime_error("Could not get text_overlay element make sure you have text_overlay element with the name text_overlay. Otherwise you can use the --print-to-terminal option to print to the terminal.");
       }
       agg_data->text_overlay = text_overlay;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
       std::cout << "Error: " << e.what() << std::endl;
       std::cout << "You should add this to your pipeline: textoverlay name=text_overlay" << std::endl;
     }
   }
-  return &data_aggregator;
+  return data_aggregator;
 }
