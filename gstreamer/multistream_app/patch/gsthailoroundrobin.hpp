@@ -57,8 +57,14 @@ struct _GstHailoRoundRobin
     GstHailoRoundRobinMode mode;
     uint retries_num;
     uint queue_size;
-    std::vector<std::unique_ptr<std::mutex>> mutexes;
-    std::vector<std::unique_ptr<std::condition_variable>> condition_vars;
+    uint wait_time;
+    uint preroll_frames;
+    std::vector<std::unique_ptr<std::mutex>> mutexes_blocking;
+    std::vector<std::unique_ptr<std::mutex>> mutexes_non_blocking;
+    std::unique_ptr<std::shared_mutex> counter_mutex;
+    int buffer_counter;
+    std::vector<std::unique_ptr<std::condition_variable>> condition_vars_blocking;
+    std::vector<std::unique_ptr<std::condition_variable>> condition_vars_non_blocking;
     std::vector<std::unique_ptr<std::queue<GstBuffer *>>> pad_queues;
     std::thread *thread;
     gboolean stop_thread;

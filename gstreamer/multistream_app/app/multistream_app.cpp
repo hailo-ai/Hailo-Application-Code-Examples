@@ -355,13 +355,19 @@ int main(int argc, char *argv[])
     // Set the pipeline to PAUSED
     g_print("Setting pipeline to PAUSED\n");
     gst_element_set_state(pipeline, GST_STATE_PAUSED);
-    // Check that all elements in the pipeline have reached the PAUSED state
-    if (!check_pipeline_state(pipeline, GST_STATE_PAUSED, 10 * GST_SECOND)) {
-        GST_ERROR("Failed to set all elements to PAUSED");
-        // continue to allow dumping of dot files
+    ret = gst_element_get_state(pipeline, NULL, NULL, 10 * GST_SECOND);
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        g_error("Failed to move pipeline to PAUSED. Try running with --gst-debug=3\n");
+        exit(1);
+    } else if (ret == GST_STATE_CHANGE_NO_PREROLL) {
+        g_info("Moved to PAUSED, no preroll. Expected in live sources\n");
+    } else if (ret == GST_STATE_CHANGE_ASYNC) {
+        g_warning("Pipeline reached timeout switching to paused\n");
     }
-
+    
     if (result["dump-dot-files"].as<bool>()) {
+        g_print("Dumping dot files, adding delay to make sure state transition is done....\n");
+        sleep(10);
         // Dump the DOT file after the pipeline has been set to PAUSED
         gst_debug_bin_to_dot_file(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline_paused");
     }
@@ -369,10 +375,13 @@ int main(int argc, char *argv[])
     // Set the pipeline state to PLAYING
     g_print("Setting pipeline to PLAYING\n");
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
-    // Check that all elements in the pipeline have reached the PLAYING state
-    if (!check_pipeline_state(pipeline, GST_STATE_PLAYING, 5 * GST_SECOND)) {
-        GST_ERROR("Failed to set all elements to PLAYING");
+    //wait for the pipeline to finish state change
+    ret = gst_element_get_state(pipeline, NULL, NULL, 10 * GST_SECOND);
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        g_error("Failed to move pipeline to PLAYING. Try running with --gst-debug=3\n");
         exit(1);
+    } else if (ret == GST_STATE_CHANGE_ASYNC) {
+        g_warning("Pipeline reached timoute switching to playing\n");
     }
     
     if (result["dump-dot-files"].as<bool>()) {

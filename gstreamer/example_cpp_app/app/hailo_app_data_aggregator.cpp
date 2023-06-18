@@ -218,7 +218,6 @@ bool update_host_stats_callback(gpointer udata)
 void add_aggregator_options(cxxopts::Options &options)
 {
   options.add_options()
-      // ("f, show-fps", "Enable displaying FPS", cxxopts::value<bool>()->default_value("false"))
       ("host-stats", "Enable displaying host stats", cxxopts::value<bool>()->default_value("false"))("print-to-terminal", "When set will print to terminal not overlay video", cxxopts::value<bool>()->default_value("false"));
 }
 
