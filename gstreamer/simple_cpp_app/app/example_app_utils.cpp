@@ -81,7 +81,12 @@ cxxopts::Options build_arg_parser()
 {
   cxxopts::Options options("Hailo App");
   options.allow_unrecognised_options();
-  options.add_options()("h, help", "Show this help")("i, input", "Set the input source.\nSource can be a device for example /dev/video0 \nOr URI for file use file://<FILE-FULL_PATH>\nSee README for online URI source example\n", cxxopts::value<std::string>()->default_value(std::string("/dev/video0")))("s, hailo-stats", "Enable displaying Hailo stats", cxxopts::value<bool>()->default_value("false"))("sync-pipeline", "Enable to sync to video framerate otherwise runs as fast as possible", cxxopts::value<bool>()->default_value("false"))("f, show-fps", "Enable displaying FPS", cxxopts::value<bool>()->default_value("false"));
+  options.add_options()
+  ("h, help", "Show this help")
+  ("i, input", "Set the input source.\nSource can be a device for example /dev/video0 \nOr URI for file use file://<FILE-FULL_PATH>\nSee README for online URI source example\n", cxxopts::value<std::string>()->default_value(std::string("/dev/video0")))
+  ("s, hailo-stats", "Enable displaying Hailo stats", cxxopts::value<bool>()->default_value("false"))
+  ("sync-pipeline", "Enable to sync to video framerate otherwise runs as fast as possible", cxxopts::value<bool>()->default_value("false"))
+  ("f, show-fps", "Enable displaying FPS", cxxopts::value<bool>()->default_value("false"));
   return options;
 }
 

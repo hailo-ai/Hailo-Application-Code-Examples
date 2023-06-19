@@ -1,4 +1,4 @@
-Example app
+Simple app
 ===========
 
 | This example is a bare bones app that shows how to use Gstreamer with C++ on top.

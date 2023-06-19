@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     } else if (ret == GST_STATE_CHANGE_NO_PREROLL) {
         g_info("Moved to PAUSED, no preroll. Expected in live sources\n");
     } else if (ret == GST_STATE_CHANGE_ASYNC) {
-        g_warning("Pipeline reached timoute switching to paused\n");
+        g_warning("Pipeline reached timeout switching to paused\n");
     }
 
     if (result["dump-dot-files"].as<bool>()) {

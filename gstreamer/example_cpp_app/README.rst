@@ -1,4 +1,4 @@
-Example app 2
+Example app
 =============
 
 | This example is a bit more complicated than example 1 and showcase more features you can implement with Gstreamer with C++ on top.

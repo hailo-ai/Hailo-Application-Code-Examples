@@ -61,7 +61,7 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     
     // If required add hailodevicestats to pipeline
     if (result["hailo-stats"].as<bool>()) {
-        stats_pipeline = "hailodevicestats name=hailo_stats silent=false ";
+        stats_pipeline = "hailodevicestats name=hailo_stats ";
     }
     if (result["show-fps"].as<bool>()) {
         show_fps = "true";
@@ -135,7 +135,6 @@ int main(int argc, char *argv[])
 
     // Create the pipeline
     std::string pipeline_string = create_pipeline_string(result);
-
     // Parse the pipeline string and create the pipeline
     GError *err = nullptr;
     GstElement *pipeline = gst_parse_launch(pipeline_string.c_str(), &err);

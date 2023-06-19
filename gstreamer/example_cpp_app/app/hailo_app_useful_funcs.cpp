@@ -108,6 +108,7 @@ void fps_probe_callback(GstElement *element, GstBuffer *buffer, gpointer user_da
   framecount_map[element_name]++;
   GstClockTime current_time = gst_clock_get_time(gst_system_clock_obtain());
   GstClockTimeDiff diff = current_time - last_time_map[element_name];
+  
   if (diff >= GST_SECOND)
   {
     g_print("Framerate %s: %d\n", element_name.c_str(), framecount_map[element_name] / GST_TIME_AS_SECONDS(diff));
@@ -140,7 +141,10 @@ void set_queue_properties(GstElement *queue, gboolean leaky = false, guint max_s
   g_object_set(G_OBJECT(queue), "max-size-buffers", max_size_buffers, NULL);
   g_object_set(G_OBJECT(queue), "max-size-bytes", 0, NULL);
   g_object_set(G_OBJECT(queue), "max-size-time", 0, NULL);
+  
 }
+
+
 /**
  * This function is used to disable the Quality of Service (QoS) events on all elements of a GStreamer pipeline (or bin).
  * QoS events in GStreamer provide a mechanism for elements to provide feedback about the quality of the stream.

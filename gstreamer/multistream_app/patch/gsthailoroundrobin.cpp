@@ -28,7 +28,6 @@ GType gst_hailo_round_robin_pad_get_type(void);
     (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_HAILO_ROUND_ROBIN_PAD))
 #define GST_HAILO_ROUND_ROBIN_PAD_CAST(obj) \
     ((GstHailoRoundRobinPad *)(obj))
-#define SLEEP_TIME 0.001
 
 typedef struct _GstHailoRoundRobinPad GstHailoRoundRobinPad;
 typedef struct _GstHailoRoundRobinPadClass GstHailoRoundRobinPadClass;
@@ -83,6 +82,8 @@ enum
     PROP_MODE,
     PROP_RETRIES_NUM,
     PROP_QUEUE_SIZE,
+    PROP_WAIT_TIME,
+    PROP_PREROLL_FRAMES,
 };
 
 static void
@@ -114,6 +115,9 @@ G_DEFINE_TYPE_WITH_CODE(GstHailoRoundRobin, gst_hailo_round_robin, GST_TYPE_ELEM
 static GstStateChangeReturn gst_hailo_round_robin_change_state(GstElement *element,
                                                                GstStateChange transition);
 
+static GstFlowReturn gst_hailo_round_robin_sink_chain_preroll(GstPad *pad,
+                                                              GstObject *parent,
+                                                              GstBuffer *buf);
 static GstFlowReturn gst_hailo_round_robin_sink_chain_funnel_mode(GstPad *pad,
                                                                   GstObject *parent,
                                                                   GstBuffer *buf);
@@ -157,6 +161,16 @@ gst_hailo_round_robin_set_property(GObject *object, guint prop_id,
         GST_HAILO_ROUND_ROBIN(object)->queue_size = g_value_get_uint(value);
         break;
     }
+    case PROP_WAIT_TIME:
+    {
+        GST_HAILO_ROUND_ROBIN(object)->wait_time = g_value_get_uint(value);
+        break;
+    }
+    case PROP_PREROLL_FRAMES:
+    {
+        GST_HAILO_ROUND_ROBIN(object)->preroll_frames = g_value_get_uint(value);
+        break;
+    }
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
@@ -178,6 +192,12 @@ gst_hailo_round_robin_get_property(GObject *object, guint prop_id, GValue *value
     case PROP_QUEUE_SIZE:
         g_value_set_uint(value, GST_HAILO_ROUND_ROBIN(object)->queue_size);
         break;
+    case PROP_WAIT_TIME:
+        g_value_set_uint(value, GST_HAILO_ROUND_ROBIN(object)->wait_time);
+        break;
+    case PROP_PREROLL_FRAMES:
+        g_value_set_uint(value, GST_HAILO_ROUND_ROBIN(object)->preroll_frames);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
@@ -194,6 +214,25 @@ void set_current_pad_num(GstHailoRoundRobin *hailo_round_robin, size_t num)
 {
     std::unique_lock lock(*(hailo_round_robin->current_pad_mutex.get())); // writer lock
     hailo_round_robin->current_pad_num = num;
+}
+
+int get_buffer_counter_value(GstHailoRoundRobin *hailo_round_robin)
+{
+    std::shared_lock lock(*(hailo_round_robin->counter_mutex.get())); // reader lock
+    return hailo_round_robin->buffer_counter;
+}
+
+void set_buffer_counter_value(GstHailoRoundRobin *hailo_round_robin, size_t val)
+{
+    std::unique_lock lock(*(hailo_round_robin->counter_mutex.get())); // writer lock
+    hailo_round_robin->buffer_counter = val;
+}
+
+void increment_buffer_counter_value(GstHailoRoundRobin *hailo_round_robin)
+{
+    std::unique_lock lock(*(hailo_round_robin->counter_mutex.get())); // writer lock
+    if (hailo_round_robin->buffer_counter != -1)
+        hailo_round_robin->buffer_counter++;
 }
 
 static gboolean
@@ -226,7 +265,7 @@ void schedule(GstHailoRoundRobin *hailo_round_robin)
                     {
                         if (j < hailo_round_robin->retries_num) // don't sleep on the last iteration
                         {
-                            sleep(SLEEP_TIME);
+                            sleep((float)hailo_round_robin->wait_time / 1000.0);
                         }
                     }
                     else
@@ -234,11 +273,11 @@ void schedule(GstHailoRoundRobin *hailo_round_robin)
                         set_current_pad_num(hailo_round_robin, i);
                         GstBuffer *buf = hailo_round_robin->pad_queues[i]->front();
                         hailo_round_robin->pad_queues[i]->pop();
-                        if (hailo_round_robin->condition_vars[i] == NULL)
+                        if (hailo_round_robin->condition_vars_non_blocking[i] == NULL)
                         {
                             continue;
                         }
-                        hailo_round_robin->condition_vars[i]->notify_one();
+                        hailo_round_robin->condition_vars_non_blocking[i]->notify_one();
 
                         GstPad *pad = gst_element_get_static_pad(GST_ELEMENT_CAST(hailo_round_robin), ("sink_" + std::to_string(i)).c_str());
 
@@ -327,21 +366,45 @@ gst_hailo_round_robin_class_init(GstHailoRoundRobinClass *klass)
                                                       10,
                                                       3,
                                                       (GParamFlags)(GST_PARAM_CONTROLLABLE | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+    g_object_class_install_property(gobject_class,
+                                    PROP_WAIT_TIME,
+                                    g_param_spec_uint("wait-time",
+                                                      "Wait Time",
+                                                      "Time in ms to wait between tries to get a buffer from a pad queue (only relevant when using non-blocking mode)",
+                                                      1,
+                                                      500,
+                                                      5,
+                                                      (GParamFlags)(GST_PARAM_CONTROLLABLE | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+    g_object_class_install_property(gobject_class,
+                                    PROP_PREROLL_FRAMES,
+                                    g_param_spec_uint("preroll-frames",
+                                                      "Preroll frames",
+                                                      "Number of frames to operate in blocking mode before moving to non-blocking-mode (only relevant when using non-blocking mode)",
+                                                      1,
+                                                      30,
+                                                      3,
+                                                      (GParamFlags)(GST_PARAM_CONTROLLABLE | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 }
 
 static void
 gst_hailo_round_robin_init(GstHailoRoundRobin *hailo_round_robin)
 {
     hailo_round_robin->current_pad_num = 0;
-    hailo_round_robin->mutexes.clear();
+    hailo_round_robin->mutexes_blocking.clear();
+    hailo_round_robin->mutexes_non_blocking.clear();
     hailo_round_robin->pad_queues.clear();
-    hailo_round_robin->condition_vars.clear();
-    hailo_round_robin->retries_num = 3;
+    hailo_round_robin->condition_vars_blocking.clear();
+    hailo_round_robin->condition_vars_non_blocking.clear();
+    hailo_round_robin->buffer_counter = 0;
+    hailo_round_robin->retries_num = 1;
     hailo_round_robin->queue_size = 3;
+    hailo_round_robin->wait_time = 0;
+    hailo_round_robin->preroll_frames = 3;
     hailo_round_robin->stop_thread = false;
     hailo_round_robin->srcpad = gst_pad_new_from_static_template(&src_template, "src");
     hailo_round_robin->mode = GST_HAILO_ROUND_ROBIN_MODE_BLOCKING;
     hailo_round_robin->current_pad_mutex = std::make_unique<std::shared_mutex>();
+    hailo_round_robin->counter_mutex = std::make_unique<std::shared_mutex>();
     gst_pad_use_fixed_caps(hailo_round_robin->srcpad);
     gst_element_add_pad(GST_ELEMENT(hailo_round_robin), hailo_round_robin->srcpad);
 }
@@ -351,11 +414,25 @@ gst_hailo_round_robin_dispose(GObject *object)
 {
     GstHailoRoundRobin *hailo_round_robin = GST_HAILO_ROUND_ROBIN_CAST(object);
     hailo_round_robin->srcpad = NULL;
-    hailo_round_robin->current_pad_num = 0;pad_queues
+    hailo_round_robin->current_pad_num = 0;
     hailo_round_robin->pad_queues.clear();
-    hailo_round_robin->mutexes.clear();
-    hailo_round_robin->condition_vars.clear();
+    hailo_round_robin->buffer_counter = 0;
+    hailo_round_robin->mutexes_blocking.clear();
+    hailo_round_robin->mutexes_non_blocking.clear();
+    hailo_round_robin->condition_vars_blocking.clear();
+    hailo_round_robin->condition_vars_non_blocking.clear();
     G_OBJECT_CLASS(parent_class)->dispose(object);
+}
+
+void set_chain_to_all_pads(GstHailoRoundRobin *hailo_round_robin, GstPadChainFunction chain_function)
+{
+    GstElement *element = GST_ELEMENT_CAST(hailo_round_robin);
+    GList *item;
+    for (item = element->sinkpads; item != NULL; item = g_list_next(item))
+    {
+        GstPad *sinkpad = GST_PAD_CAST(item->data);
+        gst_pad_set_chain_function(sinkpad, GST_DEBUG_FUNCPTR(chain_function));
+    }
 }
 
 static GstPad *
@@ -385,7 +462,7 @@ gst_hailo_round_robin_request_new_pad(GstElement *element, GstPadTemplate *templ
     }
     case GST_HAILO_ROUND_ROBIN_MODE_NON_BLOCKING:
     {
-        gst_pad_set_chain_function(sinkpad, GST_DEBUG_FUNCPTR(gst_hailo_round_robin_sink_chain_non_blocking_mode));
+        gst_pad_set_chain_function(sinkpad, GST_DEBUG_FUNCPTR(gst_hailo_round_robin_sink_chain_preroll)); // this will be changed to non-blocking mode after specific number of buffers
         break;
     }
     }
@@ -396,9 +473,11 @@ gst_hailo_round_robin_request_new_pad(GstElement *element, GstPadTemplate *templ
     GST_OBJECT_FLAG_SET(sinkpad, GST_PAD_FLAG_PROXY_CAPS);
     GST_OBJECT_FLAG_SET(sinkpad, GST_PAD_FLAG_PROXY_ALLOCATION);
 
-    hailo_round_robin->mutexes.emplace_back(std::make_unique<std::mutex>());
+    hailo_round_robin->mutexes_blocking.emplace_back(std::make_unique<std::mutex>());
+    hailo_round_robin->mutexes_non_blocking.emplace_back(std::make_unique<std::mutex>());
     hailo_round_robin->pad_queues.emplace_back(std::make_unique<std::queue<GstBuffer *>>()); // create a new queue for the new pad
-    hailo_round_robin->condition_vars.emplace_back(std::make_unique<std::condition_variable>());
+    hailo_round_robin->condition_vars_blocking.emplace_back(std::make_unique<std::condition_variable>());
+    hailo_round_robin->condition_vars_non_blocking.emplace_back(std::make_unique<std::condition_variable>());
 
     gst_pad_set_active(sinkpad, TRUE);
 
@@ -446,9 +525,98 @@ gst_hailo_round_robin_release_pad(GstElement *element, GstPad *pad)
     GST_DEBUG_OBJECT(hailo_round_robin, "releasing pad %s:%s", GST_DEBUG_PAD_NAME(pad));
     gst_pad_set_active(pad, FALSE);
 
-    if (hailo_round_robin->condition_vars[get_pad_num(pad)] != NULL)
-        hailo_round_robin->condition_vars[get_pad_num(pad)]->notify_all();
+    if (hailo_round_robin->condition_vars_blocking[get_pad_num(pad)] != NULL)
+        hailo_round_robin->condition_vars_blocking[get_pad_num(pad)]->notify_all();
+
+    if (hailo_round_robin->condition_vars_non_blocking[get_pad_num(pad)] != NULL)
+        hailo_round_robin->condition_vars_non_blocking[get_pad_num(pad)]->notify_all();
     gst_element_remove_pad(GST_ELEMENT_CAST(hailo_round_robin), pad);
+}
+
+static GstFlowReturn
+gst_hailo_round_robin_sink_chain_preroll(GstPad *pad, GstObject *parent, GstBuffer *buf)
+{
+    GstFlowReturn ret = GST_FLOW_ERROR;
+    GstHailoRoundRobin *hailo_round_robin = GST_HAILO_ROUND_ROBIN_CAST(parent);
+
+    size_t pad_num = get_pad_num(pad);
+    if (hailo_round_robin->current_pad_num != pad_num)
+    {
+        // Wait for the turn of this pad.
+        if (hailo_round_robin->condition_vars_blocking[pad_num] != NULL)
+        {
+            std::unique_lock lock(*hailo_round_robin->mutexes_blocking[pad_num].get());
+            hailo_round_robin->condition_vars_blocking[pad_num]->wait(lock);
+        }
+        else
+        {
+            gst_buffer_unref(buf);
+            return ret;
+        }
+
+        // If condition variable got notified but it is not this pad's turn, raise an error.
+        if ((hailo_round_robin->current_pad_num != pad_num) && (get_buffer_counter_value(hailo_round_robin) != -1))
+        {
+            GST_ERROR_OBJECT(hailo_round_robin,
+                             "Tried to send buf on pad %zu while current pad should be %zu, dropping buffer!",
+                             pad_num, hailo_round_robin->current_pad_num);
+            gst_buffer_unref(buf);
+            return ret;
+        }
+    }
+
+    buf = gst_buffer_make_writable(buf);
+
+    gchar *pad_name = gst_pad_get_name(pad);
+    gchar *stream_id = gst_pad_get_stream_id(pad);
+
+    // Add stream meta to the buffer including the pad name and stream id.
+    gst_buffer_add_hailo_stream_meta(buf, pad_name, stream_id);
+
+    // Forward sticky events.
+    gst_pad_sticky_events_foreach(pad, forward_events, hailo_round_robin->srcpad);
+
+    // Push out_buffer forward.
+    ret = gst_pad_push(hailo_round_robin->srcpad, buf);
+
+    increment_buffer_counter_value(hailo_round_robin); // increment only if not equal to -1
+
+    if (get_buffer_counter_value(hailo_round_robin) == hailo_round_robin->mutexes_blocking.size() * hailo_round_robin->preroll_frames) // 10 buffers per pad
+    {
+        set_buffer_counter_value(hailo_round_robin, -1); // don't use it anymore
+        std::thread schedule_thread(schedule, hailo_round_robin);
+        hailo_round_robin->thread = std::move(&schedule_thread);
+        hailo_round_robin->thread->detach();
+        set_chain_to_all_pads(hailo_round_robin, gst_hailo_round_robin_sink_chain_non_blocking_mode);
+        hailo_round_robin->mode = GST_HAILO_ROUND_ROBIN_MODE_NON_BLOCKING;
+        hailo_round_robin->current_pad_num = 0;
+
+        // notify all pads that are waiting in the blocking mode
+        for (size_t i = 0; i < hailo_round_robin->mutexes_blocking.size(); i++)
+        {
+            if (hailo_round_robin->condition_vars_blocking[i] != NULL)
+                hailo_round_robin->condition_vars_blocking[i]->notify_all();
+        }
+    }
+
+    g_free(pad_name);
+    g_free(stream_id);
+
+    if (get_buffer_counter_value(hailo_round_robin) != -1)
+    {
+        hailo_round_robin->current_pad_num++;
+        if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes_blocking.size())
+            hailo_round_robin->current_pad_num = 0;
+
+        while (hailo_round_robin->condition_vars_blocking[hailo_round_robin->current_pad_num] == NULL)
+        {
+            hailo_round_robin->current_pad_num++;
+            if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes_blocking.size())
+                hailo_round_robin->current_pad_num = 0;
+        }
+        hailo_round_robin->condition_vars_blocking[hailo_round_robin->current_pad_num]->notify_one();
+    }
+    return ret;
 }
 
 static GstFlowReturn
@@ -461,10 +629,10 @@ gst_hailo_round_robin_sink_chain_blocking_mode(GstPad *pad, GstObject *parent, G
     if (hailo_round_robin->current_pad_num != pad_num)
     {
         // Wait for the turn of this pad.
-        if (hailo_round_robin->condition_vars[pad_num] != NULL)
+        if (hailo_round_robin->condition_vars_blocking[pad_num] != NULL)
         {
-            std::unique_lock lock(*hailo_round_robin->mutexes[pad_num].get());
-            hailo_round_robin->condition_vars[pad_num]->wait(lock);
+            std::unique_lock lock(*hailo_round_robin->mutexes_blocking[pad_num].get());
+            hailo_round_robin->condition_vars_blocking[pad_num]->wait(lock);
         }
         else
         {
@@ -500,19 +668,17 @@ gst_hailo_round_robin_sink_chain_blocking_mode(GstPad *pad, GstObject *parent, G
     g_free(pad_name);
     g_free(stream_id);
 
-    // Update current pad num.
     hailo_round_robin->current_pad_num++;
-    if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes.size())
+    if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes_blocking.size())
         hailo_round_robin->current_pad_num = 0;
 
-    while (hailo_round_robin->condition_vars[hailo_round_robin->current_pad_num] == NULL)
+    while (hailo_round_robin->condition_vars_blocking[hailo_round_robin->current_pad_num] == NULL)
     {
         hailo_round_robin->current_pad_num++;
-        if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes.size())
+        if (hailo_round_robin->current_pad_num == hailo_round_robin->mutexes_blocking.size())
             hailo_round_robin->current_pad_num = 0;
     }
-    hailo_round_robin->condition_vars[hailo_round_robin->current_pad_num]->notify_one();
-
+    hailo_round_robin->condition_vars_blocking[hailo_round_robin->current_pad_num]->notify_one();
     return ret;
 }
 
@@ -544,11 +710,11 @@ gst_hailo_round_robin_sink_chain_non_blocking_mode(GstPad *pad, GstObject *paren
     GstHailoRoundRobin *hailo_round_robin = GST_HAILO_ROUND_ROBIN_CAST(parent);
     size_t pad_num = get_pad_num(pad);
 
-    if (hailo_round_robin->condition_vars[pad_num] != NULL)
+    if (hailo_round_robin->condition_vars_non_blocking[pad_num] != NULL)
     {
-        std::unique_lock lock(*hailo_round_robin->mutexes[pad_num].get());
-        hailo_round_robin->condition_vars[pad_num]->wait(lock, [hailo_round_robin, pad_num]
-                                                         { return hailo_round_robin->pad_queues[pad_num]->size() < 3; });
+        std::unique_lock lock(*hailo_round_robin->mutexes_non_blocking[pad_num].get());
+        hailo_round_robin->condition_vars_non_blocking[pad_num]->wait(lock, [hailo_round_robin, pad_num]
+                                                                      { return hailo_round_robin->pad_queues[pad_num]->size() < hailo_round_robin->queue_size; });
 
         hailo_round_robin->pad_queues[pad_num]->push(buf);
     }
@@ -583,8 +749,10 @@ gst_hailo_round_robin_sink_event(GstPad *pad, GstObject *parent, GstEvent *event
         {
             GST_OBJECT_LOCK(hailo_round_robin);
             fpad->got_eos = TRUE;
-            hailo_round_robin->condition_vars[pad_num]->notify_all();
-            hailo_round_robin->condition_vars[pad_num] = NULL;
+            hailo_round_robin->condition_vars_blocking[pad_num]->notify_all();
+            hailo_round_robin->condition_vars_blocking[pad_num] = NULL;
+            hailo_round_robin->condition_vars_non_blocking[pad_num]->notify_all();
+            hailo_round_robin->condition_vars_non_blocking[pad_num] = NULL;
             forward = gst_hailo_round_robin_all_sinkpads_eos_unlocked(hailo_round_robin);
             GST_OBJECT_UNLOCK(hailo_round_robin);
         }
@@ -638,24 +806,21 @@ gst_hailo_round_robin_change_state(GstElement *element, GstStateChange transitio
 
     switch (transition)
     {
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-    {
-        if (hailo_round_robin->mode == GST_HAILO_ROUND_ROBIN_MODE_NON_BLOCKING)
-        {
-            std::thread schedule_thread(schedule, hailo_round_robin);
-            hailo_round_robin->thread = std::move(&schedule_thread);
-            hailo_round_robin->thread->detach();
-            break;
-        }
-    }
-    case GST_STATE_CHANGE_PAUSED_TO_READY:
+    case GST_STATE_CHANGE_READY_TO_NULL:
     {
         if (hailo_round_robin->mode != GST_HAILO_ROUND_ROBIN_MODE_FUNNEL_MODE)
         {
             hailo_round_robin->stop_thread = true;
-            for (uint i = 0; i < hailo_round_robin->condition_vars.size(); i++)
-                if (hailo_round_robin->condition_vars[i] != NULL)
-                    hailo_round_robin->condition_vars[i]->notify_all();
+            for (uint i = 0; i < hailo_round_robin->condition_vars_blocking.size(); i++)
+            {
+                if (hailo_round_robin->condition_vars_blocking[i] != NULL)
+                    hailo_round_robin->condition_vars_blocking[i]->notify_all();
+            }
+            for (uint i = 0; i < hailo_round_robin->condition_vars_non_blocking.size(); i++)
+            {
+                if (hailo_round_robin->condition_vars_non_blocking[i] != NULL)
+                    hailo_round_robin->condition_vars_non_blocking[i]->notify_all();
+            }
             break;
         }
     }
