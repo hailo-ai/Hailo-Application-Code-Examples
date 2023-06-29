@@ -118,7 +118,7 @@ public:
                                                tensor->height(),
                                                num_classes(tensor->features()),
                                                anchors,
-                                               false,
+                                               perform_sigmoid,
                                                label_offset,
                                                is_uint16,
                                                tensor){};
