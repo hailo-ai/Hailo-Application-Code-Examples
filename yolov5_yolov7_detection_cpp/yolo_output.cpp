@@ -42,9 +42,9 @@ uint YoloOutputLayer::get_class_prob(uint row, uint col, uint anchor, uint class
 {
     uint channel = _tensor->features() / NUM_ANCHORS * anchor + CLASS_CHANNEL_OFFSET + class_id - 1;
     if (_is_uint16)
-        return _tensor->get_uint16(row, col, channel);
-    else
         return _tensor->get(row, col, channel);
+    else
+        return _tensor->get_uint8(row, col, channel);
 }
 
 float Yolov5OL::get_class_conf(uint prob_max)
