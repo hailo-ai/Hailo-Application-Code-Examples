@@ -70,7 +70,7 @@ def get_label(class_id):
 def draw_detection(draw, d, c, s, color, scale_factor):
     """Draw box and label for 1 detection."""
     if args.labels is not None:
-        if args.arch == 'yolo_v8' or  args.arch == 'yolo_v5_nms':
+        if args.arch == 'yolo_v8' or args.arch == 'yolo_v5_nms':
             label = get_label(c+1) + ": " + "{:.2f}".format(s) + '%'
         else:
             label = get_label(c) + ": " + "{:.2f}".format(s) + '%'
@@ -82,7 +82,7 @@ def draw_detection(draw, d, c, s, color, scale_factor):
     draw.text((xmin * scale_factor + 4, ymin * scale_factor + 4), label, fill=color, font=font)
     return label
 
-def post_process(detections, image, id, output_path, width, height, min_score=0.4, scale_factor=1):
+def post_process(detections, image, id, output_path, width, height, min_score=0.45, scale_factor=1):
     COLORS = np.random.randint(0, 255, size=(100, 3), dtype=np.uint8)
     boxes = np.array(detections['detection_boxes'])[0]
     classes = np.array(detections['detection_classes'])[0].astype(int)
@@ -159,36 +159,20 @@ def postproc_yolov8(height, width, anchors, meta_arch, num_of_classes, raw_detec
 
 def postproc_yolov3(height, width, anchors, meta_arch, num_of_classes, raw_detections):
     raw_detections_keys = list(raw_detections.keys())
-    raw_detections_keys.sort()
+    raw_detections_keys.sort(reverse=True)
     
     post_proc = YoloPostProc(img_dims=(height,width), 
                             anchors=anchors,
                             meta_arch=meta_arch, 
                             classes=num_of_classes,
-                            nms_iou_thresh=0.65,
+                            nms_iou_thresh=0.45,
                             score_threshold=0.01,
                             labels_offset=1,
                             **kwargs)
-
-    scales = [scale for scale in raw_detections_keys if 'scales' in scale]
-    centers = [center for center in raw_detections_keys if 'centers' in center]
-    probs = [prob for prob in raw_detections_keys if 'probs' in prob]
-    objs = [obj for obj in raw_detections_keys if 'obj' in obj]
-
-    # The detections that go in the postprocessing should have very specific order for the postprocessing to succeed.
-    # It is reccomeneded NOT to change the below order
-    detections = [raw_detections[centers[2]],
-                    raw_detections[scales[2]],
-                    raw_detections[objs[2]],
-                    raw_detections[probs[2]],
-                    raw_detections[centers[1]],
-                    raw_detections[scales[1]],
-                    raw_detections[objs[1]],
-                    raw_detections[probs[1]],
-                    raw_detections[centers[0]],
-                    raw_detections[scales[0]],
-                    raw_detections[objs[0]],
-                    raw_detections[probs[0]]]
+    
+    detections = []
+    for raw_det in raw_detections_keys:
+        detections.append(raw_detections[raw_det])
 
     return post_proc.postprocessing(detections, **kwargs)
                     
@@ -200,8 +184,8 @@ def postproc_yolov4(height,width, anchors, meta_arch, num_of_classes, raw_detect
                         anchors=anchors,
                         meta_arch=meta_arch, 
                         classes=num_of_classes,
-                        nms_iou_thresh=0.3,
-                        score_threshold=0.1,
+                        nms_iou_thresh=0.45,
+                        score_threshold=0.01,
                         labels_offset=1,
                         **kwargs)
     
@@ -307,7 +291,6 @@ def letterbox_image(image, size):
     scaled_w = int(img_w * scale)
     scaled_h = int(img_h * scale)
     image = image.resize((scaled_w, scaled_h), Image.BICUBIC)
-    # new_image = Image.new('RGB', size, (128,128,128))
     new_image = Image.new('RGB', size, (114,114,114))
     new_image.paste(image, ((model_input_w - scaled_w) // 2, (model_input_h - scaled_h) // 2))
     return new_image
@@ -404,7 +387,7 @@ with PcieDevice(devices[0]) as target:
             with network_group.activate(network_group_params):
                 raw_detections = infer_pipeline.infer(input_data)
                 
-                if args.arch == 'yolo_v5_nms':
+                if len(outputs) == 1 and 'nms' in outputs[0].name: 
                     results = post_nms_infer(raw_detections, outputs[0].name)
                 else:
                     results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
