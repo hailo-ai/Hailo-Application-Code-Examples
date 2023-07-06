@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
                 InputVStreamParams, OutputVStreamParams, FormatType)
 from zenlog import log
 from PIL import Image, ImageDraw, ImageFont
@@ -357,13 +357,13 @@ else:
         raise ValueError(error)
 
 
-devices = PcieDevice.scan_devices()
+devices = Device.scan()
 hef = HEF(args.hef)
 
 inputs = hef.get_input_vstream_infos()
 outputs = hef.get_output_vstream_infos()
 
-with PcieDevice(devices[0]) as target:
+with VDevice(device_ids=devices) as target:
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
     network_group = target.configure(hef, configure_params)[0]
     network_group_params = network_group.create_params()
