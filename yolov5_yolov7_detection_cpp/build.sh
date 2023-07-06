@@ -14,7 +14,7 @@ for ARCH in x86_64 # aarch64
 do
     echo "-I- Building ${ARCH}"
     mkdir -p build/${ARCH}
-    HAILORT_VER=4.10.0 cmake -H. -Bbuild/${ARCH} -DARCH=${ARCH} -DCMAKE_C_COMPILER=${COMPILER[${ARCH}]}
+    cmake -H. -Bbuild/${ARCH}
     cmake --build build/${ARCH}
 done
 
