@@ -10,7 +10,7 @@ yolov3, yolov3_gluon, yolov4_leaky, yolov5s, yolov5m_wo_spp, yolox_l_leaky, yolo
 numpy  
 zenlog  
 Pillow  
-hailo_platform (installed from the HailoRT .whl) (tested on version 4.14.0)  
+hailo_platform >= 4.14.0 (installed from the HailoRT .whl, tested on version 4.14.0)  
 Hailo Model Zoo prerequesities (tested on version 2.8.0)
 
 Install the hailo model-zoo, and hailort whl, and then the requirements:
