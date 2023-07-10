@@ -34,6 +34,7 @@ args = parser.parse_args()
 
 kwargs = {}
 kwargs['device_pre_post_layers'] = None
+is_nms = False
 
 
 ## strides - Constant scalar per bounding box for scaling. One for each anchor by size of the anchor values
@@ -70,7 +71,7 @@ def get_label(class_id):
 def draw_detection(draw, d, c, s, color, scale_factor):
     """Draw box and label for 1 detection."""
     if args.labels is not None:
-        if args.arch == 'yolo_v8' or args.arch == 'yolo_v5_nms':
+        if is_nms:
             label = get_label(c+1) + ": " + "{:.2f}".format(s) + '%'
         else:
             label = get_label(c) + ": " + "{:.2f}".format(s) + '%'
@@ -387,7 +388,8 @@ with VDevice(device_ids=devices) as target:
             with network_group.activate(network_group_params):
                 raw_detections = infer_pipeline.infer(input_data)
                 
-                if len(outputs) == 1 and 'nms' in outputs[0].name: 
+                if len(outputs) == 1 and 'nms' in outputs[0].name:
+                    is_nms = True 
                     results = post_nms_infer(raw_detections, outputs[0].name)
                 else:
                     results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
