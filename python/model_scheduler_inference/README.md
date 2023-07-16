@@ -19,4 +19,4 @@ hailo_platform (installed from the HailoRT .whl of version >= 4.14.0)
 NOTE: This is a very basic example meant for basis of a Python inference code using the Model Scheduler. You are more then welcome to change it to suite your needs.
 
 
-For more information, run ./hailo_inference_scheduler.py -h
+For more information, run ```./hailo_inference_scheduler.py -h```
