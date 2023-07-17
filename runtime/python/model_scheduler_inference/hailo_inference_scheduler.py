@@ -9,11 +9,11 @@ from zenlog import log
 import psutil
 
 from multiprocessing import Process
-from hailo_platform import (HEF, VDevice, HailoStreamInterface, ConfigureParams, InputVStreamParams, InputVStreams,
-                            OutputVStreamParams, OutputVStreams, HailoSchedulingAlgorithm, FormatType)
+from hailo_platform import (HEF, VDevice, HailoStreamInterface, ConfigureParams, InferVStreams, InputVStreamParams,
+                            OutputVStreamParams, HailoSchedulingAlgorithm, FormatType)
 
 parser = argparse.ArgumentParser(description='Running a Hailo + ONNXRUntime inference')
-parser.add_argument('hef', help="HEF file path")
+parser.add_argument('hefs', nargs='*', help="Path to the HEF files to be inferenced")
 parser.add_argument('--input-images', help="Images path to perform inference on. Could be either a single image or a folder containing the images. In case the input path is not defined, the input will be a 300 randomly generated tensors.")
 parser.add_argument('--output-images-path', help="Inferenced output images folder path. If no input images were defined this will have no effect.")
 parser.add_argument('--use-multi-process', action='store_true', help="Use the Multi-Process service of HailoRT along with the Model Scheduler.")
@@ -28,25 +28,11 @@ def post_processing(inference_output, i):
 
 # ---------------- Inferences threads functions -------------- #
 
-def send(configured_network, images_list, num_images):
-    vstreams_params = InputVStreamParams.make_from_network_group(configured_network, quantized=False, format_type=FormatType.FLOAT32)
-    print('Performing inference on input images...\n')
-    with InputVStreams(configured_network, vstreams_params) as vstreams:
-        vstream_to_buffer = {vstream: np.ndarray([1] + list(vstream.shape), dtype=vstream.dtype) for vstream in vstreams}
-        for i in range(num_images):
-            for vstream, _ in vstream_to_buffer.items():
-                data = np.expand_dims(images_list[i], axis=0).astype(np.float32)
-                vstream.send(data)
-
-                
-def recv(configured_network, num_images):
-    vstreams_params = OutputVStreamParams.make_from_network_group(configured_network, quantized=False, format_type=FormatType.FLOAT32)
-    with OutputVStreams(configured_network, vstreams_params) as vstreams:
-        for i in range(num_images):
-            data = []
-            for vstream in vstreams:
-                data.append(vstream.recv())
-            post_processing(data, i)
+def infer(network_group, input_vstreams_params, output_vstreams_params, images):
+    with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
+        for idx, image in enumerate(images):
+            infer_results = infer_pipeline.infer(np.expand_dims(image, axis=0).astype(np.float32))
+            post_processing(infer_results, idx)
 
 # ----------------------------------------------------------- #
 
@@ -93,55 +79,68 @@ def create_vdevice_params():
 
 check_if_service_enabled('hailort_service')
 
-hef = HEF(args.hef)
-height, width, channels = hef.get_input_vstream_infos()[0].shape
+hefs = []
+all_images = []
+for hef_path in args.hefs:
+    hef_name = hef_path.split('/')[-1].split('.')[0]
+    hef = HEF(hef_path)
+    hefs.append(hef)
+    
+    log.info(f'HEF name: {hef_name}')
+    [log.info('Input  layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_input_vstream_infos()]
+    [log.info('Output layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_output_vstream_infos()]
+    print()
+    
+    height, width, channels = hef.get_input_vstream_infos()[0].shape
 
-images_path = args.input_images
+    images_path = args.input_images
 
-images = []
-if not images_path:
-    images = np.zeros((300, height, width, channels), dtype=np.float32)
-else:
-    if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp')):
-        images.append(Image.open(images_path))
-    if (os.path.isdir(images_path)):
-        for image in os.listdir(images_path):
-            if (image.endswith(".jpg") or image.endswith(".png") or images_path.endswith('.bmp')):
-                images.append(Image.open(os.path.join(images_path, image)))
-
-
-num_images = len(images)
+    images = []
+    if not images_path:
+        images = np.zeros((300, height, width, channels), dtype=np.float32)
+    else:
+        if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp')):
+            images.append(Image.open(images_path))
+        if (os.path.isdir(images_path)):
+            for image in os.listdir(images_path):
+                if (image.endswith(".jpg") or image.endswith(".png") or images_path.endswith('.bmp')):
+                    images.append(Image.open(os.path.join(images_path, image)))
+    
+    all_images.append(images)
 
 params = create_vdevice_params()
-hef = HEF(args.hef)
 
 with VDevice(params) as target:
+    for i, hef in enumerate(hefs):
         configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
         
         network_group = target.configure(hef, configure_params)[0]
-        network_group_params = network_group.create_params()
         
-        [log.info('Input  layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_input_vstream_infos()]
-        [log.info('Output layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_output_vstream_infos()]
+        infer_processes = []
+        
+        input_vstreams_params = InputVStreamParams.make(network_group, quantized=False, format_type=FormatType.FLOAT32)
+        output_vstreams_params = OutputVStreamParams.make(network_group, quantized=False, format_type=FormatType.UINT8)
         
         # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
         if images_path:
-            resized_images = [set_resized_input(lambda size: image.resize(size, Image.LANCZOS), width=width, height=height) for image in images]
+            height, width, _ = hef.get_input_vstream_infos()[0].shape
+            resized_images = [set_resized_input(lambda size: image.resize(size, Image.LANCZOS), width=width, height=height) for image in all_images[i]]
         else:
-            resized_images = images
+            resized_images = all_images[i]
         
-        send_process = Process(target=send, args=(network_group, resized_images, num_images))
-        recv_process = Process(target=recv, args=(network_group, num_images))
-        start_time = time.time()
-        recv_process.start()
-        send_process.start()
+        infer_processes.append(Process(target=infer, args=(network_group, input_vstreams_params, output_vstreams_params, resized_images)))
         
-        recv_process.join()
-        send_process.join()
+    start_time = time.time()
+    
+    for i in range(len(infer_processes)):
+        infer_processes[i].start()
+    for i in range(len(infer_processes)):    
+        infer_processes[i].join()
 
         end_time = time.time()
 print('Inference was successful!\n')
+
 log.info('-------------------------------------')
 log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
-log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
+log.info(' Average FPS:     {:.3f}'.format(len(all_images[0])/(end_time - start_time)))
 log.info('-------------------------------------')
