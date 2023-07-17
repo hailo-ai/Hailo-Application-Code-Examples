@@ -119,7 +119,7 @@ with VDevice(params) as target:
         infer_processes = []
         
         input_vstreams_params = InputVStreamParams.make(network_group, quantized=False, format_type=FormatType.FLOAT32)
-        output_vstreams_params = OutputVStreamParams.make(network_group, quantized=False, format_type=FormatType.UINT8)
+        output_vstreams_params = OutputVStreamParams.make(network_group, quantized=False, format_type=FormatType.FLOAT32)
         
         # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
         if images_path:
