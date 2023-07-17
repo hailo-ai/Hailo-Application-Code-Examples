@@ -14,7 +14,7 @@ multiprocessing
 hailo_platform (installed from the HailoRT .whl of version >= 4.14.0)
 
 ## Running the example:
-```./hailo_inference_scheduler.py /path/to/hef/file [--input-images path/to/image/or/images/folder]  [--use-multi-process]```
+```./hailo_inference_scheduler.py /path/to/hef/file0 [/path/to/hef/file1 /path/to/hef/file2 ...] [--input-images path/to/image/or/images/folder]  [--use-multi-process]```
 
 NOTE: This is a very basic example meant for basis of a Python inference code using the Model Scheduler. You are more then welcome to change it to suite your needs.
 
