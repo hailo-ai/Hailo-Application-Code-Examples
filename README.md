@@ -13,3 +13,6 @@ Under the `model_compilation` directory you would find
 * Examples for converting a naitve mode in ONNX or tflite formats to Hailo executable - HEF
 * Complete optimization flow, including quantization
 
+Under the 'resources' directory you would find
+* documents for specific issues
+* different files & general stuff
