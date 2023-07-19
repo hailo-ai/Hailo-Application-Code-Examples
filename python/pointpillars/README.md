@@ -14,14 +14,15 @@ IPython.display.Image('./hailo_assisted_model_front.png', width=300)
 
 # OpenPCdet - overview
 [https://github.com/open-mmlab/OpenPCDet]
-<img src="openpcdet_1.png" alt="drawing" width="40%"/>
+
+<img src="openpcdet_1.png" alt="drawing" width="50%"/>
 <img src="openpcdet_2.png" alt="drawing" width="60%"/>
 
 
 ### We map to Hailo the 2D backbone and detection head:
-<img src="openpcdet_3.png" alt="drawing" width="60%"/>
 The purple bracket marks the part of net we can offload to any Hailo device ("Hx" = H8,H15,..). 
 In case of PointPillars, that makes the lion's share of TOPS, as 3D part is minimal.The 3D parts of this and other nets can be Hailo-mapped too, but with a significant task-specific effort required to achieve good efficiency.
+<img src="openpcdet_3.png" alt="drawing" width="50%"/>
 
 # Setup
 
