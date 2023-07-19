@@ -1,6 +1,6 @@
 # Intro
 
-This notebook is a minimalistic proof-of-concept showing how a Hailo device can offload the heavy 2D-convolutional part of a point-cloud-input 3D-object-detection network. For this example we use the PointPillars (PP) network from OpenPCDet repo, a modular ecosystem with many 3D networks. The pre/post computation is running in PyTorch using native OpenPCDet code. Almost all of it on CPU, sans the 3D-NMS op which unfortunately is compliled for cuda only. Some of the integration code resides in the openpcdet2hailo_uitls.py. Some integration details, i.e. how we "hook" Hailo into the pytorch model are product of an exploration process of the network as given by OpenPCDet.  See last chapter for an outline of how this has been done, to get a roadmap of how to replicate exploration to other (non-PP) 3D network out of OpenPCdet collection, so that to maximally offload ANY openpcdet 3d-detection net to hailo.
+This is a minimalistic proof-of-concept showing how a Hailo device can offload the heavy 2D-convolutional part of a 3D-object-detection network operating on point-clouds. For this example we use the PointPillars (PP) network from OpenPCDet repo, a modular ecosystem with many 3D networks. The pre/post computation is running in PyTorch using native OpenPCDet code. Almost all of it on CPU, sans the 3D-NMS op which unfortunately is compliled for cuda only. 
 
 ### Final result
 Processing a point cloud to get 3D boxes - similar result when executing part of network on Hailo.
@@ -30,14 +30,14 @@ In case of PointPillars, that makes the lion's share of TOPS, as 3D part is mini
 For the notebook to run properly, please first:
 
 1. Install CUDA and Pytorch. Tested configs:
-    a.) torch=1.12.1+cu113 (CUDA 11.3)
-    b.) torch=1.12.1+cu102 (CUDA 10.2)
-1. Clone & install OpenPCDet: (also consult repo instructions)
-   pip install -r requirements
-   pip install spconv kornia
-   python setup.py develop
-   (tested w. commit a68aaa656 04-Apr-23) 
-1. Install Mayavi for 3D visualization of point clouds and 3D boxes
+    1. torch=1.12.1+cu113 (CUDA 11.3)
+    1. torch=1.12.1+cu102 (CUDA 10.2)
+1. Clone & install OpenPCDet: (tested w. commit a68aaa656 04-Apr-23) 
+    `pip install -r requirements
+     pip install spconv kornia
+     python setup.py develop`   
+1. Install Mayavi for 3D visualization of point clouds and 3D boxes. Installing and using Mayavi and its dependencies (PyQT5) might be tricky, especially working remotely on a server, so in the notebook code we create visual results as png files without any windows. Still, it might help to prepend the *jupyter-notebook* launch command with instructions to skip checking for gui toolkit (s.a. Qt) and, if no screen ("headless"), also creating and working against a virtual display, like so:
+`ETS_TOOLKIT=null xvfb-run --server-args="-screen 0 1024x768x24" jupyter notebook ... `
 
-Download pretrained PointPillar pytorch model from the link below into <openpcdet-clone-location>:
+1. Download pretrained PointPillar pytorch model from the link below into <openpcdet-clone-location>:
 [https://drive.google.com/file/d/1wMxWTpU1qUoY3DsCH31WJmvJxcjFXKlm/view?usp=sharing]
