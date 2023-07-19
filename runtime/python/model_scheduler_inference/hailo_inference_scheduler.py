@@ -63,7 +63,7 @@ def check_if_service_enabled(process_name):
             pass
     
     print('HailoRT Schduler service is disabled. Enabling service...')
-    os.system('sudo systemctl daemon-reload & sudo systemctl enable --now hailort.service')
+    os.system('sudo systemctl daemon-reload && sudo systemctl enable --now hailort.service')
     
 
 def create_vdevice_params():
