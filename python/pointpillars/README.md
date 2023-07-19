@@ -6,11 +6,12 @@ This notebook is a minimalistic proof-of-concept showing how a Hailo device can 
 Processing a point cloud to get 3D boxes - similar result when executing part of network on Hailo.
 Use the jupyter notebook to go through all steps towards this bottom line.
 Original result:
+
 <img src="./orig_model_front" alt="drawing" width="40%"/>
+
 Hailo Assisted:
+
 <img src="./hailo_assisted_model_front" alt="drawing" width="40%"/>
-IPython.display.Image('./orig_model_front.png', width=300)
-IPython.display.Image('./hailo_assisted_model_front.png', width=300) 
 
 # OpenPCdet - overview
 [https://github.com/open-mmlab/OpenPCDet]
