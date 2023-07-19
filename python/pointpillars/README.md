@@ -28,7 +28,7 @@ In case of PointPillars, that makes the lion's share of TOPS, as 3D part is mini
 
 # Setup
 
-For the notebook to run properly, please first:
+Run the notebook from a virtualenv prepared like so:
 
 1. Install CUDA and Pytorch. Tested configs:
     1. `pip install torch==1.12.1+cu113` (assuming CUDA 11.3) **OR**
@@ -44,5 +44,5 @@ For the notebook to run properly, please first:
 ETS_TOOLKIT=null xvfb-run --server-args="-screen 0 1024x768x24" jupyter notebook ...
 ```
 
-1. Download pretrained PointPillar pytorch model from the link below into <openpcdet-clone-location>:
+1. Download pretrained PointPillar pytorch model from the link below into your *openpcdet-clone-location*:
 [https://drive.google.com/file/d/1wMxWTpU1qUoY3DsCH31WJmvJxcjFXKlm/view?usp=sharing]
