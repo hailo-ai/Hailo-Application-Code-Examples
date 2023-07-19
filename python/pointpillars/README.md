@@ -23,6 +23,7 @@ Hailo Assisted:
 ### We map to Hailo the 2D backbone and detection head:
 The purple bracket marks the part of net we can offload to any Hailo device ("Hx" = H8,H15,..). 
 In case of PointPillars, that makes the lion's share of TOPS, as 3D part is minimal.The 3D parts of this and other nets can be Hailo-mapped too, but with a significant task-specific effort required to achieve good efficiency.
+
 <img src="./rsc/openpcdet_3.png" alt="drawing" width="50%"/>
 
 # Setup
@@ -30,8 +31,8 @@ In case of PointPillars, that makes the lion's share of TOPS, as 3D part is mini
 For the notebook to run properly, please first:
 
 1. Install CUDA and Pytorch. Tested configs:
-    1. torch=1.12.1+cu113 (CUDA 11.3)
-    1. torch=1.12.1+cu102 (CUDA 10.2)
+    1. `pip install torch==1.12.1+cu113` (assuming CUDA 11.3) **OR**
+    1. `pip install torch=1.12.1+cu102` (assuming CUDA 10.2)
 1. Clone & install OpenPCDet: (tested w. commit a68aaa656 04-Apr-23) 
     ```
      pip install -r requirements
