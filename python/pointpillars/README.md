@@ -33,10 +33,13 @@ For the notebook to run properly, please first:
     1. torch=1.12.1+cu113 (CUDA 11.3)
     1. torch=1.12.1+cu102 (CUDA 10.2)
 1. Clone & install OpenPCDet: (tested w. commit a68aaa656 04-Apr-23) 
-    `pip install -r requirements
+    `
+     pip install -r requirements
      pip install spconv kornia
-     python setup.py develop`   
+     python setup.py develop
+   `   
 1. Install Mayavi for 3D visualization of point clouds and 3D boxes. Installing and using Mayavi and its dependencies (PyQT5) might be tricky, especially working remotely on a server, so in the notebook code we create visual results as png files without any windows. Still, it might help to prepend the *jupyter-notebook* launch command with instructions to skip checking for gui toolkit (s.a. Qt) and, if no screen ("headless"), also creating and working against a virtual display, like so:
+
 `ETS_TOOLKIT=null xvfb-run --server-args="-screen 0 1024x768x24" jupyter notebook ... `
 
 1. Download pretrained PointPillar pytorch model from the link below into <openpcdet-clone-location>:
