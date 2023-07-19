@@ -7,23 +7,23 @@ Processing a point cloud to get 3D boxes - similar result when executing part of
 Use the jupyter notebook to go through all steps towards this bottom line.
 Original result:
 
-<img src="./orig_model_front" alt="drawing" width="40%"/>
+<img src="./rsc/orig_model_front.png" alt="drawing" width="40%"/>
 
 Hailo Assisted:
 
-<img src="./hailo_assisted_model_front" alt="drawing" width="40%"/>
+<img src="./rsc/hailo_assisted_model_front.png" alt="drawing" width="40%"/>
 
 # OpenPCdet - overview
 [https://github.com/open-mmlab/OpenPCDet]
 
-<img src="openpcdet_1.png" alt="drawing" width="50%"/>
-<img src="openpcdet_2.png" alt="drawing" width="60%"/>
+<img src="./rsc/openpcdet_1.png" alt="drawing" width="50%"/>
+<img src="./rsc/openpcdet_2.png" alt="drawing" width="60%"/>
 
 
 ### We map to Hailo the 2D backbone and detection head:
 The purple bracket marks the part of net we can offload to any Hailo device ("Hx" = H8,H15,..). 
 In case of PointPillars, that makes the lion's share of TOPS, as 3D part is minimal.The 3D parts of this and other nets can be Hailo-mapped too, but with a significant task-specific effort required to achieve good efficiency.
-<img src="openpcdet_3.png" alt="drawing" width="50%"/>
+<img src="./rsc/openpcdet_3.png" alt="drawing" width="50%"/>
 
 # Setup
 
