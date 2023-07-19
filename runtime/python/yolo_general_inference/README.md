@@ -4,14 +4,14 @@ The example takes one or more images, performs inference using the input HEF fil
 The example works with .jpg, .jpeg, .png and .bmp image files.  
 
 The example was tested with the following Hailo Models Zoo networks:  
-yolov3, yolov3_gluon, yolov4_leaky, yolov5m_wo_spp, yolox_l_leaky, yolov6n, yolov7  
+yolov3, yolov3_gluon, yolov4_leaky, yolov5s, yolov5m_wo_spp, yolox_l_leaky, yolov6n, yolov7, yolov7_tiny, yolov8m
 
 ## Prerequesities:  
 numpy  
 zenlog  
 Pillow  
-hailo_platform (installed from the HailoRT .whl) (tested on version 4.13.0)  
-Hailo Model Zoo prerequesities (tested on version 2.6.0)
+hailo_platform >= 4.14.0 (installed from the HailoRT .whl, tested on version 4.14.0)  
+Hailo Model Zoo prerequesities (tested on version 2.8.0)
 
 Install the hailo model-zoo, and hailort whl, and then the requirements:
 `pip install -r requiremets.txt`
