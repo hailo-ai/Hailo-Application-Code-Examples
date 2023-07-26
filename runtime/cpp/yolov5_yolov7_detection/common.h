@@ -42,7 +42,7 @@
 #define BOLDCYAN "\033[1m\033[36m"    /* Bold Cyan */
 #define BOLDWHITE "\033[1m\033[37m"   /* Bold White */
 
-
+template <typename T>
 class FeatureData {
 public:
     FeatureData(uint32_t buffers_size, float32_t qp_zp, float32_t qp_scale, uint32_t width, hailo_vstream_info_t vstream_info) :
@@ -50,7 +50,7 @@ public:
     {}
     static bool sort_tensors_by_size (std::shared_ptr<FeatureData> i, std::shared_ptr<FeatureData> j) { return i->m_width < j->m_width; };
 
-    DoubleBuffer m_buffers;
+    DoubleBuffer<T> m_buffers;
     float32_t m_qp_zp;
     float32_t m_qp_scale;
     uint32_t m_width;

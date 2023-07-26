@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(vstream_yolov7_example_cpp)
+project(vstream_yolov5_v7_example_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -20,10 +20,8 @@ find_package( OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
-    double_buffer.cpp
-    yolo_output.cpp
-    yolo_postprocess.cpp
-    yolov5_yolov7_inference.cpp
+    ./*.cpp
+    ./common/*.cpp
 )
 
 link_libraries(stdc++fs)
@@ -31,5 +29,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ONNXRUNTIME_INCLUDE_DIR})
 include_directories(rapidjson/include)
-target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS} -fconcepts)
 target_link_libraries(${PROJECT_NAME} HailoRT::libhailort ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS})
+

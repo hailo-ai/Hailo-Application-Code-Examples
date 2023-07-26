@@ -13,7 +13,8 @@ std::pair<uint, float> YoloOutputLayer::get_class(uint row, uint col, uint ancho
     uint selected_class_id = 1;
     for (uint class_id = label_offset; class_id <= _num_classes; class_id++)
     {
-        cls_prob = get_class_prob(row, col, anchor, class_id);
+        // cls_prob = get_class_prob(row, col, anchor, class_id);
+        cls_prob = (uint)get_class_prob(row, col, anchor, class_id);
         if (cls_prob > prob_max)
         {
             selected_class_id = class_id;
@@ -38,13 +39,13 @@ float YoloOutputLayer::sigmoid(float x)
     return 1.0f / (1.0f + expf(-x));
 }
 
-uint YoloOutputLayer::get_class_prob(uint row, uint col, uint anchor, uint class_id)
+float YoloOutputLayer::get_class_prob(uint row, uint col, uint anchor, uint class_id)
 {
     uint channel = _tensor->features() / NUM_ANCHORS * anchor + CLASS_CHANNEL_OFFSET + class_id - 1;
     if (_is_uint16)
-        return _tensor->get(row, col, channel);
+        return (float)_tensor->get_uint16(row, col, channel);
     else
-        return _tensor->get_uint8(row, col, channel);
+        return (float)_tensor->get(row, col, channel);
 }
 
 float Yolov5OL::get_class_conf(uint prob_max)

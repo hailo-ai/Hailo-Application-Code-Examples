@@ -2,11 +2,12 @@
  * Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
  * Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
  **/
+
 #pragma once
-#include "common/hailo_objects.hpp"
-#include "common/hailo_common.hpp"
+#include "hailo_objects.hpp"
+#include "hailo_common.hpp"
 #include "yolo_output.hpp"
-#include "common/labels/coco_eighty.hpp"
+#include "labels/coco_eighty.hpp"
 
 __BEGIN_DECLS
 
