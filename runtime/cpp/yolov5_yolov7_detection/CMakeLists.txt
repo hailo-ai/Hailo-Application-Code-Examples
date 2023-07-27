@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(vstream_yolov5_v7_example_cpp)
+project(vstream_yolov5_yolov7_example_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -20,8 +20,10 @@ find_package( OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
-    ./*.cpp
-    ./common/*.cpp
+    ./yolov5_yolov7_inference.cpp
+    ./common/yolo_hailortpp.cpp
+    ./common/yolo_output.cpp
+    ./common/yolo_postprocess.cpp
 )
 
 link_libraries(stdc++fs)
