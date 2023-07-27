@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include "yolo_postprocess.hpp"
-#include "common/nms.hpp"
+#include "nms.hpp"
 #include "json_config.hpp"
 
 #include "rapidjson/document.h"
@@ -143,7 +143,6 @@ public:
 private:
     std::vector<HailoTensorPtr> _tensors;
 };
-
 
 void yolov5(HailoROIPtr roi, void *params_void_ptr)
 {

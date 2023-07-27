@@ -2,8 +2,9 @@
  * Copyright (c) 2021-2022 Hailo Technologies Ltd. All rights reserved.
  * Distributed under the LGPL license (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
  **/
+
 #pragma once
-#include "common/hailo_objects.hpp"
+#include "hailo_objects.hpp"
 #include <iostream>
 
 /**
@@ -93,7 +94,8 @@ protected:
      * @param channel
      * @return uint
      */
-    virtual uint get_class_prob(uint row, uint col, uint anchor, uint class_id);
+    // virtual uint get_class_prob(uint row, uint col, uint anchor, uint class_id);
+    virtual float get_class_prob(uint row, uint col, uint anchor, uint class_id);
     /**
      * @brief Get the class conf object
      *
@@ -118,7 +120,7 @@ public:
                                                tensor->height(),
                                                num_classes(tensor->features()),
                                                anchors,
-                                               perform_sigmoid,
+                                               false,
                                                label_offset,
                                                is_uint16,
                                                tensor){};
