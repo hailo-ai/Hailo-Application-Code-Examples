@@ -1,6 +1,6 @@
-**Last HailoRT version checked - 4.12.0**
+**Last HailoRT version checked - 4.14.0**
 
-This is a HailoRT C++ API yolov5 & yolov7 detection example.
+This is a HailoRT C++ API yolov5 & yolov7 detection example. Note that this example also supports yolov5\v7 models with NMS on-Hailo. 
 
 The example does the following:
 
@@ -25,6 +25,8 @@ To compile the example run `./build.sh`
 To run the compiled example:
 
 `./build/x86_64/vstream_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4 -arch=ARCH` (where ARCH is yolov5 or yolov7)
+
+NOTE: When using a HEF file that was compiled with NMS on-Hailo, the `-arch` is redundant. For the regular compiled model, it is mandatory. 
 
 NOTE: You can also save the processed video by commenting in a few lines at the "post_processing_all" function in yolov5_yolov7_inference.cpp.
 
