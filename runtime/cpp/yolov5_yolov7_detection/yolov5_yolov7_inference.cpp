@@ -354,7 +354,6 @@ int main(int argc, char** argv) {
         std::cerr << "Failed to configure network group " << yolo_hef << std::endl;
         return network_group.status();
     }
-    // auto network_group = network_group_exp.release();
 
     auto input_vstreams_params = network_group.value()->make_input_vstream_params(QUANTIZED, FORMAT_TYPE_INPUT, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
     if (!input_vstreams_params) {
