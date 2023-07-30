@@ -6,17 +6,12 @@ if [ ! -d "$RAPIDJSON_DIRECTORY" ]; then
   git clone https://github.com/Tencent/rapidjson
 fi
 
-declare -A COMPILER=( [x86_64]=/usr/bin/gcc
-                      [aarch64]=/usr/bin/aarch64-linux-gnu-gcc
-                      [armv7l]=/usr/bin/arm-linux-gnueabi-gcc )
+declare -A COMPILER=( [x86_64]=/usr/bin/gcc )
 
-for ARCH in x86_64 # aarch64
-do
-    echo "-I- Building ${ARCH}"
-    mkdir -p build/${ARCH}
-    cmake -H. -Bbuild/${ARCH}
-    cmake --build build/${ARCH}
-done
+echo "-I- Building ${ARCH}"
+mkdir -p build/${ARCH}
+cmake -H. -Bbuild/${ARCH}
+cmake --build build/${ARCH}
 
 if [[ -f "hailort.log" ]]; then
     rm hailort.log
