@@ -1,6 +1,6 @@
 **Last HailoRT version checked - 4.14.0**
 
-This is a HailoRT C++ API yolov5seg detection example.
+This is a HailoRT C++ API yolov5seg detection + instance segmentation example.
 
 The example does the following:
 
@@ -14,7 +14,7 @@ Prints the object detected + confidence to the screen
 Prints statistics
 NOTE: Currently supports only devices connected on a PCIe link.
 
-Prequisites: OpenCV 4.2.X CMake >= 3.20 HailoRT >= 4.10.0 git - to clone the rapidjson repository
+Prequisites: OpenCV 4.2.X CMake >= 3.20 HailoRT >= 4.10.0 git - rapidjson repository is cloned when performing build.
 
 To compile the example run `./build.sh`
 
