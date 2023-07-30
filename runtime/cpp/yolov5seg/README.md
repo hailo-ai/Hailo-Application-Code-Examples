@@ -16,7 +16,7 @@ NOTE: Currently supports only devices connected on a PCIe link.
 
 Prequisites: OpenCV 4.2.X CMake >= 3.20 HailoRT >= 4.10.0 git - to clone the rapidjson repository
 
-To compile the example run ./build.sh
+To compile the example run `./build.sh`
 
 To run the compiled example:
 
