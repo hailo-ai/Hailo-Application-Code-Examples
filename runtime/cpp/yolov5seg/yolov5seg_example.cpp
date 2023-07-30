@@ -63,7 +63,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
                                 std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, 
                                 double org_height, double org_width)
 {
-    auto status = HAILO_SUCCESS;   
 
     std::sort(features.begin(), features.end(), &FeatureData<T>::sort_tensors_by_size);
 
@@ -119,7 +118,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
     postprocess_time = t_end - t_start;
     // video.release();
 
-    return status;
+    return HAILO_SUCCESS;
 }
 
 template <typename T>
@@ -274,9 +273,9 @@ void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<
 }
 
 
-Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolov_hef)
+Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yoloseg_hef)
 {
-    auto hef_exp = Hef::create(yolov_hef);
+    auto hef_exp = Hef::create(yoloseg_hef);
     if (!hef_exp) {
         return make_unexpected(hef_exp.status());
     }
@@ -343,13 +342,13 @@ int main(int argc, char** argv) {
         return network_group.status();
     }
 
-    auto input_vstreams_params = network_group.value()->make_input_vstream_params(QUANTIZED, FORMAT_TYPE_INPUT, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS*100, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    auto input_vstreams_params = network_group.value()->make_input_vstream_params(QUANTIZED, FORMAT_TYPE_INPUT, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
     if (!input_vstreams_params) {
         std::cerr << "Failed creating input vstreams " << input_vstreams_params.status() << std::endl;
         return input_vstreams_params.status();
     }
 
-    auto output_vstreams_params = network_group.value()->make_output_vstream_params(QUANTIZED, FORMAT_TYPE_OUTPUT, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS*100, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    auto output_vstreams_params = network_group.value()->make_output_vstream_params(QUANTIZED, FORMAT_TYPE_OUTPUT, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
     if (!output_vstreams_params) {
         std::cerr << "Failed creating vstreams " << output_vstreams_params.status() << std::endl;
         return output_vstreams_params.status();
