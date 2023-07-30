@@ -1,4 +1,4 @@
-Last HailoRT version checked - 4.14.0
+**Last HailoRT version checked - 4.14.0**
 
 This is a HailoRT C++ API yolov5seg detection example.
 
@@ -20,8 +20,9 @@ To compile the example run ./build.sh
 
 To run the compiled example:
 
-./build/x86_64/vstream_yolov5seg_example_cpp -hef=YOLOV5SEG_HEF_FILE.hef -input=VIDEO_FILE.mp4
 
-NOTE: You can also save the processed video by commenting in a few lines at the "post_processing_all" function in yolov5seg_example.cpp.
+`./build/x86_64/vstream_yolov5seg_example_cpp -hef=YOLOV5SEG_HEF_FILE.hef -input=VIDEO_FILE.mp4`
+
+NOTE: You can also save the processed video by commenting in a few lines at the `post_processing_all` function in yolov5seg_example.cpp.
 
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.
