@@ -17,17 +17,19 @@ This demo was tested on H15 EVB with Vision_Processor_SW_Package_2023_07.tar.gz
 - CMake >= 3.11
 
 ### Usage ###
-
 1. On the development machine, compile the example by running `./build.sh` and providing the toolchain folder location
 2. Get the required resources by running `./get_resources.sh`
 3. On the H15 platform create a dir called `yolov8_example`
 4. Copy the compiled binary and the downloaded resources from the development machine to the H15 yolov8_example dir.
- 
+
    `scp build/aarch64/yolov8_cross_compilation_h15 root@10.0.0.1:~/yolov8_example/`
+
    `scp resources/images/bus.jpg root@10.0.0.1:~/yolov8_example/`
+
    `scp resources/hefs/h15/yolov8s_h15.hef root@10.0.0.1:~/yolov8_example/`
-5. Run the example on the H15 machine - ./yolov8_cross_compilation_h15 -input=bus.jpg -hef=yolov8s_h15.hef -num=30
+
+5. Run the example on the H15 machine - `./yolov8_cross_compilation_h15 -input=bus.jpg -hef=yolov8s_h15.hef -num=30`
 6. The example will infer the bus.jpg frame 30 times, and generate an output file `output.jpg`
-7. copy the file back to the development machine to view the bounding boxes
+7. Copy the file back to the development machine to view the bounding boxes
 
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.  
