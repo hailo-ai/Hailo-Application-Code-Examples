@@ -27,7 +27,8 @@ This demo was tested on H15 EVB with Vision_Processor_SW_Package_2023_07.tar.gz
 1. On the development machine, compile the example by running `./build.sh` and providing the toolchain folder location
 2. Get the required resources by running `./get_resources.sh`
 3. On the H15 platform create a dir called `yolov8_example`
-4. Copy the compiled binary and the downloaded resources from the development machine to the H15 yolov8_example dir. 
+4. Copy the compiled binary and the downloaded resources from the development machine to the H15 yolov8_example dir.
+ 
    `scp build/aarch64/yolov8_cross_compilation_h15 root@10.0.0.1:~/yolov8_example/`
    `scp resources/images/bus.jpg root@10.0.0.1:~/yolov8_example/`
    `scp resources/hefs/h15/yolov8s_h15.hef root@10.0.0.1:~/yolov8_example/`
