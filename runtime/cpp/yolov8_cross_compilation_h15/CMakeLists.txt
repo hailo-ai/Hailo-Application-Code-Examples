@@ -1,3 +1,5 @@
+# This CMakeLists.txt may only run after sourcing the cross develeopment toolchain
+
 cmake_minimum_required(VERSION 3.11)
 project(yolov8_cross_compilation_h15)
 
