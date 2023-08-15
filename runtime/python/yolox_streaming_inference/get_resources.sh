@@ -25,6 +25,7 @@ VIDEO_FILES=(
     "detection13.mp4"
     "detection14.mp4"
 )
+
 HEF_FILE="yolox_s_leaky.hef"
 
 # Create the resources/hefs and resources/video directories if they do not exist
