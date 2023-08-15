@@ -11,13 +11,21 @@ HEF_URL="https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ModelZoo/Compiled/v2
 VIDEO_FILES=(
    "detection0.mp4"
    "detection1.mp4"
+   "detection2.mp4"
    "detection3.mp4"
    "detection4.mp4"
    "detection5.mp4"
    "detection6.mp4"
+   "detection7.mp4"
+   "detection8.mp4"
+   "detection9.mp4"
+   "detection10.mp4"
+   "detection11.mp4"
+   "detection12.mp4"
     "detection13.mp4"
     "detection14.mp4"
 )
+
 HEF_FILE="yolox_s_leaky.hef"
 
 # Create the resources/hefs and resources/video directories if they do not exist
