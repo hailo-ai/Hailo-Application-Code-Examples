@@ -57,12 +57,12 @@ def check_if_service_enabled(process_name):
     for proc in psutil.process_iter():
         try:
             if process_name.lower() in proc.name().lower():
-                print('HailoRT Schduler service is enabled!')
+                print('HailoRT Scheduler service is enabled!')
                 return
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     
-    print('HailoRT Schduler service is disabled. Enabling service...')
+    print('HailoRT Scheduler service is disabled. Enabling service...')
     os.system('sudo systemctl daemon-reload && sudo systemctl enable --now hailort.service')
     
 
