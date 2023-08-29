@@ -69,8 +69,9 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             std::cout << "Frame " << i << ", Detection: " << detection->get_label() << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
 
-        if (i == 0)
-		    cv::imwrite("output.jpg",frames[0]);
+        if (i == 0) {
+		cv::imwrite("output.jpg",frames[0]);
+	}
         frames[0].release();
         frames.erase(frames.begin());
     }
