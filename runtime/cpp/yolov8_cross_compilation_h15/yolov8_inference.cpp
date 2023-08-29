@@ -17,7 +17,6 @@
 
 constexpr bool QUANTIZED = true;
 constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;
-std::mutex m;
 
 using namespace hailort;
 
@@ -45,8 +44,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
 
-	// cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size((int)org_width, (int)org_height));
-
     for (int i = 0; i < (int)frame_count; i++){
         HailoROIPtr roi = std::make_shared<HailoROI>(HailoROI(HailoBBox(0.0f, 0.0f, 1.0f, 1.0f)));
         
@@ -71,34 +68,32 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             
             std::cout << "Frame " << i << ", Detection: " << detection->get_label() << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
-        // cv::imshow("Display window", frames[0]);
-        // cv::waitKey(0);
 
         if (i == 0)
-		cv::imwrite("output.jpg",frames[0]);
+		    cv::imwrite("output.jpg",frames[0]);
         frames[0].release();
         frames.erase(frames.begin());
     }
     postprocess_time = std::chrono::high_resolution_clock::now();
-    // video.release();
-
     return status;
 }
 
 
-hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData> feature, double frame_count) {
+hailo_status read_all(std::vector<OutputVStream>& output_vstreams, std::vector<std::shared_ptr<FeatureData>> features, double frame_count) {
     for (size_t i = 0; i < (size_t)frame_count; i++) {
-        auto& buffer = feature->m_buffers.get_write_buffer();
-        hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
-        feature->m_buffers.release_write_buffer();
-        if (HAILO_SUCCESS != status) {
-            std::cerr << "Failed reading with status = " <<  status << std::endl;
-            return status;
+        for (size_t j = 0; j < (size_t)output_vstreams.size(); j++) {
+            auto& buffer = features[j]->m_buffers.get_write_buffer();
+            hailo_status status = output_vstreams[j].read(MemoryView(buffer.data(), buffer.size()));
+            features[j]->m_buffers.release_write_buffer();
+            if (HAILO_SUCCESS != status) {
+                std::cerr << "Failed reading with status = " <<  status << std::endl;
+                return status;
+            }
         }
     }
-
     return HAILO_SUCCESS;
 }
+
 
 hailo_status use_single_frame(InputVStream& input_vstream, std::chrono::time_point<std::chrono::system_clock>& write_time_vec, 
                                 std::vector<cv::Mat>& frames, cv::Mat& image, int frame_count){
@@ -148,7 +143,6 @@ hailo_status write_all(InputVStream& input_vstream, const std::string input_path
             
             cv::resize(org_frame, org_frame, cv::Size(height, width), 1);
             frames.push_back(org_frame);
-
             input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
             if (HAILO_SUCCESS != status)
                 return status;
@@ -193,10 +187,10 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
                     double frame_count, double org_height, double org_width, const std::string cmd_img_num) {
 
     hailo_status status = HAILO_UNINITIALIZED;
-    hailo_status output_status = HAILO_UNINITIALIZED;
     
     auto output_vstreams_size = output_vstreams.size();
 
+    // features is the shared memory allocated for inference data
     std::vector<std::shared_ptr<FeatureData>> features;
     features.reserve(output_vstreams_size);
     for (size_t i = 0; i < output_vstreams_size; i++) {
@@ -215,20 +209,15 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     // Create the write thread
     auto input_thread(std::async(write_all, std::ref(input_vstream[0]), input_path, std::ref(write_time_vec), std::ref(frames), std::ref(cmd_img_num)));
 
-    // Create read threads
-    std::vector<std::future<hailo_status>> output_threads;
-    output_threads.reserve(output_vstreams_size);
-    for (size_t i = 0; i < output_vstreams_size; i++) {
-        output_threads.emplace_back(std::async(read_all, std::ref(output_vstreams[i]), features[i], frame_count)); 
-    }
+    // Create the read thread
+    auto output_thread(std::async(read_all, std::ref(output_vstreams), std::ref(features), frame_count));
 
     // Create the postprocessing thread
     auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
 
+    // Join the threads
     auto input_status = input_thread.get();
-    for (size_t i = 0; i < output_threads.size(); i++) {
-        output_status = output_threads[i].get();
-    }
+    auto output_status = output_thread.get();
     auto pp_status = pp_thread.get();
 
     status = check_inference_status(input_status, output_status, pp_status);
