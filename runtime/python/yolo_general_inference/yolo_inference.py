@@ -26,7 +26,7 @@ class device_pre_post_layers():
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolo_v5_nms, yolox, yolo_v6, yolo_v7 or yolo_v8.")
+parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolo_v5_nms, yolox, yolov6, yolov6t (yolo_v6_0.2.1 & yolo_v6_0.4.0), yolo_v7 or yolo_v8.")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
 args = parser.parse_args()
@@ -252,6 +252,32 @@ def postproc_yolov5_yolov7(height,width, anchors, meta_arch, num_of_classes, raw
         
     return post_proc.postprocessing(detections, **kwargs)
 
+def postproc_yolov6t(height,width, anchors, meta_arch, num_of_classes, raw_detections):
+    raw_detections_keys = list(raw_detections.keys())
+    raw_detections_keys.sort()
+    
+    post_proc = YoloPostProc(img_dims=(height,width), 
+                            anchors=anchors,
+                            meta_arch=meta_arch, 
+                            classes=num_of_classes,
+                            nms_iou_thresh=0.65,
+                            score_threshold=0.01,
+                            labels_offset=1,
+                            **kwargs)
+    
+    layer_from_shape: dict = {raw_detections[key].shape:key for key in raw_detections_keys}
+    
+    # The detections that go in the postprocessing should have very specific order. so,
+    # we take the name of the layer name according to it's shape -  layer_from_shape(OUTPUT_SHAPE)-->LAYER_NAME
+    detections = [raw_detections[layer_from_shape[1, 80, 80, 4]],
+                    raw_detections[layer_from_shape[1, 80, 80, 80]],
+                    raw_detections[layer_from_shape[1, 40, 40, 4]],
+                    raw_detections[layer_from_shape[1, 40, 40, 80]],
+                    raw_detections[layer_from_shape[1, 20, 20, 4]],
+                    raw_detections[layer_from_shape[1, 20, 20, 80]]]
+    
+    return post_proc.postprocessing(detections, **kwargs)
+
   
 def postproc_yolox_yolov6(height,width, anchors, meta_arch, num_of_classes, raw_detections):
     raw_detections_keys = list(raw_detections.keys())
@@ -291,7 +317,7 @@ def letterbox_image(image, size):
     scale = min(model_input_w / img_w, model_input_h / img_h)
     scaled_w = int(img_w * scale)
     scaled_h = int(img_h * scale)
-    image = image.resize((scaled_w, scaled_h), Image.BICUBIC)
+    image = image.resize((scaled_w, scaled_h), Image.Resampling.BICUBIC)
     new_image = Image.new('RGB', size, (114,114,114))
     new_image.paste(image, ((model_input_w - scaled_w) // 2, (model_input_h - scaled_h) // 2))
     return new_image
@@ -323,7 +349,7 @@ func_dict = {'yolo_v3': postproc_yolov3,
              'yolo_v4t': postproc_yolov4t,
              'yolo_v5': postproc_yolov5_yolov7,
              'yolox': postproc_yolox_yolov6,
-             'yolo_v6': postproc_yolox_yolov6,
+             'yolo_v6': postproc_yolov6t,
              'yolo_v7': postproc_yolov5_yolov7,
              'nanodet_v8': postproc_yolov8,
              }
@@ -352,7 +378,10 @@ if arch in arch_list:
 else:
     if arch == 'yolo_v6':
         anchors = arch_dict['yolox']
-        meta_arch = 'yolox'
+        meta_arch = 'yolox' 
+    elif arch == 'yolo_v6t':
+        anchors = arch_dict['yolox']
+        meta_arch = 'yolo_v6'        
     else:
         error = 'Not a valid architecture. Please choose an architecture from the this list: yolo_v3, yolo_v4, yolov_4t, yolo_v5, yolox, yolo_v6, yolo_v7, yolo_v8'
         raise ValueError(error)
