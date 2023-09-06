@@ -1,4 +1,5 @@
-# Hailo Application Code Examples 
+#![github_code](https://github.com/hailo-ai/Hailo-Application-Code-Examples/assets/124154433/2258432a-e633-454a-bee9-1d348ada8060)
+ Hailo Application Code Examples 
 A set of stand-alone canned examples for compiling NN models and exercising different tasks on Hailo devices.
 
 
