@@ -1,7 +1,7 @@
 
 #include "hailo/hailort.hpp"
-#include "yolo_post.hpp"
 #include "tensors_buffers.hpp"
+#include "yolo_post.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -31,7 +31,7 @@ private:
 public:
     VideoCaptureWrapper(int deviceIndex) : capture(deviceIndex), frame_size(0) {
         if (!capture.isOpened()) {
-            std::cerr << "Error: Could not open device" << std::endl;
+            std::cerr << "Error: Could not open camera device" << std::endl;
             exit(1);
         }
     }
@@ -47,7 +47,7 @@ public:
         cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
         capture >> frame;
         if (frame.empty()) {
-            std::cerr << "frame is empty, meaning we finished reading all frames" << std::endl;
+            // std::cerr << "frame is empty, meaning we finished reading all frames" << std::endl;
             return EXIT_FAILURE;
         }
         return EXIT_SUCCESS;
@@ -288,7 +288,6 @@ public:
             // int input_ctr = 0;
             while (continue_run) {
                 std::unique_lock<std::mutex> lock(print_mutex);
-                std::cout << "input async write " << input_ctr << std::endl;
                 lock.unlock();
                 input_status = inputs[0].get().wait_for_async_ready(inputs[0].get().get_frame_size(), TIMEOUT);
                 if (HAILO_SUCCESS != input_status) { return; }
@@ -301,6 +300,9 @@ public:
                 input_tensor.m_queue.push(input_buffer);
                 input_status = inputs[0].get().write_async(input_buffer.get(), inputs[0].get().get_frame_size(), input_async_callback);
                 if (HAILO_SUCCESS != input_status) { return; }
+                if (input_ctr < 2 || input_ctr > 1230) {
+                    std::cout << "input async write " << input_ctr << std::endl;
+                }
                 input_ctr++;
             }
         });
@@ -314,9 +316,8 @@ public:
         for (int i = 0; i < num_outputs; i++) { // the thread get all by reference, including i, that's why I think we get a segfault
             output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run]() { // TODO: is output_ctr[i] ok???
             // int output_ctr = 0;
-            while (output_ctr <= input_ctr || continue_run) { // we haven't finished to process all the input frames // TODO: make sure it's < and not <=. Also if possible without bool continue_run, it will be clearer.
+            while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // TODO: make sure it's < and not <=. Also if possible without bool continue_run, it will be clearer.
                 std::unique_lock<std::mutex> lock(print_mutex);
-                std::cout << "output async read " << output_ctr << ", thread " << i << std::endl;
                 lock.unlock();
                 output_statuses[i] = outputs[i].get().wait_for_async_ready(outputs[i].get().get_frame_size(), TIMEOUT);
                 if (HAILO_SUCCESS != output_statuses[i]) { return; }
@@ -325,6 +326,9 @@ public:
                 output_statuses[i] = outputs[i].get().read_async(output_buffer.get(), outputs[i].get().get_frame_size(), output_async_callback);
                 if (HAILO_SUCCESS != output_statuses[i]) { return; }
                 output_tensors.outputs[i].get()->m_queue.push(output_buffer);
+                if (output_ctr < 2 || output_ctr > 1230) {
+                    std::cout << "output async read " << output_ctr << ", thread " << i << std::endl;
+                }
                 output_ctr++;
                 }
             }));
@@ -336,22 +340,54 @@ public:
             cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight()));
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames
                 std::unique_lock<std::mutex> lock(print_mutex);
-                std::cout << "post-process async write " << pp_ctr << std::endl;
                 lock.unlock();
                 
                 // we have to make sure that all 3 outputs finished calback before we can pop them
-
+                // TODO: check with counter from callback for 3 out !!!
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
                 auto out_1 = output_tensors.outputs[1]->m_queue.pop();
                 auto out_2 = output_tensors.outputs[2]->m_queue.pop();
-
                 auto raw_input = input_tensor.m_queue.pop();
+                if ( !out_0 || !out_1 || !out_2 || !raw_input) {
+                    std::cerr << "Failed to pop inut or output buffer" << std::endl;
+                    return;
+                }
+                if (pp_ctr < 2 || pp_ctr > 1230) {
+                    std::cout << "post-process async write " << pp_ctr << std::endl;
+                }
                 cv::Mat raw_frame(camera.getHeight(), camera.getWidth(), CV_8UC3, static_cast<void*>(raw_input.get()));
-                video.write(raw_frame);
-      
+
+                FeatureMap feature_map_0(out_0, output_tensors.outputs[0]->m_height, output_tensors.outputs[0]->m_width, output_tensors.outputs[0]->m_channels, 
+                default_anchors_num, default_feature_map_channels, output_tensors.outputs[0]->m_qp_zp, output_tensors.outputs[0]->m_qp_scale, default_conf_threshold, {116, 90, 156, 198, 373, 326});
+                FeatureMap feature_map_1(out_1, output_tensors.outputs[1]->m_height, output_tensors.outputs[1]->m_width, output_tensors.outputs[1]->m_channels, 
+                default_anchors_num, default_feature_map_channels, output_tensors.outputs[1]->m_qp_zp, output_tensors.outputs[1]->m_qp_scale, default_conf_threshold, {30, 61, 62, 45, 59, 119});
+                FeatureMap feature_map_2(out_2, output_tensors.outputs[2]->m_height, output_tensors.outputs[2]->m_width, output_tensors.outputs[2]->m_channels, 
+                default_anchors_num, default_feature_map_channels, output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale, default_conf_threshold, {10, 13, 16, 30, 33, 23});
+                
+                YoloPost yolo_post;
+                yolo_post.feature_maps.push_back(feature_map_0);
+                yolo_post.feature_maps.push_back(feature_map_1);
+                yolo_post.feature_maps.push_back(feature_map_2);
+
+                std::vector<DetectionObject> detections = yolo_post.decode();
+
+                for (auto& detection : detections) {
+                    if (detection.confidence > 0) {
+                        std::cout << "detection: id: "  << detection.class_id << ", bbox: " << detection.xmin << ", " << detection.ymin << ", " << detection.xmax << ", " << detection.ymax << ", " << detection.confidence << std::endl;
+                        // cv::Rect rect(detection.xmin, detection.ymin, detection.xmax, detection.ymax);
+                        // cv::rectangle(raw_frame, rect, cv::Scalar(0, 255, 0));
+                        cv::rectangle(raw_frame, cv::Point2f(detection.xmin, detection.ymin), 
+                            cv::Point2f(detection.xmax, detection.ymax), 
+                            cv::Scalar(0, 0, 255), 1);
+                    }
+                }
+                // cv::Rect centerRect(camera.getWidth()/4, camera.getHeight()/4, (camera.getWidth()*3)/4 - camera.getWidth()/4, (camera.getHeight()*3)/4 - camera.getHeight()/4);
+                // cv::rectangle(raw_frame, centerRect, cv::Scalar(0, 0, 255));
+                video << raw_frame;
+    
                 pp_ctr++;
             }
-            // video.release(); // TODO: cleaner get out from thread
+            video.release(); // TODO: cleaner get out from thread (we always miss the last frame)
         });
         // --------------------------------------------------------------------------------------------------------------------------
         // After all async operations are launched, the inference is running.
@@ -368,7 +404,7 @@ public:
         }
         pp_thread.join();
 
-        if ((HAILO_STREAM_NOT_ACTIVATED != input_status) || (HAILO_SUCCESS != input_status)) {
+        if ((HAILO_STREAM_NOT_ACTIVATED != input_status) && (HAILO_SUCCESS != input_status)) {
             std::cerr << "[b7] Got unexpected status: " << input_status << " from thread" << std::endl; //  << output_status_0
             return input_status; // TODO: check all statuses
         }
@@ -385,8 +421,16 @@ int main() {
     const std::string hef_path = "/home/batshevak/useful/models/yolov5m_wo_spp_60p.hef";
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
-    app.init(hef_path);
-    app.run();
+    hailo_status status = app.init(hef_path);
+    if (status != HAILO_SUCCESS) {
+        std::cerr << "Failed to init app, error: " << status << std::endl;
+        return status;
+    }
+    status = app.run();
+    if (status != HAILO_SUCCESS) {
+        std::cerr << "Failed to while running, error: " << status << std::endl;
+        return status;
+    }
 
     return 0;
 }

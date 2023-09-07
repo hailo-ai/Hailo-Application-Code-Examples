@@ -6,7 +6,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(HailoRT 4.14.0 EXACT REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_executable(${PROJECT_NAME} multi_async.cpp)
+add_executable(${PROJECT_NAME} multi_async.cpp yolo_post.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 

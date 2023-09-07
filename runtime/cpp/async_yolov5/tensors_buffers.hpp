@@ -11,6 +11,7 @@
 #include <condition_variable>
 
 #include <iostream> // b7: debug only
+constexpr int timeoutMs = 1000;
 
 #if defined(__unix__)
 #include <sys/mman.h>
@@ -56,17 +57,29 @@ public:
 
 	T pop() {
 		std::unique_lock<std::mutex> lock(m_mutex);
-		m_cond.wait(lock, [this] { return !m_queue.empty(); });
-		T t = m_queue.front();
-		m_queue.pop();
-		return t;
+		auto timeout = std::chrono::milliseconds(timeoutMs);
+		if (m_cond.wait_for(lock, timeout, [this]{ return !m_queue.empty(); })) {
+			// m_cond.wait(lock, [this] { return !m_queue.empty(); });
+			T t = m_queue.front();
+			m_queue.pop();
+			return t;
+		}
+		else {
+			return nullptr;
+		}
 	}
 
 	void pop(T& t) {
 		std::unique_lock<std::mutex> lock(m_mutex);
-		m_cond.wait(lock, [this] { return !m_queue.empty(); });
-		t = m_queue.front();
-		m_queue.pop();
+		auto timeout = std::chrono::milliseconds(timeoutMs);
+		if (m_cond.wait_for(lock, timeout, [this]{ return !m_queue.empty(); })) {
+			// m_cond.wait(lock, [this] { return !m_queue.empty(); });
+			t = m_queue.front();
+			m_queue.pop();
+		}
+		else {
+			t = nullptr;
+		}
 	}
 private:
 	std::queue<T> m_queue = {};
