@@ -47,8 +47,7 @@ public:
         cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
         capture >> frame;
         if (frame.empty()) {
-            // std::cerr << "frame is empty, meaning we finished reading all frames" << std::endl;
-            return EXIT_FAILURE;
+            return EXIT_FAILURE; // finished all frames
         }
         return EXIT_SUCCESS;
     }
@@ -92,66 +91,6 @@ template <class T>
 bool compare_queue_size(const T& a, const T& b) {
     return a.get().get_async_max_queue_size().value() < b.get().get_async_max_queue_size().value(); // b7: need to check expected bla bla
 }
-
-// // TODO: find a better place to decalre this, maybe inside a class? but may make some errors in function signature
-// static void input_async_callback(const InputStream::CompletionInfo &completion_info)
-// {
-//     // Real applications can free the buffer or reuse it for next transfer.
-//     if ((HAILO_SUCCESS != completion_info.status) && (HAILO_STREAM_ABORTED_BY_USER  != completion_info.status)) {
-//         // We will get HAILO_STREAM_ABORTED_BY_USER  when activated_network_group is destructed.
-//         std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
-//     }
-// }
-
-// static void output_async_callback(const OutputStream::CompletionInfo &completion_info)
-// {
-//     // Real applications can free the buffer or forward it to post-process/display.
-//     if ((HAILO_SUCCESS != completion_info.status) && (HAILO_STREAM_ABORTED_BY_USER != completion_info.status)) {
-//         // We will get HAILO_STREAM_ABORTED_BY_USER when activated_network_group is destructed.
-//         std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
-//     }
-// }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-// std::mutex output_callback_mutex;
-// std::condition_variable output_callback_cv;
-// std::atomic<int> output_callback_notifications(0);
-
-// OutputStream::TransferDoneCallback output_async_callback = [](const OutputStream::CompletionInfo &completion_info) {
-//         hailo_status status = HAILO_UNINITIALIZED;
-//         switch (completion_info.status) {
-//         case HAILO_SUCCESS:
-//             // Real applications can forward the buffer to post-process/display.
-//             if ((HAILO_SUCCESS != status) && (HAILO_STREAM_NOT_ACTIVATED != status)) { // b7: why we need to check here?? why the default isn't enough? 
-//             // +  what's the difference between HAILO_STREAM_NOT_ACTIVATED & HAILO_STREAM_ABORTED_BY_USER? 
-//             // why the stream may be not activated? (is it related to the network group?)
-//                 std::cerr << "Failed read async with status=" << status << std::endl;
-//             }
-//             break;
-//         case HAILO_STREAM_ABORTED_BY_USER:
-//             // Transfer was canceled, finish gracefully.
-//             break;
-//         default:
-//             std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
-//         }
-//     };
-//     InputStream::TransferDoneCallback input_async_callback = [](const InputStream::CompletionInfo &completion_info) {
-//         hailo_status status = HAILO_UNINITIALIZED;
-//         switch (completion_info.status) {
-//         case HAILO_SUCCESS:
-//             // Real applications may free the buffer and replace it with new buffer ready to be sent.
-//             if ((HAILO_SUCCESS != status) && (HAILO_STREAM_NOT_ACTIVATED != status)) {
-//                 std::cerr << "Failed read async with status=" << status << std::endl;
-//             }
-//             break;
-//         case HAILO_STREAM_ABORTED_BY_USER:
-//             // Transfer was canceled, finish gracefully.
-//             break;
-//         default:
-//             std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
-//         }
-//     };
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class App {
 private:
@@ -242,7 +181,6 @@ public:
         return std::move(network_groups->at(0));
     }
 
-    // TODO: find a better place to decalre this, maybe inside a class? but may make some errors in function signature
     static void input_async_callback(const InputStream::CompletionInfo &completion_info) // b7: why it has to be static?
     {
         // Real applications can free the buffer or reuse it for next transfer.
@@ -285,7 +223,6 @@ public:
         // --------------------------------------------------- input thread -------------------------------------------------------
         std::atomic<hailo_status> input_status(HAILO_UNINITIALIZED);
         std::thread input_thread([&print_mutex=print_mutex, &input_status, &inputs, &camera=camera, &input_tensor, &input_ctr=input_ctr, &continue_run=continue_run]() {
-            // int input_ctr = 0;
             while (continue_run) {
                 std::unique_lock<std::mutex> lock(print_mutex);
                 lock.unlock();
@@ -314,9 +251,8 @@ public:
             status.store(HAILO_UNINITIALIZED);
         }
         for (int i = 0; i < num_outputs; i++) { // the thread get all by reference, including i, that's why I think we get a segfault
-            output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run]() { // TODO: is output_ctr[i] ok???
-            // int output_ctr = 0;
-            while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // TODO: make sure it's < and not <=. Also if possible without bool continue_run, it will be clearer.
+            output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run]() {
+            while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // TODO: if possible without bool continue_run, it will be clearer.
                 std::unique_lock<std::mutex> lock(print_mutex);
                 lock.unlock();
                 output_statuses[i] = outputs[i].get().wait_for_async_ready(outputs[i].get().get_frame_size(), TIMEOUT);
@@ -341,7 +277,7 @@ public:
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames
                 std::unique_lock<std::mutex> lock(print_mutex);
                 lock.unlock();
-                
+                // sleep(1);
                 // we have to make sure that all 3 outputs finished calback before we can pop them
                 // TODO: check with counter from callback for 3 out !!!
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
