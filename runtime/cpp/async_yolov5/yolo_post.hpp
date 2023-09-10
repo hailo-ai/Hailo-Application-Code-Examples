@@ -23,7 +23,7 @@
 #include <vector>
 #include <memory>
 
-constexpr float default_conf_threshold = 0.5f;
+constexpr float default_conf_threshold = 0.6f;
 constexpr int default_anchors_num = 3;
 constexpr int default_feature_map_channels = 85;
 

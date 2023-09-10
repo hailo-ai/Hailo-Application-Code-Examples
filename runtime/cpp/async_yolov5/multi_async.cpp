@@ -27,6 +27,7 @@ private:
     size_t frame_size;
     int width;
     int height;
+    int counter_frames = 0;
 
 public:
     VideoCaptureWrapper(int deviceIndex) : capture(deviceIndex), frame_size(0) {
@@ -44,12 +45,16 @@ public:
     }
 
     int getNextFrame(AlignedBuffer buffer) {
-        cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
-        capture >> frame;
-        if (frame.empty()) {
-            return EXIT_FAILURE; // finished all frames
+        if (counter_frames < 200) { // TODO: debug!
+            cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
+            capture >> frame;
+            counter_frames++;
+            if (frame.empty()) {
+                return EXIT_FAILURE; // finished all frames
+            }
+            return EXIT_SUCCESS;
         }
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     bool isOpened() const {
@@ -237,7 +242,7 @@ public:
                 input_tensor.m_queue.push(input_buffer);
                 input_status = inputs[0].get().write_async(input_buffer.get(), inputs[0].get().get_frame_size(), input_async_callback);
                 if (HAILO_SUCCESS != input_status) { return; }
-                if (input_ctr < 2 || input_ctr > 1230) {
+                if (true) { // was: (input_ctr < 2 || input_ctr > 1230)
                     std::cout << "input async write " << input_ctr << std::endl;
                 }
                 input_ctr++;
@@ -262,7 +267,7 @@ public:
                 output_statuses[i] = outputs[i].get().read_async(output_buffer.get(), outputs[i].get().get_frame_size(), output_async_callback);
                 if (HAILO_SUCCESS != output_statuses[i]) { return; }
                 output_tensors.outputs[i].get()->m_queue.push(output_buffer);
-                if (output_ctr < 2 || output_ctr > 1230) {
+                if (true) { // was: output_ctr < 2 || output_ctr > 1230
                     std::cout << "output async read " << output_ctr << ", thread " << i << std::endl;
                 }
                 output_ctr++;
@@ -288,7 +293,7 @@ public:
                     std::cerr << "Failed to pop inut or output buffer" << std::endl;
                     return;
                 }
-                if (pp_ctr < 2 || pp_ctr > 1230) {
+                if (true) { // was: (pp_ctr < 2 || pp_ctr > 1230)
                     std::cout << "post-process async write " << pp_ctr << std::endl;
                 }
                 cv::Mat raw_frame(camera.getHeight(), camera.getWidth(), CV_8UC3, static_cast<void*>(raw_input.get()));
@@ -301,9 +306,9 @@ public:
                 default_anchors_num, default_feature_map_channels, output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale, default_conf_threshold, {10, 13, 16, 30, 33, 23});
                 
                 YoloPost yolo_post;
-                yolo_post.feature_maps.push_back(feature_map_0);
-                yolo_post.feature_maps.push_back(feature_map_1);
                 yolo_post.feature_maps.push_back(feature_map_2);
+                yolo_post.feature_maps.push_back(feature_map_1);
+                yolo_post.feature_maps.push_back(feature_map_0);
 
                 std::vector<DetectionObject> detections = yolo_post.decode();
 
