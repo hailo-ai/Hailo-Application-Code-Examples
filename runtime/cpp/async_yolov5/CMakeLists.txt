@@ -10,8 +10,6 @@ add_executable(${PROJECT_NAME} multi_async.cpp yolo_post.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=address)
-
 target_link_libraries(${PROJECT_NAME} PRIVATE HailoRT::libhailort Threads::Threads ${OpenCV_LIBS})
 
 if(WIN32)

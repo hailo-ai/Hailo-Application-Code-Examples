@@ -1,4 +1,5 @@
 
+//#include "yolo_post_processing.hpp" // B7: debug
 #include "hailo/hailort.hpp"
 #include "tensors_buffers.hpp"
 #include "yolo_post.hpp"
@@ -45,7 +46,7 @@ public:
     }
 
     int getNextFrame(AlignedBuffer buffer) {
-        if (counter_frames < 200) { // TODO: debug!
+        if (counter_frames < 2000) { // TODO: debug!
             cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
             capture >> frame;
             counter_frames++;
@@ -298,12 +299,21 @@ public:
                 }
                 cv::Mat raw_frame(camera.getHeight(), camera.getWidth(), CV_8UC3, static_cast<void*>(raw_input.get()));
 
-                FeatureMap feature_map_0(out_0, output_tensors.outputs[0]->m_height, output_tensors.outputs[0]->m_width, output_tensors.outputs[0]->m_channels, 
-                default_anchors_num, default_feature_map_channels, output_tensors.outputs[0]->m_qp_zp, output_tensors.outputs[0]->m_qp_scale, default_conf_threshold, {116, 90, 156, 198, 373, 326});
+                // auto detections = post_processing("yolov5",
+                // out_0.get(), output_tensors.outputs[0]->m_qp_zp, output_tensors.outputs[0]->m_qp_scale,
+                // out_1.get(), output_tensors.outputs[1]->m_qp_zp, output_tensors.outputs[1]->m_qp_scale,
+                // out_2.get(), output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale);
+
+                // // -------------------------------------------------------------------------------------------------------------------
+                std::cout << "height 0: " << output_tensors.outputs[0]->m_height << std::endl;
+                std::cout << "height 1: " << output_tensors.outputs[1]->m_height << std::endl;
+                std::cout << "height 2: " << output_tensors.outputs[2]->m_height << std::endl;
+                FeatureMap feature_map_2(out_2, output_tensors.outputs[2]->m_height, output_tensors.outputs[2]->m_width, output_tensors.outputs[2]->m_channels, 
+                default_anchors_num, default_feature_map_channels, output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale, default_conf_threshold, {116, 90, 156, 198, 373, 326});
                 FeatureMap feature_map_1(out_1, output_tensors.outputs[1]->m_height, output_tensors.outputs[1]->m_width, output_tensors.outputs[1]->m_channels, 
                 default_anchors_num, default_feature_map_channels, output_tensors.outputs[1]->m_qp_zp, output_tensors.outputs[1]->m_qp_scale, default_conf_threshold, {30, 61, 62, 45, 59, 119});
-                FeatureMap feature_map_2(out_2, output_tensors.outputs[2]->m_height, output_tensors.outputs[2]->m_width, output_tensors.outputs[2]->m_channels, 
-                default_anchors_num, default_feature_map_channels, output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale, default_conf_threshold, {10, 13, 16, 30, 33, 23});
+                FeatureMap feature_map_0(out_0, output_tensors.outputs[0]->m_height, output_tensors.outputs[0]->m_width, output_tensors.outputs[0]->m_channels, 
+                default_anchors_num, default_feature_map_channels, output_tensors.outputs[0]->m_qp_zp, output_tensors.outputs[0]->m_qp_scale, default_conf_threshold, {10, 13, 16, 30, 33, 23});
                 
                 YoloPost yolo_post;
                 yolo_post.feature_maps.push_back(feature_map_2);
@@ -311,6 +321,7 @@ public:
                 yolo_post.feature_maps.push_back(feature_map_0);
 
                 std::vector<DetectionObject> detections = yolo_post.decode();
+                // // -------------------------------------------------------------------------------------------------------------------
 
                 for (auto& detection : detections) {
                     if (detection.confidence > 0) {

@@ -27,6 +27,7 @@ constexpr float default_conf_threshold = 0.6f;
 constexpr int default_anchors_num = 3;
 constexpr int default_feature_map_channels = 85;
 
+// ------------- in note for debug only ! -------------------------------------------------------------------
 struct DetectionObject {
     float ymin, xmin, ymax, xmax, confidence;
     int class_id;

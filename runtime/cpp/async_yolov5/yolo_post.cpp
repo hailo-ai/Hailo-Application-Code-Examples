@@ -87,7 +87,7 @@ void FeatureMap::extract_boxes(std::vector<DetectionObject>& detections, const i
                     }
                 }
                 if (conf_max >= conf_threshold) {
-                    add = (feature_map_channels * anchors_num + 1) * width * chosen_row + (feature_map_channels * anchors_num + 1) * chosen_col + feature_map_channels * anchor + 1;
+                    add = (feature_map_channels * anchors_num + 1) * width * chosen_row + (feature_map_channels * anchors_num + 1) * chosen_col + feature_map_channels * anchor;
                     // box centers
                     x = (fix_scale(data.get()[add], m_qp_scale,  m_qp_zp) * 2.0f - 0.5f + (float)(chosen_col)) / ((float)(width));
                     y = (fix_scale(data.get()[add + 1], m_qp_scale,  m_qp_zp) * 2.0f - 0.5f +  (float)(chosen_row)) / (float)(height);
