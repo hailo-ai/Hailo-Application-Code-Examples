@@ -100,7 +100,7 @@ void FeatureMap::extract_boxes(std::vector<DetectionObject>& detections, const i
                     xmax = std::min(((x + (w / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
                     ymax = std::min(((y + (h / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
 
-                    if (detections.size() < max_num_detections)
+                    if (detections.size() < max_num_detections) // TODO: else return
 					{
                         detections.push_back(DetectionObject(ymin, xmin, ymax, xmax, conf_max, chosen_cls));
 					}

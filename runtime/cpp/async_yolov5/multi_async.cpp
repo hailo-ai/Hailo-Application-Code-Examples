@@ -370,7 +370,7 @@ int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
     // int cameraIndex = 0; // You might need to adjust the camera index
     const std::string video_source = "640.mp4";
-    const std::string hef_path = "/home/batshevak/useful/models/yolov5m_wo_spp_60p.hef";
+    const std::string hef_path = "yolov5m_wo_spp_60p.hef";
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
     hailo_status status = app.init(hef_path);
