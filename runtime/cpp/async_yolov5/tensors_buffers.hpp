@@ -2,7 +2,6 @@
 #define _OUTPUT_TENSORS_HPP_
 
 #include "hailo/hailort.hpp"
-// #include "double_buffer.hpp"
 #include <stdlib.h>
 #include <stdint.h>
 #include <vector>
@@ -10,7 +9,6 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <iostream> // b7: debug only
 constexpr int timeoutMs = 1000;
 
 #if defined(__unix__)
@@ -148,10 +146,8 @@ public:
 	}
 
 	OutputTensors(std::vector<hailo_stream_info_t> stream_infos) {
-		// std::vector<std::shared_ptr<OutputTensor>> outputs;
 		outputs.reserve(stream_infos.size());
 		for (auto& stream_info : stream_infos) {
-			std::cout << "stream_info :| " << std::endl;
 			outputs.emplace_back(std::make_shared<OutputTensor>(stream_info));
 		}
 	}

@@ -17,7 +17,7 @@
 using namespace hailort;
 
 constexpr auto TIMEOUT = std::chrono::milliseconds(1000);
-constexpr int default_num_outputs = 3; // Note: this is used to declare const-sized array only, but for real usage, we use dynamic num_outputs frrom hef.
+constexpr int default_num_outputs = 3; // Note: this is used to declare const-sized array only, but for real usage, we use dynamic num_outputs from hef.
 // TODO: maybe add an assertion we don't exceed this default_num_outputs number of outputs
 
 class VideoCaptureWrapper {
@@ -78,7 +78,7 @@ class App {
 private:
     VideoCaptureWrapper camera;
     std::unique_ptr<hailort::Device> device;
-    std::shared_ptr<ConfiguredNetworkGroup> network_group; // all the .get() because of reference_wrapper are ugly, maybe save as reference of inputs & outputs vstreams instead (or in addition)
+    std::shared_ptr<ConfiguredNetworkGroup> network_group; // TODO: all the .get() because of reference_wrapper are ugly, maybe save as reference of inputs & outputs vstreams instead (or in addition)
     int num_outputs;
     std::mutex print_mutex;
     std::atomic<int> input_ctr;
@@ -222,7 +222,7 @@ public:
         }
         for (int i = 0; i < num_outputs; i++) {
             output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run, &print=print]() {
-            while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // TODO: if possible without bool continue_run, it will be clearer.
+            while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames
                 output_statuses[i] = outputs[i].get().wait_for_async_ready(outputs[i].get().get_frame_size(), TIMEOUT);
                 if (HAILO_SUCCESS != output_statuses[i]) { return; }
 
@@ -240,8 +240,8 @@ public:
         }
         // --------------------------------------------------- post-process thread -------------------------------------------------------
         std::atomic<hailo_status> pp_status(HAILO_UNINITIALIZED);
-        std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print]() {
-            cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight()));
+        std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status]() {
+            // cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // was: while (pp_ctr < input_ctr || continue_run)
                 // we have to make sure that all 3 outputs finished calback before we can pop them 
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
@@ -249,7 +249,8 @@ public:
                 auto out_2 = output_tensors.outputs[2]->m_queue.pop();
                 auto raw_input = input_tensor.m_queue.pop();
                 if ( !out_0 || !out_1 || !out_2 || !raw_input) {
-                    std::cerr << "Failed to pop inut or output buffer" << std::endl;
+                    std::cerr << "Failed to pop input or output buffer" << std::endl;
+                    pp_status = HAILO_INTERNAL_FAILURE;
                     return;
                 }
                 if (print) {
@@ -284,27 +285,39 @@ public:
                             cv::Scalar(0, 0, 255), 1);
                     }
                 }
-                video << raw_frame;
+                // video << raw_frame; // add in order to save to file the processed video
     
                 pp_ctr++;
             }
-            video.release();
+            // video.release(); // add in order to save to file the processed video
+            pp_status = HAILO_SUCCESS;
         });
-        // --------------------------------------------------------------------------------------------------------------------------
-
+        // ------------------------------------------------ join threads ----------------------------------------------------------------
         input_thread.join();
         for (auto& output_thread : output_threads) {
             output_thread.join();
         }
         pp_thread.join();
+        // ----------------------------------------------- check statuses --------------------------------------------------------------
 
         if ((HAILO_STREAM_NOT_ACTIVATED != input_status) && (HAILO_SUCCESS != input_status)) {
-            std::cerr << "[b7] Got unexpected status: " << input_status << " from thread" << std::endl; //  << output_status_0
-            return input_status; // TODO: check all statuses
+            std::cerr << "Got unexpected status: " << input_status << " from input thread" << std::endl;
+            return input_status;
+        }
+        if (std::any_of(output_statuses.begin(), output_statuses.end(),
+                     [](const std::atomic<hailo_status>& status) {
+                         return (status != HAILO_STREAM_NOT_ACTIVATED) && (status != HAILO_SUCCESS);
+                     })) {
+            std::cerr << "Got unexpected status from output thread" << std::endl;
+            return HAILO_INTERNAL_FAILURE; // TODO: return specific error code
+        }
+        if ((HAILO_STREAM_NOT_ACTIVATED != pp_status) && (HAILO_SUCCESS != pp_status)) {
+            std::cerr << "Got unexpected status: " << pp_status << " from post-process thread" << std::endl;
+            return pp_status;
         }
 
         std::cout << "Inference finished successfully" << std::endl;
-        return HAILO_SUCCESS; // TODO: if all statuses are success, then return success
+        return HAILO_SUCCESS;
     }
 };
 
@@ -312,7 +325,7 @@ int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
     const std::string video_source = "640.mp4";
     const std::string hef_path = "/home/batshevak/useful/models/yolov5m_wo_spp_60p.hef";
-    const bool print = true;
+    const bool print = false;
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
     hailo_status status = app.init(hef_path, print);

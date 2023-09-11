@@ -19,4 +19,8 @@ vlc processed_video.mp4
 ``
 
 What this example does?  
-This example creates   
+This example creates 
+
+Notes:  
+If you want to save the processed video as mp4, search in this code this note: ```// add in order to save to file the processed video```
+and add it (there are 3 lines to un-note).  
