@@ -238,7 +238,7 @@ public:
         // --------------------------------------------------- post-process thread -------------------------------------------------------
         std::atomic<hailo_status> pp_status(HAILO_UNINITIALIZED);
         std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status]() {
-            // cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
+            cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // was: while (pp_ctr < input_ctr || continue_run)
                 // we have to make sure that all 3 outputs finished calback before we can pop them 
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
@@ -282,11 +282,11 @@ public:
                             cv::Scalar(0, 0, 255), 1);
                     }
                 }
-                // video << raw_frame; // add in order to save to file the processed video
+                video << raw_frame; // add in order to save to file the processed video
     
                 pp_ctr++;
             }
-            // video.release(); // add in order to save to file the processed video
+            video.release(); // add in order to save to file the processed video
             pp_status = HAILO_SUCCESS;
         });
         // ------------------------------------------------ join threads ----------------------------------------------------------------
@@ -322,7 +322,7 @@ int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
     const std::string video_source = "640.mp4";
     const std::string hef_path = "yolov5m_wo_spp_60p.hef";
-    const bool print = false;
+    const bool print = true;
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
     hailo_status status = app.init(hef_path, print);
