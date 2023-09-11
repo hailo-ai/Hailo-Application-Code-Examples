@@ -88,7 +88,7 @@ private:
 class InputTensor {
 public:
 	InputTensor(hailo_stream_info_t info) : m_hw_data_bytes(info.hw_data_bytes), m_height(info.hw_shape.height), 
-	m_width(info.hw_shape.width), m_channels(info.hw_shape.features) {} // TODO: not sure it's hw_data_bytes or hw_frame_size
+	m_width(info.hw_shape.width), m_channels(info.hw_shape.features) {}
 
 	// InputTensor(uint32_t buffers_size, uint32_t height, uint32_t width, uint32_t channels) :
 	// m_queue(buffers_size), m_height(height), m_width(width), m_channels(channels)

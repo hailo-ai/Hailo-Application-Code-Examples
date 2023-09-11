@@ -11,7 +11,7 @@
  * You shall not reproduce, modify or distribute this software without prior written permission.
  **/
 /**
- * @file yolo_post_processing.hpp
+ * @file yolo_post.hpp
  * @brief Yolo Post-Processing
  **/
 
@@ -23,11 +23,15 @@
 #include <vector>
 #include <memory>
 
+// ------------------- consts --------------------------------------------------------------------------------
 constexpr float default_conf_threshold = 0.6f;
 constexpr int default_anchors_num = 3;
 constexpr int default_feature_map_channels = 85;
+constexpr float default_iou_threshold = 0.6f;
+constexpr int default_num_outputs = 3; // Note: this is used to declare const-sized array only, but for real usage, we use dynamic num_outputs from hef.
+// TODO: maybe add an assertion we don't exceed this default_num_outputs number of outputs
+constexpr int default_max_num_detections = 50;
 
-// ------------- in note for debug only ! -------------------------------------------------------------------
 struct DetectionObject {
     float ymin, xmin, ymax, xmax, confidence;
     int class_id;
@@ -73,7 +77,6 @@ public:
     const std::vector<DetectionObject> get_detections() const;
     std::vector<DetectionObject> decode();
 
-// private:
     std::vector<DetectionObject> detections;
     int num_detections;
     int max_num_detections;

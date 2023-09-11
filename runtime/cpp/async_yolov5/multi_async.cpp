@@ -17,9 +17,6 @@
 using namespace hailort;
 
 constexpr auto TIMEOUT = std::chrono::milliseconds(1000);
-constexpr int default_num_outputs = 3; // Note: this is used to declare const-sized array only, but for real usage, we use dynamic num_outputs from hef.
-// TODO: maybe add an assertion we don't exceed this default_num_outputs number of outputs
-
 class VideoCaptureWrapper {
 private:
     cv::VideoCapture capture;
@@ -78,12 +75,12 @@ class App {
 private:
     VideoCaptureWrapper camera;
     std::unique_ptr<hailort::Device> device;
-    std::shared_ptr<ConfiguredNetworkGroup> network_group; // TODO: all the .get() because of reference_wrapper are ugly, maybe save as reference of inputs & outputs vstreams instead (or in addition)
+    std::shared_ptr<ConfiguredNetworkGroup> network_group; // TODO: all the .get() are because of reference_wrapper, maybe save as plain reference of inputs & outputs vstreams instead (or in addition)
     int num_outputs;
     std::mutex print_mutex;
     std::atomic<int> input_ctr;
     std::array<std::atomic<int>, default_num_outputs> output_ctr;
-    std::array<std::atomic<bool>, default_num_outputs> output_callback_ctr;
+    std::array<std::atomic<int>, default_num_outputs> output_callback_ctr;
     std::atomic<int> pp_ctr;
     std::atomic<bool> continue_run;
     bool print;
@@ -119,7 +116,7 @@ public:
             output_ctr[i].store(0);
         }
         for (int i = 0; i < num_outputs; i++) {
-            output_callback_ctr[i].store(false);
+            output_callback_ctr[i].store(0);
         }
 
         continue_run = true;
@@ -159,7 +156,7 @@ public:
         return std::move(network_groups->at(0));
     }
 
-    static void input_async_callback(const InputStream::CompletionInfo &completion_info) // b7: why it has to be static?
+    static void input_async_callback(const InputStream::CompletionInfo &completion_info)
     {
         if ((HAILO_SUCCESS != completion_info.status) && (HAILO_STREAM_ABORTED_BY_USER  != completion_info.status)) {
             // We will get HAILO_STREAM_ABORTED_BY_USER  when activated_network_group is destructed.
@@ -178,7 +175,7 @@ public:
     hailo_status run() {
         auto inputs = network_group->get_input_streams();
         auto outputs = network_group->get_output_streams();
-        // --------------------------------------------------- create buffers for input / output -----------------------------------
+        // --------------------------------------------------- create wrappers for input / output -----------------------------------
         InputTensor input_tensor(inputs[0].get().get_info()); // we have only 1 input
         std::vector<hailo_stream_info_t> outputs_stream_infos; // we have n outputs
         for (auto& output : outputs) {
@@ -202,7 +199,7 @@ public:
                 if (EXIT_SUCCESS != get_frame_status) {
                     continue_run = false;
                     return; 
-                } // TODO: notify to read_all & post_process threads to finish their work and then return
+                }
                 input_tensor.m_queue.push(input_buffer);
                 input_status = inputs[0].get().write_async(input_buffer.get(), inputs[0].get().get_frame_size(), input_async_callback);
                 if (HAILO_SUCCESS != input_status) { return; }
@@ -324,7 +321,7 @@ public:
 int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
     const std::string video_source = "640.mp4";
-    const std::string hef_path = "/home/batshevak/useful/models/yolov5m_wo_spp_60p.hef";
+    const std::string hef_path = "yolov5m_wo_spp_60p.hef";
     const bool print = false;
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);

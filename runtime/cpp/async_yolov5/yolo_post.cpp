@@ -27,9 +27,7 @@
 #define CONF_CHANNEL_OFFSET  4
 #define CLASS_CHANNEL_OFFSET 5
 
-constexpr float default_iou_threshold = 0.6f;
-constexpr int default_num_outputs = 3;
-constexpr int default_max_num_detections = 50;
+
 // TODO: in hpp file
 
 float iou(const DetectionObject& box_1, const DetectionObject& box_2) {
@@ -100,10 +98,10 @@ void FeatureMap::extract_boxes(std::vector<DetectionObject>& detections, const i
                     xmax = std::min(((x + (w / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
                     ymax = std::min(((y + (h / 2.0f)) * YOLOV5M_IMAGE_SIZE), (static_cast<float>(YOLOV5M_IMAGE_SIZE) - 1));
 
-                    if (detections.size() < max_num_detections) // TODO: else return
-					{
-                        detections.push_back(DetectionObject(ymin, xmin, ymax, xmax, conf_max, chosen_cls));
+                    if (detections.size() >= max_num_detections) {
+                        return;
 					}
+                    detections.push_back(DetectionObject(ymin, xmin, ymax, xmax, conf_max, chosen_cls));
                 }
             }
         }
@@ -118,7 +116,6 @@ void YoloPost::iou_over_frame() {
         }
         for (size_t j = i + 1; j < detections.size(); ++j) {
             if ((detections[i].class_id == detections[j].class_id) && (detections[j].confidence >= conf_threshold)) {
-                // Implement IOU calculation logic here
                 if (iou(detections[i], detections[j]) >= iou_threshold) {
                     detections[j].confidence = -1.f;
                     num_detections--;
