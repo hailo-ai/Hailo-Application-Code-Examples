@@ -23,17 +23,18 @@ private:
     size_t frame_size;
     int width;
     int height;
-    int counter_frames = 0;
+public:
+    int counter_frames;
 
 public:
-    VideoCaptureWrapper(int deviceIndex) : capture(deviceIndex), frame_size(0) {
+    VideoCaptureWrapper(int deviceIndex) : capture(deviceIndex), frame_size(0), counter_frames(0) {
         if (!capture.isOpened()) {
             std::cerr << "Error: Could not open camera device" << std::endl;
             exit(1);
         }
     }
 
-    VideoCaptureWrapper(const std::string& filename) : capture(filename) {
+    VideoCaptureWrapper(const std::string& filename) : capture(filename), frame_size(0), counter_frames(0) {
         if (!capture.isOpened()) {
             std::cerr << "Error: Could not open video file" << std::endl;
             exit(1);
@@ -43,10 +44,10 @@ public:
     int getNextFrame(AlignedBuffer buffer) {
         cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
         capture >> frame;
-        counter_frames++;
         if (frame.empty()) {
             return EXIT_FAILURE; // finished all frames
         }
+        counter_frames++;
         return EXIT_SUCCESS;
     }
 
@@ -90,6 +91,10 @@ private:
 public:
     App(int cameraIndex) : camera(cameraIndex), num_outputs(0), input_ctr(0), pp_ctr(0), continue_run(false), print(false) {}
     App(const std::string source) : camera(source), num_outputs(0), input_ctr(0), pp_ctr(0), continue_run(false), print(false) {}
+
+    const int get_num_frames_processed() {
+        return camera.counter_frames;
+    }
 
     hailo_status init(const std::string& hef_path, bool print) {
         auto device_exp = Device::create();
@@ -180,6 +185,7 @@ public:
             std::cerr << "Failed to activate network group "  << activated_network_group.status() << std::endl;
             return activated_network_group.status();
         }
+        std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
         // --------------------------------------------------- input thread -------------------------------------------------------
         std::atomic<hailo_status> input_status(HAILO_UNINITIALIZED);
         std::thread input_thread([&print_mutex=print_mutex, &input_status, &inputs, &camera=camera, &input_tensor, &input_ctr=input_ctr, &continue_run=continue_run, &print=print]() {
@@ -310,6 +316,8 @@ public:
             output_thread.join();
         }
         pp_thread.join();
+        std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
+        std::cout << "FPS = " << get_num_frames_processed() * 1000 / std::chrono::duration_cast<std::chrono::milliseconds> (end_time - begin_time).count() << std::endl; 
         // ----------------------------------------------- check statuses --------------------------------------------------------------
 
         if ((HAILO_STREAM_NOT_ACTIVATED != input_status) && (HAILO_SUCCESS != input_status)) {
