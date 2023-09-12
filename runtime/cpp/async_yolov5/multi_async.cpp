@@ -164,14 +164,6 @@ public:
         }
     }
 
-    static void output_async_callback(const OutputStream::CompletionInfo &completion_info)
-    {
-        if ((HAILO_SUCCESS != completion_info.status) && (HAILO_STREAM_ABORTED_BY_USER != completion_info.status)) {
-            // We will get HAILO_STREAM_ABORTED_BY_USER when activated_network_group is destructed.
-            std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
-        }
-    }
-
     hailo_status run() {
         auto inputs = network_group->get_input_streams();
         auto outputs = network_group->get_output_streams();
@@ -217,8 +209,25 @@ public:
         for (auto& status : output_statuses) {
             status.store(HAILO_UNINITIALIZED);
         }
+        std::vector<OutputStream::TransferDoneCallback> output_async_callbacks_guard;
         for (int i = 0; i < num_outputs; i++) {
-            output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run, &print=print]() {
+            OutputStream::TransferDoneCallback output_async_callback = [&output_callback_ctr=output_callback_ctr, i, &outputs_mutex=outputs_mutex, &outputs_cv=outputs_cv](const OutputStream::CompletionInfo &completion_info) {
+                if ((HAILO_SUCCESS != completion_info.status) && (HAILO_STREAM_ABORTED_BY_USER != completion_info.status)) {
+                    // We will get HAILO_STREAM_ABORTED_BY_USER when activated_network_group is destructed.
+                    std::cerr << "Got an unexpected status on callback. status=" << completion_info.status << std::endl;
+                }
+                std::unique_lock<std::mutex> lock(outputs_mutex);
+                output_callback_ctr[i]++;
+                if (output_callback_ctr[0] > 0 && output_callback_ctr[1] > 0 && output_callback_ctr[2] > 0) {
+                    outputs_cv.notify_all();
+                }
+                lock.unlock();
+
+            };
+            output_async_callbacks_guard.push_back(output_async_callback);
+        }
+        for (int i = 0; i < num_outputs; i++) {
+            output_threads.emplace_back(std::thread([&print_mutex=print_mutex, &output_statuses, &outputs, i, &output_tensors, &input_ctr=input_ctr, &output_ctr=output_ctr[i], &continue_run=continue_run, &print=print, &output_async_callback=output_async_callbacks_guard[i]]() {
             while (output_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames
                 output_statuses[i] = outputs[i].get().wait_for_async_ready(outputs[i].get().get_frame_size(), TIMEOUT);
                 if (HAILO_SUCCESS != output_statuses[i]) { return; }
@@ -237,10 +246,16 @@ public:
         }
         // --------------------------------------------------- post-process thread -------------------------------------------------------
         std::atomic<hailo_status> pp_status(HAILO_UNINITIALIZED);
-        std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status]() {
+        std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status, &outputs_mutex=outputs_mutex, &outputs_cv=outputs_cv]() {
             cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // was: while (pp_ctr < input_ctr || continue_run)
                 // we have to make sure that all 3 outputs finished calback before we can pop them 
+                std::unique_lock<std::mutex> lock(outputs_mutex);
+                while (output_callback_ctr[0] <= 0 || output_callback_ctr[1] <= 0 || output_callback_ctr[2] <= 0) {
+                    outputs_cv.wait(lock); // Release the lock and wait for a signal.
+                }
+                lock.unlock();
+
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
                 auto out_1 = output_tensors.outputs[1]->m_queue.pop();
                 auto out_2 = output_tensors.outputs[2]->m_queue.pop();
