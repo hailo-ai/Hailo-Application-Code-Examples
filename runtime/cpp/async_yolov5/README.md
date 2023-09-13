@@ -21,8 +21,8 @@ vlc processed_video.mp4
 ```
 
 ## Notes:  
-If you do not want to save the processed video as mp4, search in the code this note: ```// add in order to save to file the processed video```
-and make those lines as note (there are 3).  
+If you do not want to save the processed video as mp4, 
+comment out the line ```#define SAVE_TO_FILE // comment out to disable saving to file ``` in ```multi_async.cpp```.
 
 ## Overview  
 This code represents an application for performing inference using HailoRT async API on raw-streams (not VStreams). The application is designed to process video data from a video file, run it through a YOLOv5 model, and post-process the results to detect objects in the video frames.
