@@ -48,7 +48,8 @@ Instructions
        $ cd resources
        $ ./get_hef_resources.sh
 
-4. To run the demo, execute the command in the parent library. The default setting runs with 4 streams and no display:
+4. Make sure you got the $TAPPAS_WORKSPACE environment variable set to the root of your TAPPAS / HailoSuite docker. For example: export TAPPAS_WORKSPACE=/home/...../hailo_sw_suite/artifacts/tappas
+5. To run the demo, execute the command in the parent library. The default setting runs with 4 streams and no display:
 
    .. code-block:: bash
 

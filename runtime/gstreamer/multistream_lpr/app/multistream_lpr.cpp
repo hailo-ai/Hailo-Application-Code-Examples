@@ -68,8 +68,6 @@ const std::string LICENSE_PLATE_CROP_SO = TAPPAS_WORKSPACE + "/apps/h8/gstreamer
 const std::string LICENSE_PLATE_DETECTION_CROP_FUNC = "vehicles_without_ocr";
 const std::string LICENSE_PLATE_OCR_CROP_FUNC = "license_plate_quality_estimation";
 
-const std::string DEBUG_SO = POSTPROCESS_DIR + "/libdebug.so";
-
 // check_resources function that checks if all resources exist
 void check_resources()
 {
@@ -93,8 +91,6 @@ void check_resources()
         }
     }
 }
-// const std::string PYTHON_DEBUG = APP_RUNTIME_DIR + "/debug.py";
-// pipeline_string += "hailopython name=debug_python qos=false module=" + PYTHON_DEBUG + " ! ";
     
 std::string DECODER_FORMAT="NV12";
 const std::string QUEUE = "queue leaky=no max-size-bytes=0 max-size-time=0 ";
@@ -176,7 +172,6 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     std::string ocr_net_params = " batch-size=16 vdevice-key=1 scheduling-algorithm=1 scheduler-threshold=8 scheduler-timeout-ms=200 ";
     
     if (debug_mode){
-        //vaapi_res = ",width=640,height=640 !  ";
         vaapi_res = ",width=1920,height=1080 ! ";
         debug_tracker = " debug=true ";
     }
@@ -269,11 +264,8 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
         pipeline_string += "queue name=pre_lpd_q leaky=no max-size-buffers=3 max-size-bytes=0 max-size-time=0 ! ";
     }
 
-    // pipeline_string += "hailofilter so-path=" + DEBUG_SO + " function-name=frame_counter_a qos=false ! ";
     // License plate pipeline
     std::string license_plate_detection_pipeline = "";
-    // TBD drop buffers
-    // license_plate_detection_pipeline += "videoconvert name=license_plate_detect_videoconvert qos=false ! video/x-raw,format=RGB ! ";
     license_plate_detection_pipeline += "hailocropper so-path=" + LICENSE_PLATE_CROP_SO + " function-name=" + LICENSE_PLATE_DETECTION_CROP_FUNC \
     + " internal-offset=" + internal_offset + " drop-uncropped-buffers=true use-letterbox=false name=license_plate_detect_cropper ";
     license_plate_detection_pipeline += "hailoaggregator name=lpd_agg ";
