@@ -117,17 +117,6 @@ std::string create_compositor_locations(int num_of_src, int width, int height, i
 //******************************************************************
 // PIPELINE CREATION
 //******************************************************************
-/**
- * @brief Create the pipeline string object
- *
- * @param cxxopts result
- *  input_src - std::string
- *      A video file path or usb camera name (/dev/video*)
- *  hailo-stats - bool
- *     If true, add hailodevicestats to pipeline
- * @return std::string
- *         The full pipeline string.
- */
 std::string create_pipeline_string(cxxopts::ParseResult result)
 {
     int num_of_src = result["num-of-inputs"].as<int>();
@@ -155,7 +144,11 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     std::string streamrouter_input_streams;
     int start_index = 0;
     std::string vaapi_res = "";
-    if(num_of_src > 4){
+    if(num_of_src > 11){
+        width = 640;
+        height = 360;
+        streams_in_line = 4;
+    } else if(num_of_src > 4){
         width = 640;
         height = 360;
         streams_in_line = 3;
@@ -211,8 +204,6 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     
     pipeline_string = sources + " hailoroundrobin name=fun ! ";
     pipeline_string += QUEUE + " name=hailo_pre_infer_q_0 max-size-buffers=30 ! ";
-    // The floats in config-path define a bbox "xmin,ymin,width,height" for the region of interest used for license plate detection
-    // pipeline_string += "hailofilter name=add_mask so-path=" + LICENSE_PLATE_CROP_SO + " config-path=0.0,0.5,1.0,0.5 qos=false function-name=add_mask ! ";
     pipeline_string += QUEUE + " name=car_det_pre_crop max-size-buffers=30 ! ";
     pipeline_string += "hailocropper so-path=" + WHOLE_BUFFER_CROP_SO + " use-letterbox=false function-name=create_crops internal-offset=" + internal_offset + " name=car_detect_cropper ";
     
@@ -292,8 +283,6 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     
     // License plate OCR pipeline
     std::string license_plate_ocr_pipeline = "";
-    //license_plate_ocr_pipeline += "vaapipostproc name=license_plate_ocr_postproc format=yuy2 ! video/x-raw,format=YUY2,width=1920,height=1080 ! ";
-    // license_plate_ocr_pipeline += "videoconvert name=license_plate_ocr_convert ! video/x-raw,format=YUY2,width=1920,height=1080 ! ";
     
     license_plate_ocr_pipeline += "hailocropper so-path=" + LICENSE_PLATE_CROP_SO + " function-name=" + LICENSE_PLATE_OCR_CROP_FUNC \
     + " internal-offset=" + internal_offset + " drop-uncropped-buffers=true use-letterbox=false name=license_plate_ocr_cropper ";
@@ -320,9 +309,6 @@ std::string create_pipeline_string(cxxopts::ParseResult result)
     license_plate_ocr_pipeline += "lpd_ocr_agg.sink_0 ";
     license_plate_ocr_pipeline += "lpd_ocr_agg. ! ";
     license_plate_ocr_pipeline += "queue leaky=no max-size-bytes=0 max-size-time=0 max-size-buffers=3 name=post_ocr_q ! ";
-    // license_plate_ocr_pipeline += "hailofilter so-path=" + LPR_OCR_SINK + " qos=false ! ";
-
-    // license_plate_ocr_pipeline += "hailofilter so-path=" + LPR_OCR_SINK + " function-name=ocr_no_catalog qos=false ! ";
     license_plate_ocr_pipeline += "hailofilter use-gst-buffer=true so-path=" + LPR_OCR_SINK + " qos=false ! ";
     
     pipeline_string += license_plate_ocr_pipeline;
@@ -365,7 +351,6 @@ static void probe_callback(GstElement *element, GstBuffer *buffer, gpointer user
     for (auto detection : detections)
     {
         auto bbox = detection->get_bbox();
-        //g_object_set(G_OBJECT(data_->text_overlay), "text", detection->get_label().c_str() , NULL);
         std::cout << "Detection: " << detection->get_label() << " " << std::to_string(bbox.width()) << " " << std::to_string(bbox.xmin()) << std::endl;
         sub_detections = hailo_common::get_hailo_detections(detection);
         for (auto sub_detection : sub_detections)
@@ -373,7 +358,6 @@ static void probe_callback(GstElement *element, GstBuffer *buffer, gpointer user
             auto sub_bbox = sub_detection->get_bbox();
             std::cout << "Sub Detection: " << sub_detection->get_label() << " " << std::to_string(sub_bbox.width()) << " " << std::to_string(sub_bbox.xmin()) << std::endl;
         }
-        //break;
     }
 }
 
@@ -407,12 +391,7 @@ int main(int argc, char *argv[])
         std::cout << options.help() << std::endl;
         exit(0);
     }
-    // if (result["num-of-inputs"].as<int>() > 9)
-    // {
-    //     std::cout << "ERROR: The maximum number of inputs is 9" << std::endl;
-    //     exit(0);
-    // }
-
+    
     // Prepare pipeline components
     GstBus *bus;
     GMainLoop *main_loop;
@@ -436,8 +415,6 @@ int main(int argc, char *argv[])
     UserData user_data;
     setup_hailo_utils(pipeline, bus, main_loop, &user_data, result);
     
-    // set_hailo_probe_callbacks(&user_data); // Set probe callbacks
-
     // get fps_probe element
     GstElement *fps_probe = gst_bin_get_by_name(GST_BIN(pipeline), "fps_probe");
     // set probe callback

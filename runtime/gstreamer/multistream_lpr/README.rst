@@ -67,6 +67,6 @@ Instructions
 
        $ ./multistream_lpr --num-of-inputs 8 --enable-display
    
-   **Note**: Running with the display option reduces FPS.
+   **Note**: Running with the display option reduces FPS. Each stream is 1080p and handling it requires a lot of resources. To get the best performance, run without the display option.
    
 Enjoy ;)
