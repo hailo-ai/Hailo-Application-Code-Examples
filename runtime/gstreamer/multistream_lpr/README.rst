@@ -48,7 +48,8 @@ Instructions
        $ cd resources
        $ ./get_hef_resources.sh
 
-4. To run the demo, execute the command in the parent library. The default setting runs with 4 streams and no display:
+4. Make sure you got the $TAPPAS_WORKSPACE environment variable set to the root of your TAPPAS / HailoSuite docker. For example: export TAPPAS_WORKSPACE=/home/...../hailo_sw_suite/artifacts/tappas
+5. To run the demo, execute the command in the parent library. The default setting runs with 4 streams and no display:
 
    .. code-block:: bash
 
@@ -66,6 +67,6 @@ Instructions
 
        $ ./multistream_lpr --num-of-inputs 8 --enable-display
    
-   **Note**: Running with the display option reduces FPS.
+   **Note**: Running with the display option reduces FPS. Each stream is 1080p and handling it requires a lot of resources. To get the best performance, run without the display option.
    
 Enjoy ;)
