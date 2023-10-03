@@ -35,9 +35,9 @@ template <typename T>
 class ThreadSafeQueue {
 public:
 	ThreadSafeQueue() = default;
-	// ThreadSafeQueue(const ThreadSafeQueue&) = delete;
-	// ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
-	// ThreadSafeQueue(ThreadSafeQueue&&) = delete;
+	ThreadSafeQueue(const ThreadSafeQueue&) = delete;
+	ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
+	ThreadSafeQueue(ThreadSafeQueue&&) = delete;
 
 	// void push(T& t) {
 	// 	std::unique_lock<std::mutex> lock(m_mutex);

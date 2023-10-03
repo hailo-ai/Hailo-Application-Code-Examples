@@ -16,12 +16,19 @@
 
 using namespace hailort;
 
+// #define _EMBEDDED_ // comment out to disable embedded mode (jpg instead of mp4, for h15 / imx)
+
+#ifndef _EMBEDDED_
 #define SAVE_TO_FILE // comment out to disable saving to file
+#endif
+
 constexpr auto TIMEOUT = std::chrono::milliseconds(1000);
-constexpr int default_max_num_frames_to_process = 300;
+constexpr int default_max_num_frames_to_process = 1233;
 class VideoCaptureWrapper {
 private:
     cv::VideoCapture capture;
+    std::string filename; // TODO: make it clearer for camera device type instead of -1 things.
+    std::string extension;
     int max_num_frames_to_process;
     size_t frame_size;
     int width;
@@ -35,26 +42,51 @@ public:
             std::cerr << "Error: Could not open camera device" << std::endl;
             exit(1);
         }
+        max_num_frames_to_process = default_max_num_frames_to_process;
     }
 
-    VideoCaptureWrapper(const std::string& filename) : capture(filename), frame_size(0), counter_frames(0), max_num_frames_to_process(-1) {
+    VideoCaptureWrapper(const std::string& filename) : capture(filename), filename(filename), frame_size(0), counter_frames(0), max_num_frames_to_process(default_max_num_frames_to_process) {
         if (!capture.isOpened()) {
             std::cerr << "Error: Could not open video file" << std::endl;
+            exit(1);
+        }
+        size_t dot_position = filename.rfind('.');
+        if (dot_position != std::string::npos) {
+            extension = filename.substr(dot_position + 1);
+            std::cout << extension << std::endl;
+            if (extension == "jpg" || extension == "jpeg") {
+                max_num_frames_to_process = default_max_num_frames_to_process;
+            } else if (extension == "mp4") {
+                max_num_frames_to_process = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_COUNT));
+            }
+            else {
+                std::cout << "Unknown file format " << extension << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cout << "Unknown file format" << std::endl;
             exit(1);
         }
     }
 
     int getNextFrame(AlignedBuffer buffer) {
-        if (max_num_frames_to_process == -1 || counter_frames < max_num_frames_to_process) {
+        if (counter_frames < max_num_frames_to_process) {
             cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
-            capture >> frame;
-            if (frame.empty()) {
-                return EXIT_FAILURE; // finished all frames
+            if (extension != "mp4" && capture.get(cv::CAP_PROP_POS_FRAMES) == capture.get(cv::CAP_PROP_FRAME_COUNT)) { // image file (not video) we already read
+                capture.release();  // Release the current capture
+                capture.open(filename); // Open the file again
+                if (!capture.isOpened()) {
+                    std::cerr << "Error: Could not open file " << filename << ", counter frames: " << counter_frames << std::endl;
+                    exit(1);
+                }
             }
+            capture >> frame;
             counter_frames++;
             return EXIT_SUCCESS;
         }
-        return EXIT_FAILURE;
+        std::cout << "Finished all frames. counter_frames = " << counter_frames << ", max_num_frames_to_process = " << max_num_frames_to_process << std::endl;
+        return EXIT_FAILURE; // finished all frames (images)
     }
 
     hailo_status setHeightWidth(double height_hef, double width_hef) {
@@ -259,21 +291,25 @@ public:
         // --------------------------------------------------- post-process thread -------------------------------------------------------
         std::atomic<hailo_status> pp_status(HAILO_UNINITIALIZED);
         std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status, &outputs_mutex=outputs_mutex, &outputs_cv=outputs_cv]() {
-            #ifdef SAVE_TO_FILE
+#ifdef SAVE_TO_FILE
             cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
-            #endif
+#endif
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // was: while (pp_ctr < input_ctr || continue_run)
                 // we have to make sure that all 3 outputs finished calback before we can pop them 
                 std::unique_lock<std::mutex> lock(outputs_mutex);
                 while (output_callback_ctr[0] <= 0 || output_callback_ctr[1] <= 0 || output_callback_ctr[2] <= 0) {
                     outputs_cv.wait(lock); // Release the lock and wait for a signal.
                 }
-                lock.unlock();
+                // was: lock.unlock() here
 
                 auto out_0 = output_tensors.outputs[0]->m_queue.pop();
                 auto out_1 = output_tensors.outputs[1]->m_queue.pop();
                 auto out_2 = output_tensors.outputs[2]->m_queue.pop();
                 auto raw_input = input_tensor.m_queue.pop();
+                output_callback_ctr[0]--;
+                output_callback_ctr[1]--;
+                output_callback_ctr[2]--;
+                lock.unlock();
                 if ( !out_0 || !out_1 || !out_2 || !raw_input) {
                     std::cerr << "Failed to pop input or output buffer" << std::endl;
                     pp_status = HAILO_INTERNAL_FAILURE;
@@ -311,15 +347,15 @@ public:
                             cv::Scalar(0, 0, 255), 1);
                     }
                 }
-                #ifdef SAVE_TO_FILE
+#ifdef SAVE_TO_FILE
                 video << raw_frame; // add in order to save to file the processed video
-                #endif
+#endif
     
                 pp_ctr++;
             }
-            #ifdef SAVE_TO_FILE
+#ifdef SAVE_TO_FILE
             video.release(); // add in order to save to file the processed video
-            #endif
+#endif
             pp_status = HAILO_SUCCESS;
         });
         // ------------------------------------------------ join threads ----------------------------------------------------------------
@@ -355,9 +391,14 @@ public:
 
 int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
+#ifdef _EMBEDDED_
+    const std::string video_source = "640.jpg";
+    const bool print = false;
+#else
     const std::string video_source = "640.mp4";
-    const std::string hef_path = "yolov5m_wo_spp_60p.hef";
     const bool print = true;
+#endif
+    const std::string hef_path = "yolov5m_wo_spp_60p.hef";
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
     hailo_status status = app.init(hef_path, print);
