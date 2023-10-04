@@ -16,80 +16,97 @@
 
 using namespace hailort;
 
-// #define _EMBEDDED_ // comment out to disable embedded mode (jpg instead of mp4, for h15 / imx)
+// #define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx)
 
 #ifndef _EMBEDDED_
 #define SAVE_TO_FILE // comment out to disable saving to file
 #endif
 
 constexpr auto TIMEOUT = std::chrono::milliseconds(1000);
-constexpr int default_max_num_frames_to_process = 1233;
-class VideoCaptureWrapper {
-private:
-    cv::VideoCapture capture;
-    std::string filename; // TODO: make it clearer for camera device type instead of -1 things.
-    std::string extension;
-    int max_num_frames_to_process;
-    size_t frame_size;
-    int width;
-    int height;
+constexpr int default_max_num_frames_to_process = 1200;
+
+class AbstractCapture {
 public:
     int counter_frames;
 
+    AbstractCapture(const std::string& filename, int max_num_frames_to_process, int counter_frames) : filename(filename), max_num_frames_to_process(max_num_frames_to_process), counter_frames(counter_frames) {}
+    virtual int getNextFrame(AlignedBuffer buffer) = 0; // Pure virtual function
+    virtual hailo_status setHeightWidth(double height_hef, double width_hef) = 0; // Pure virtual function
+    int getWidth() {
+        return width;
+    }
+    int getHeight() {
+        return height;
+    }
+
+protected:
+    std::string filename;
+    int max_num_frames_to_process;
+    int width;
+    int height;
+};
+
+class ImageCapture : public AbstractCapture {
 public:
-    VideoCaptureWrapper(int deviceIndex) : capture(deviceIndex), frame_size(0), counter_frames(0), max_num_frames_to_process(default_max_num_frames_to_process) {
-        if (!capture.isOpened()) {
-            std::cerr << "Error: Could not open camera device" << std::endl;
-            exit(1);
-        }
-        max_num_frames_to_process = default_max_num_frames_to_process;
-    }
-
-    VideoCaptureWrapper(const std::string& filename) : capture(filename), filename(filename), frame_size(0), counter_frames(0), max_num_frames_to_process(default_max_num_frames_to_process) {
-        if (!capture.isOpened()) {
-            std::cerr << "Error: Could not open video file" << std::endl;
-            exit(1);
-        }
-        size_t dot_position = filename.rfind('.');
-        if (dot_position != std::string::npos) {
-            extension = filename.substr(dot_position + 1);
-            std::cout << extension << std::endl;
-            if (extension == "jpg" || extension == "jpeg") {
-                max_num_frames_to_process = default_max_num_frames_to_process;
-            } else if (extension == "mp4") {
-                max_num_frames_to_process = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_COUNT));
-            }
-            else {
-                std::cout << "Unknown file format " << extension << std::endl;
-                exit(1);
-            }
-        }
-        else {
-            std::cout << "Unknown file format" << std::endl;
+    ImageCapture(const std::string& filename) : AbstractCapture(filename, default_max_num_frames_to_process, 0) {
+        capture = cv::imread(filename);
+        if (capture.empty()) {
+            std::cerr << "Error: Could not open image file " << filename << std::endl;
             exit(1);
         }
     }
 
-    int getNextFrame(AlignedBuffer buffer) {
+    int getNextFrame(AlignedBuffer buffer) override {
         if (counter_frames < max_num_frames_to_process) {
             cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
-            if (extension != "mp4" && capture.get(cv::CAP_PROP_POS_FRAMES) == capture.get(cv::CAP_PROP_FRAME_COUNT)) { // image file (not video) we already read
-                capture.release();  // Release the current capture
-                capture.open(filename); // Open the file again
-                if (!capture.isOpened()) {
-                    std::cerr << "Error: Could not open file " << filename << ", counter frames: " << counter_frames << std::endl;
-                    exit(1);
-                }
-            }
-            capture >> frame;
+            capture.copyTo(frame); // TODO: make sure same type and size, so there won't be reallocation
             counter_frames++;
             return EXIT_SUCCESS;
         }
-        std::cout << "Finished all frames. counter_frames = " << counter_frames << ", max_num_frames_to_process = " << max_num_frames_to_process << std::endl;
         return EXIT_FAILURE; // finished all frames (images)
     }
 
-    hailo_status setHeightWidth(double height_hef, double width_hef) {
+    hailo_status setHeightWidth(double height_hef, double width_hef) override {
+        cv::Size size = capture.size();
+        int height_capture = size.height;
+        int width_capture = size.width;
+        if (height_hef != height_capture || width_hef != width_capture) {
+            std::cerr << "Error: Frame size of HEF and capture device do not match, hxw HEF: " << height_hef << "x" << width_hef << ", hxw capture: " << height_capture << "x" << width_capture << std::endl;
+            return HAILO_INVALID_ARGUMENT; // TODO: maybe resize video and not fail, and only print warnning
+        }
+        height = height_hef;
+        width = width_hef;
+        return HAILO_SUCCESS;
+    }
+
+private:
+    cv::Mat capture;
+
+};
+
+class VideoCapture : public AbstractCapture {
+public:
+    VideoCapture(const std::string& filename) : AbstractCapture(filename, default_max_num_frames_to_process, 0), capture(filename) {
+        if (!capture.isOpened()) {
+            std::cerr << "Error: Could not open video file " << filename << std::endl;
+            exit(1);
+        }
+        max_num_frames_to_process = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_COUNT));
+    }
+
+    int getNextFrame(AlignedBuffer buffer) override {
+        if (counter_frames < max_num_frames_to_process) {
+            cv::Mat frame(height, width, CV_8UC3, static_cast<void*>(buffer.get()));
+            capture >> frame;
+            if (!frame.empty()) {
+                counter_frames++;
+                return EXIT_SUCCESS;
+            }
+        }
+        return EXIT_FAILURE; // finished all frames (video)
+    }
+
+    hailo_status setHeightWidth(double height_hef, double width_hef) override {
         double height_capture = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
         double width_capture = capture.get(cv::CAP_PROP_FRAME_WIDTH);
         if (height_hef != height_capture || width_hef != width_capture) {
@@ -101,18 +118,13 @@ public:
         return HAILO_SUCCESS;
     }
 
-    int getWidth() {
-        return width;
-    }
+private:
+    cv::VideoCapture capture;
 
-    int getHeight() {
-        return height;
-    }
 };
 
 class App {
 private:
-    VideoCaptureWrapper camera;
     std::unique_ptr<hailort::Device> device;
     std::shared_ptr<ConfiguredNetworkGroup> network_group; // TODO: all the .get() are because of reference_wrapper, maybe save as plain reference of inputs & outputs vstreams instead (or in addition)
     int num_outputs;
@@ -127,11 +139,29 @@ private:
     std::condition_variable outputs_cv;
 
 public:
-    App(int cameraIndex) : camera(cameraIndex), num_outputs(0), input_ctr(0), pp_ctr(0), continue_run(false), print(false) {}
-    App(const std::string source) : camera(source), num_outputs(0), input_ctr(0), pp_ctr(0), continue_run(false), print(false) {}
+    std::unique_ptr<AbstractCapture> camera;
+    App(const std::string filename) : num_outputs(0), input_ctr(0), pp_ctr(0), continue_run(false), print(false) {
+        size_t dot_position = filename.rfind('.');
+        if (dot_position != std::string::npos) {
+            const std::string extension = filename.substr(dot_position + 1);
+            if (extension == "jpg" || extension == "jpeg") {
+                camera = std::make_unique<ImageCapture>(filename);
+            } else if (extension == "mp4") {
+                camera = std::make_unique<VideoCapture>(filename);
+            }
+            else {
+                std::cout << "Unknown file format " << extension << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cout << "Unknown file format" << std::endl;
+            exit(1);
+        }
+    }
 
     const int get_num_frames_processed() {
-        return camera.counter_frames;
+        return camera->counter_frames;
     }
 
     hailo_status init(const std::string& hef_path, bool print) {
@@ -148,7 +178,7 @@ public:
             return network_group_exp.status();
         }
         network_group = std::move(network_group_exp.value());
-        auto status = camera.setHeightWidth(network_group->get_input_streams()[0].get().get_info().hw_shape.height, network_group->get_input_streams()[0].get().get_info().hw_shape.width);
+        auto status = camera->setHeightWidth(network_group->get_input_streams()[0].get().get_info().hw_shape.height, network_group->get_input_streams()[0].get().get_info().hw_shape.width);
         if (status != HAILO_SUCCESS) {
             std::cerr << "Failed to set input width and height" << std::endl;
             return status;
@@ -231,7 +261,7 @@ public:
                 input_status = inputs[0].get().wait_for_async_ready(inputs[0].get().get_frame_size(), TIMEOUT);
                 if (HAILO_SUCCESS != input_status) { return; }
                 auto input_buffer = page_aligned_alloc(inputs[0].get().get_frame_size());
-                auto get_frame_status = camera.getNextFrame(input_buffer);
+                auto get_frame_status = camera->getNextFrame(input_buffer);
                 if (EXIT_SUCCESS != get_frame_status) {
                     continue_run = false;
                     return; 
@@ -292,7 +322,7 @@ public:
         std::atomic<hailo_status> pp_status(HAILO_UNINITIALIZED);
         std::thread pp_thread([&print_mutex=print_mutex, &camera=camera, &input_tensor, &output_tensors, &input_ctr=input_ctr, &output_callback_ctr=output_callback_ctr, &pp_ctr=pp_ctr, &continue_run=continue_run, &print=print, &pp_status=pp_status, &outputs_mutex=outputs_mutex, &outputs_cv=outputs_cv]() {
 #ifdef SAVE_TO_FILE
-            cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera.getWidth(), camera.getHeight())); // add in order to save to file the processed video
+            cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(camera->getWidth(), camera->getHeight())); // add in order to save to file the processed video
 #endif
             while (pp_ctr < input_ctr || continue_run) { // we haven't finished to process all the input frames // was: while (pp_ctr < input_ctr || continue_run)
                 // we have to make sure that all 3 outputs finished calback before we can pop them 
@@ -319,7 +349,7 @@ public:
                     std::unique_lock<std::mutex> lock(print_mutex);
                     std::cout << "post-process async write " << pp_ctr << std::endl;
                 }
-                cv::Mat raw_frame(camera.getHeight(), camera.getWidth(), CV_8UC3, static_cast<void*>(raw_input.get()));
+                cv::Mat raw_frame(camera->getHeight(), camera->getWidth(), CV_8UC3, static_cast<void*>(raw_input.get()));
 
                 FeatureMap feature_map_2(out_2, output_tensors.outputs[2]->m_height, output_tensors.outputs[2]->m_width, output_tensors.outputs[2]->m_channels, 
                 default_anchors_num, default_feature_map_channels, output_tensors.outputs[2]->m_qp_zp, output_tensors.outputs[2]->m_qp_scale, default_conf_threshold, {116, 90, 156, 198, 373, 326});
