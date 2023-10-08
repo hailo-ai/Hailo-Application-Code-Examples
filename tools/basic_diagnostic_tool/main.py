@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import argparse
+from inspectors.clipping_inspector import ClippingInspector
 
+from inspectors.high_precision_inspector import HighPrecisionInspector
 from inspectors.norm_inspector import NormInspector
 from inspectors.compression_inspector import CompressionInspector
 from inspectors.concatenated_outputs_inspector import ConcatenatedOutputsInspector
@@ -43,9 +45,11 @@ def main():
         dataset, _ = data_to_dataset(args.dataset, CalibrationDataType.auto)
     else:
         dataset = None
+    # ClippingInspector(runner, dataset).run()
     NormInspector(runner, dataset).run()
     CompressionInspector(runner, dataset).run()
     ConcatenatedOutputsInspector(runner, dataset).run()
+    HighPrecisionInspector(runner, dataset).run()
 
 
 if __name__ == "__main__":
