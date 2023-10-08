@@ -168,6 +168,6 @@ class NormInspector(BaseInspector):
         ch_std = {}
         for layer in measured_layers_names:
             ch_mean[layer] = np.mean(ch_mean_by_layer[layer], axis=0)
-            ch_std[layer] = np.mean(ch_std_by_layer[layer], axis=0)
+            ch_std[layer] = np.sqrt(np.mean(np.power(ch_std_by_layer[layer], 2), axis=0))
 
         return ch_mean, ch_std
