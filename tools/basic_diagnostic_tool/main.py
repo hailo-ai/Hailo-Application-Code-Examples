@@ -2,7 +2,8 @@
 import argparse
 
 from inspectors.norm_inspector import NormInspector
-from inspectors.compression_inspectors import CompressionInspector
+from inspectors.compression_inspector import CompressionInspector
+from inspectors.concatenated_outputs_inspector import ConcatenatedOutputsInspector
 
 from hailo_sdk_common.logger.logger import create_custom_logger
 from hailo_sdk_client.runner.client_runner import ClientRunner
@@ -44,6 +45,7 @@ def main():
         dataset = None
     NormInspector(runner, dataset).run()
     CompressionInspector(runner, dataset).run()
+    ConcatenatedOutputsInspector(runner, dataset).run()
 
 
 if __name__ == "__main__":

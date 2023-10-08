@@ -16,6 +16,16 @@ class BaseInspector(ABC):
         else:
             self._logger = logger
 
-    @abstractmethod
     def run(self):
+        self._logger.info(f"Running inspector module: {self.name}")
+        self._run()
+        # TODO: consider adding error / warning counters?
+        self._logger.debug(f"Inspector module has finished ({self.name})")
+
+    @abstractmethod
+    def _run(self):
         pass
+
+    @property
+    def name(self) -> str:
+        return self.__class__.__name__

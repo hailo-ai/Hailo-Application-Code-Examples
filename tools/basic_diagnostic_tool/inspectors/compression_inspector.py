@@ -5,7 +5,7 @@ from hailo_model_optimization.tools.simple_alls_parser import CommandInfo, parse
 
 
 class CompressionInspector(BaseInspector):
-    def run(self):
+    def _run(self):
         compressed_ratio = self.get_compressed_ratio()
         if compressed_ratio == 0:
             return

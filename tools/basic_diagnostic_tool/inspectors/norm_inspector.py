@@ -38,7 +38,7 @@ class NormInspector(BaseInspector):
         super().__init__(runner, dataset, logger)
         self._nn_model = runner.get_hn_model()
 
-    def run(self):
+    def _run(self):
         measured_layers = self.check_normailzation_layer()
         self.check_is_input_data_normalized(measured_layers)
 
