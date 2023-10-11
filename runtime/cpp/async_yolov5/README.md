@@ -7,8 +7,18 @@ To get hef and video:
 get_hef_and_video.sh
 ``
 
-To build:  
+To build for x86_64:  
+Use CMakeLists_x86.txt (change it's name to CMakeLists.txt)  
 ``
+./build.sh
+``
+To build for hailo-15:  
+Use CMakeLists_h15.txt (change it's name to CMakeLists.txt)   
+Add in multi_async.cpp: ```#define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx) ```   
+and then run:  
+``
+#enable cross-compile environment
+. /opt/poky/4.0.2/environment-setup-armv8a-poky-linux
 ./build.sh
 ``
 

@@ -423,12 +423,13 @@ int main() {
     // -------------------------------------------- params -----------------------------------------------------------------------
 #ifdef _EMBEDDED_
     const std::string video_source = "640.jpg";
-    const bool print = false;
+    const bool print = true;
+    const std::string hef_path = "yolov5m_h15.hef";
 #else
     const std::string video_source = "640.mp4";
     const bool print = true;
-#endif
     const std::string hef_path = "yolov5m_wo_spp_60p.hef";
+#endif
     // -------------------------------------------- main -------------------------------------------------------------------------
     App app(video_source);
     hailo_status status = app.init(hef_path, print);
