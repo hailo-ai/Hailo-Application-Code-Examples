@@ -16,7 +16,7 @@
 
 using namespace hailort;
 
-// #define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx)
+// #define _EMBEDDED_ // add to enable embedded mode (h15)
 
 #ifndef _EMBEDDED_
 #define SAVE_TO_FILE // comment out to disable saving to file
@@ -424,7 +424,7 @@ int main() {
 #ifdef _EMBEDDED_
     const std::string video_source = "640.jpg";
     const bool print = true;
-    const std::string hef_path = "yolov5m_h15.hef";
+    const std::string hef_path = "yolov5m_wo_spp_60p_async_h15.hef";
 #else
     const std::string video_source = "640.mp4";
     const bool print = true;
