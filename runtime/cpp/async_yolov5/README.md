@@ -2,38 +2,46 @@
 
 This example demonstrates the use of HailoRT async API on raw streams (not VStreams).
 
-To get hef and video:  
+## To get hef and video:  
 ``
 get_hef_and_video.sh
 ``
-
-To build for x86_64:  
-Use CMakeLists_x86.txt (change it's name to CMakeLists.txt)  
+  
+## To build for x86_64:  
+* Use CMakeLists_x86.txt (change it's name to CMakeLists.txt)  
+* And then run:  
 ``
 ./build.sh
 ``
-To build for hailo-15:  
-Use CMakeLists_h15.txt (change it's name to CMakeLists.txt)   
-Add in multi_async.cpp: ```#define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx) ```   
-and then run:  
+## To build for hailo-15:  
+* Use CMakeLists_h15.txt (change it's name to CMakeLists.txt)   
+* Add in multi_async.cpp: ```#define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx) ```   
+* And then run:  
 ``
 #enable cross-compile environment
 . /opt/poky/4.0.2/environment-setup-armv8a-poky-linux
 ./build.sh
 ``
 
-To run:  
+## To run:  
 ```
 ./build/async_infer
   
 # open processed video  
 vlc processed_video.mp4  
 ```
+## Performance:  
+|                         | x86_64 (laptop) | h15            |
+| ------------------------|:---------------:|:--------------:|
+| cpu util on peak        | 165 (/1600)     | 63.8 (/400)    |
+| fps                     | 217             | 68             |
+| hailortcli run hw_only  | 217.78          | 70             |
 
 ## Notes:  
 * If you do not want to save the processed video as mp4, 
 comment out the line ```#define SAVE_TO_FILE // comment out to disable saving to file ``` in ```multi_async.cpp```.  
 * If you compile on embedded system which doesn't have a decoder (such as hilo-15), please add ```#define _EMBEDDED_```  in ```multi_async.cpp```.  
+* yolov5m_wo_spp_60p_async_h15.hef includes ```tf_rgb_to_hailo_rgb``` and ```hailo_rgb_to_tf_rgb``` format conversions.  
 
 ## Overview  
 This code represents an application for performing inference using HailoRT async API on raw-streams (not VStreams). The application is designed to process video data from a video file, run it through a YOLOv5 model, and post-process the results to detect objects in the video frames.
