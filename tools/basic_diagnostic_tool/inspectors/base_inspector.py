@@ -8,7 +8,7 @@ class BaseInspector(ABC):
     """
     Base inspector class for the basic diagnotic tool
     """
-    def __init__(self, runner: ClientRunner, dataset, logger=None) -> None:
+    def __init__(self, runner: ClientRunner, dataset, logger=None, **kwargs) -> None:
         self._runner = runner
         self._dataset = dataset
         if logger is None:
