@@ -49,9 +49,13 @@ There might be additional info or warning messages between the inspector modules
 ```
 [info] Running inspector module: NormInspector
 [warning] Input layer resnet_v1_18/input_layer1 doesn't have normalization. Was the data normalized manually?
+[error] Unexpected data distribution at resnet_v1_18/input_layer1. (expected normalized data) mean: [120.55961  114.191986  94.09033 ], std: [59.070805 56.93998  57.789307]
+[error] Mean or std are above threshold. Data might not be noramlized
 ```
 
-Warning messages doesn't indicate there're necesarily issues with the model, but it warns about non-standard behavior. In the current example, if the data is being normalized outside of the Hailo pipeline, the behavior should be completely fine, otherwise you might want to add normalization layer to your model. 
+Warning messages doesn't indicate there're necesarily issues with the model, but it warns about non-standard behavior. In the current example, if the data is being normalized outside of the Hailo pipeline, the behavior should be completely fine, otherwise you might want to add normalization layer to your model.
+
+The error messages usually indicates that the behavior is most likely problematic. In this example, the model model didn't have normalization and the input data wasn't normalized.
 
 ### Advanced usage
 
