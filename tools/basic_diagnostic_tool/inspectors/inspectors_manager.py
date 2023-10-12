@@ -17,6 +17,7 @@ INSPECTORS = {
 
 # Assuming constant item order of dicts in python 3.7
 DEFAULT_ORDER = [inspector for inspector in INSPECTORS]
+DEFAULT_ORDER.remove(InspectorsEnum.CLIPPING)  # clipping is not ready yet
 
 
 def run_inspectors(runner, dataset, logger=None, custom_order=None, **kwargs):
