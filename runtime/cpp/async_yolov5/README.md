@@ -15,19 +15,19 @@ get_hef_and_video.sh
 ``
 ## To build for hailo-15:  
 * Use CMakeLists_h15.txt (change it's name to CMakeLists.txt)   
-* Add in multi_async.cpp: ```#define _EMBEDDED_ // add to enable embedded mode (jpg instead of mp4, for h15 / imx) ```   
+* Add in multi_async.cpp: ```// #define _EMBEDDED_ // add to enable embedded mode (h15) ```   
 * And then run:  
-``
-#enable cross-compile environment
-. /opt/poky/4.0.2/environment-setup-armv8a-poky-linux
-./build.sh
-``
+```
+# enable cross-compile environment  
+. /opt/poky/4.0.2/environment-setup-armv8a-poky-linux  
+./build.sh  
+```
 
 ## To run:  
 ```
 ./build/async_infer
   
-# open processed video  
+# if x86_64, open processed video  
 vlc processed_video.mp4  
 ```
 ## Performance:  
