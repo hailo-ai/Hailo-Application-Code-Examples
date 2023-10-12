@@ -19,8 +19,8 @@ INSPECTORS = {
 DEFAULT_ORDER = [inspector for inspector in INSPECTORS]
 
 
-def run_inspectors(runner, dataset, custom_order=None):
+def run_inspectors(runner, dataset, logger=None, custom_order=None, **kwargs):
     if custom_order is None:
         custom_order = DEFAULT_ORDER
     for inspector in custom_order:
-        INSPECTORS[inspector](runner, dataset).run()
+        INSPECTORS[inspector](runner, dataset, logger=logger, **kwargs).run()

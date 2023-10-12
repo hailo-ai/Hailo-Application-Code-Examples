@@ -12,7 +12,7 @@ class BaseInspector(ABC):
         self._runner = runner
         self._dataset = dataset
         if logger is None:
-            self._logger = create_custom_logger(log_path="normalization_checker.log", console=True)
+            self._logger = create_custom_logger(log_path="diagnostic_tool.log", console=True)
         else:
             self._logger = logger
 

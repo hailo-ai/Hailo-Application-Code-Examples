@@ -16,16 +16,22 @@ def get_parser():
         help="Path to HAR file",
         type=str)
     parser.add_argument(
-        "--dataset",
+        "-d", "--dataset",
         help="Calibration Dataset, npy / npz file formats",
         type=str,
         required=False)
     parser.add_argument(
-        "--hw_arch",
+        "-a", "--hw_arch",
         help="Target HW arch {%(choices)s}",
         choices=SUPPORTED_HW_ARCHS,
         required=False,
         metavar='HW_ARCH')
+    parser.add_argument(
+        "--log-path",
+        help="Default path: %(default)s",
+        type=str,
+        default="diagnostic_tool.log"
+    )
 
     advanced_parser = parser.add_argument_group("Advanced", description="Advanced diagnostic tool features")
     inspectors = [v.value for v in InspectorsEnum]
@@ -67,8 +73,11 @@ def _data_initialization(args):
 
 def main(args):
     from inspectors.inspectors_manager import run_inspectors
+    from hailo_sdk_common.logger.logger import create_custom_logger
+
     runner, dataset = _data_initialization(args)
-    run_inspectors(runner, dataset)
+    logger = create_custom_logger(log_path=args.log_path, console=True)
+    run_inspectors(runner, dataset, logger=logger)
 
 
 if __name__ == "__main__":
