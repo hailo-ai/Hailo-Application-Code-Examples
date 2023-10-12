@@ -51,17 +51,12 @@ There might be additional info or warning messages between the inspector modules
 [warning] Input layer resnet_v1_18/input_layer1 doesn't have normalization. Was the data normalized manually?
 ```
 
-Warning messages doesn't indicate there're necesarily issues with the model, but it warns about non-standard behavior. In the current example, if the data is normalized outside of the Hailo pipeline, the behavior should be completely fine, otherwise you might want to include normalization layer in your model. 
-
-The 
+Warning messages doesn't indicate there're necesarily issues with the model, but it warns about non-standard behavior. In the current example, if the data is being normalized outside of the Hailo pipeline, the behavior should be completely fine, otherwise you might want to add normalization layer to your model. 
 
 ### Advanced usage
-
-[//]: <> (Disable / enable inspectors)
 
 ## Modules Explanation
 
 ## Code
-
 
 The tool is composed of "Inspector" modules, each Inspector diagnoses different common issue. If you'd like to read more about the inspectors, read [here](inspectors/README.md)
