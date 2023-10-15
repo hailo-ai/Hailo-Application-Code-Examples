@@ -17,6 +17,7 @@ class PrecisionLayerInfo:
 
 class HighPrecisionInspector(BaseInspector):
     # TODO: add measure SNR function in case data is missing?
+    # TODO: if advanced LAT was applied, use the output SNR for indication
     SQNR_THRESHOLD = 10
 
     def _run(self):
