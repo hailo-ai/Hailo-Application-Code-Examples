@@ -8,3 +8,4 @@ class InspectorsEnum(Enum):
     HIGH_PRECISIOn = "high_precision"
     CLIPPING = "clipping"
     BATCH_NORM = "batch_norm"
+    IMAGE_INSPECTOR = "image_preview"

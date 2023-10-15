@@ -4,10 +4,12 @@ from inspectors.compression_inspector import CompressionInspector
 from inspectors.concatenated_outputs_inspector import ConcatenatedOutputsInspector
 from inspectors.definitions import InspectorsEnum
 from inspectors.high_precision_inspector import HighPrecisionInspector
+from inspectors.image_inspector import ImageInspector
 from inspectors.norm_inspector import NormInspector
 
 
 INSPECTORS = {
+    InspectorsEnum.IMAGE_INSPECTOR: ImageInspector,
     InspectorsEnum.NORMALIZATION: NormInspector,
     InspectorsEnum.COMPRESSION: CompressionInspector,
     InspectorsEnum.OUTPUT_CONCAT: ConcatenatedOutputsInspector,
