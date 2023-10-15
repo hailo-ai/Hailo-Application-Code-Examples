@@ -1,7 +1,7 @@
 
 
 from inspectors.base_inspector import BaseInspector
-from hailo_model_optimization.acceleras.utils.acceleras_definitions import LayerType
+from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
 
 
 class ConcatenatedOutputsInspector(BaseInspector):
@@ -25,4 +25,4 @@ class ConcatenatedOutputsInspector(BaseInspector):
 
     @staticmethod
     def _is_concat(layer):
-        return LayerType(layer.op.value) == LayerType.CONCAT
+        return layer.op == LayerType.concat

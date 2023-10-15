@@ -10,7 +10,7 @@ from inspectors.base_inspector import BaseInspector
 
 from hailo_sdk_client.runner.client_runner import ClientRunner
 from hailo_sdk_client.exposed_definitions import InferenceContext
-from hailo_model_optimization.acceleras.utils.acceleras_definitions import LayerType
+from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
 
 
 class MeasuredLayerType(Enum):
@@ -121,7 +121,7 @@ class NormInspector(BaseInspector):
         Find which layers should be sampled (mean and std)
         If an input has a norm layer as a decendent - pick the norm layer, otherwise pick the input layer.
         """
-        norm_layers = list(filter(lambda x: LayerType(x.op.value) == LayerType.NORAMLIZATION,
+        norm_layers = list(filter(lambda x: x.op == LayerType.normalization,
                                   self._nn_model.stable_toposort()))
         input_layers = self._nn_model.get_input_layers()
         measured_layers = list()

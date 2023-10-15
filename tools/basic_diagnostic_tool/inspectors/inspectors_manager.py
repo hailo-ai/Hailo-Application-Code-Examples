@@ -1,3 +1,4 @@
+from inspectors.batch_norm_inspector import BatchNormInspector
 from inspectors.clipping_inspector import ClippingInspector
 from inspectors.compression_inspector import CompressionInspector
 from inspectors.concatenated_outputs_inspector import ConcatenatedOutputsInspector
@@ -11,7 +12,8 @@ INSPECTORS = {
     InspectorsEnum.COMPRESSION: CompressionInspector,
     InspectorsEnum.OUTPUT_CONCAT: ConcatenatedOutputsInspector,
     InspectorsEnum.HIGH_PRECISIOn: HighPrecisionInspector,
-    InspectorsEnum.CLIPPING: ClippingInspector
+    InspectorsEnum.CLIPPING: ClippingInspector,
+    InspectorsEnum.BATCH_NORM: BatchNormInspector
 }
 
 
