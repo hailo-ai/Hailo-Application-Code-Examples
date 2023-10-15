@@ -91,6 +91,11 @@ The diagnostic tool is composed of different inspectors, each module assists in 
 
 ### clipping
 
+### batch_norm
+
+- The batch norm inspector checks if the layers of the model has fused batch norm layers.
+- In case the model is exported from torch, the batch norm layers might be folded pre-export (and won't appear in the hn). If dataset sample is provided, pre-act distriubtion will be collected and checked for likelyhood of folded batch-norm in the layers.
+
 ## Code
 
 The tool is composed of "Inspector" modules, each Inspector diagnoses different common issue. If you'd like to read more about the inspectors, read [here](inspectors/README.md)
