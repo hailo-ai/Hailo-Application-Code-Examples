@@ -21,7 +21,7 @@ class BatchNormInspector(BaseInspector):
     STD_TH = 2
 
     def _run(self):
-        simple_run = True
+        simple_run = self._dataset is None
         nn_model = self._runner.get_hn_model()
         fused_bn = self._get_bn_fused_layers(nn_model)
         if len(fused_bn) == 0:
@@ -29,6 +29,7 @@ class BatchNormInspector(BaseInspector):
                 self._logger.warning("The model doesn't have batch norm layers. "
                                      "This means that either the layers of the model aren't normalized correctly, "
                                      "or that the model was batch norm layers were fused during export (from torch)")
+                self._logger.info("Dataset was not provided, so data distirbution won't be checked")
                 # TODO: collect pre-act distribution and check data
             else:
                 outliers = self._get_outliers()
@@ -87,7 +88,6 @@ class BatchNormInspector(BaseInspector):
             if mean_outliers_ratio > mean_ratio_th or std_outliers_ratio > std_ratio_th:
                 outliers[layer] = (mean_outliers_ratio, std_outliers_ratio)
         return outliers
-
 
     def _get_bn_fused_layers(self, nn_model):
         fused_bn = []
