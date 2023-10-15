@@ -59,7 +59,37 @@ The error messages usually indicates that the behavior is most likely problemati
 
 ### Advanced usage
 
+The `--order` flag can be used to select custom inspector modules.
+
+There are no additional advanced usages yet.
+
+[//]: <> (Add a behavior that will allow user made inspectors)
+
 ## Modules Explanation
+
+The diagnostic tool is composed of different inspectors, each module assists in identifying common issues within the model.
+
+### normalization
+
+- Search for normalization layers at the start of the model.
+- Check the input, and post normalization data distributions.
+
+### compression
+
+- Inform the user of any compression.
+- If no explicit compression level was detect, warns of implicit compression.
+
+### output_concat
+
+- Having some layers concatenated prior the output layer, forces an expanded dynamic range for the concatenated layers, which might reduce the accuracy. Selecting the pre-concat layers can improve the quantization results.
+
+### high_precision
+
+- Simple heurstic for assisting with 16 bit layers configuration
+
+[//]: <> (Should use the advanced LAT results, or maybe 2 different inspectors?)
+
+### clipping
 
 ## Code
 
