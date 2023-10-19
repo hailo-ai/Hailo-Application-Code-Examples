@@ -30,22 +30,32 @@ class HighPrecisionInspector(BaseInspector):
         layer_info_list = []
         input_layers = nn_model.get_input_layers()
         output_layers = nn_model.get_output_layers(False)
-        missing_info = False
+        missing_simple_lat = []
+        missing_advanced_lat = []
         for layer in nn_model.stable_toposort():
             if self._skip_snr(layer, input_layers, output_layers):
                 continue
+            partial_sqnr = params_statistics[layer.name].get('layer_noise_analysis/partial_snr')
             sqnr = params_statistics[layer.name].get('layer_noise_analysis/snr')
             if sqnr is None:
-                missing_info = True
-                continue
+                if partial_sqnr is not None:
+                    sqnr = partial_sqnr
+                    missing_advanced_lat.append(layer.name)
+                else:
+                    missing_simple_lat.append(layer.name)
+                    continue
             layer_info = PrecisionLayerInfo(
                 layer_name=layer.name,
                 sqnr=sqnr,
                 prec_mode=layer.precision_config.precision_mode
             )
             layer_info_list.append(layer_info)
-        if missing_info:
-            self._logger.warning("Missing data from layer_noise_analysis")
+        if missing_advanced_lat:
+            self._logger.warning("Missing data from layer_noise_analysis. Data from simple analysis was used.")
+        if missing_simple_lat or missing_advanced_lat:
+            self._logger.warning("Please run hailo analyze to fully utilize this inspector:\n"
+                                 "hailo analyze-noise <model_har> --analyze-mode advanced --data-path <dataset>")
+
         return layer_info_list
 
     def _skip_snr(self, layer, input_layers, output_layers):
