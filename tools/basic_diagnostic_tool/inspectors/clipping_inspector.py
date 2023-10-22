@@ -65,11 +65,21 @@ class ClippingInspector(BaseInspector):
             log_level = 0
             if bin1 != 0 and (hist_ranges[layer][0] + bin_size * (bin1)) < 0:
                 left_msg = f"{bin1}% of the range (of the low range) has {count_left} items"
-                new_log_level = logging.DEBUG if bin1 <= 5 else logging.WARNING
+                if bin1 <= 5:
+                    new_log_level = logging.DEBUG
+                elif bin1 > 5 and bin1 <= 20:
+                    new_log_level = logging.INFO
+                else:
+                    new_log_level = logging.WARNING
                 log_level = max(log_level, new_log_level)
             if bin2 != len(hist) and (hist_ranges[layer][0] + bin_size * (bin2)) > 0:
                 right_msg = f"{len(hist) - bin2}% of the range (of the high range) has {count_right} items"
-                new_log_level = logging.DEBUG if bin2 >= 95 else logging.WARNING
+                if bin2 >= 95:
+                    new_log_level = logging.DEBUG
+                elif bin2 < 95 and bin2 >= 80:
+                    new_log_level = logging.INFO
+                else:
+                    new_log_level = logging.WARNING
                 log_level = max(log_level, new_log_level)
             should_right = len(right_msg) > 0
             should_left = len(left_msg) > 0
