@@ -14,14 +14,13 @@ INSPECTORS = {
     InspectorsEnum.COMPRESSION: CompressionInspector,
     InspectorsEnum.OUTPUT_CONCAT: ConcatenatedOutputsInspector,
     InspectorsEnum.HIGH_PRECISIOn: HighPrecisionInspector,
-    InspectorsEnum.CLIPPING: ClippingInspector,
-    InspectorsEnum.BATCH_NORM: BatchNormInspector
+    InspectorsEnum.BATCH_NORM: BatchNormInspector,
+    InspectorsEnum.CLIPPING: ClippingInspector
 }
 
 
 # Assuming constant item order of dicts in python 3.7
 DEFAULT_ORDER = [inspector for inspector in INSPECTORS]
-DEFAULT_ORDER.remove(InspectorsEnum.CLIPPING)  # clipping is not ready yet
 
 
 def run_inspectors(runner, dataset, logger=None, custom_order=None, **kwargs):
