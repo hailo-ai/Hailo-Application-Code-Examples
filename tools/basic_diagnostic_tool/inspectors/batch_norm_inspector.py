@@ -2,7 +2,7 @@
 import numpy as np
 import tensorflow as tf
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
 from hailo_sdk_client.exposed_definitions import InferenceContext
@@ -17,6 +17,7 @@ class BatchNormInspector(BaseInspector):
     TODO: What about transformers?
     TODO: collect pre-act distribution to verify the data is normaliezd?
     """
+    PRIORITY = InspectorPriority.HIGH
     MEAN_TH = 5
     STD_TH = 2
 

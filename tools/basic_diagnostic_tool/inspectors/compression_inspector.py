@@ -1,10 +1,12 @@
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_model_optimization.acceleras.utils.acceleras_definitions import ModelOptimizationCommand, MOConfigCommand
 from hailo_model_optimization.tools.simple_alls_parser import CommandInfo, parse_model_script
 
 
 class CompressionInspector(BaseInspector):
+    PRIORITY = InspectorPriority.MEDIUM
+
     def _run(self):
         compressed_ratio = self.get_compressed_ratio()
         if compressed_ratio == 0:

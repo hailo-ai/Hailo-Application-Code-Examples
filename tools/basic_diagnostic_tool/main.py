@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import argparse
 
-from inspectors.definitions import InspectorsEnum
+from inspectors_manager import INSPECTORS_BY_NAME  # this import takes a sec~
 
-from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS  # this import takes a sec~
+from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS
 
 
 def get_parser():
@@ -34,7 +34,7 @@ def get_parser():
     )
 
     advanced_parser = parser.add_argument_group("Advanced", description="Advanced diagnostic tool features")
-    inspectors = [v.value for v in InspectorsEnum]
+    inspectors = [name for name in INSPECTORS_BY_NAME]
     advanced_parser.add_argument(
         "--order",
         help="Choose which inspectors to run and set a custom order {%(choices)s}",
@@ -72,7 +72,7 @@ def _data_initialization(args):
 
 
 def main(args):
-    from inspectors.inspectors_manager import run_inspectors
+    from inspectors_manager import run_inspectors
     from hailo_sdk_common.logger.logger import create_custom_logger
 
     runner, dataset = _data_initialization(args)

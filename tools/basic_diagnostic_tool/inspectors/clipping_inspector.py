@@ -2,12 +2,14 @@ import numpy as np
 import tensorflow as tf
 import logging
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_client.exposed_definitions import InferenceContext
 
 
 class ClippingInspector(BaseInspector):
+    PRIORITY = InspectorPriority.LOW
+
     def _run(self):
         if self._dataset is None:
             self._logger.warning(f"Skipping {self.name}, dataset was not provided")

@@ -1,10 +1,12 @@
 
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
 
 
 class ConcatenatedOutputsInspector(BaseInspector):
+    PRIORITY = InspectorPriority.MEDIUM
+
     def _run(self):
         self.search_concatenated_outputs()
 

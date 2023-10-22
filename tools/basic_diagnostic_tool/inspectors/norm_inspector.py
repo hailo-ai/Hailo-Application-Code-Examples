@@ -6,7 +6,7 @@ import networkx as nx
 import numpy as np
 import tensorflow as tf
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_client.runner.client_runner import ClientRunner
 from hailo_sdk_client.exposed_definitions import InferenceContext
@@ -29,6 +29,8 @@ class NormInspector(BaseInspector):
     """
     Check the normalization layers in the model.
     """
+    PRIORITY = InspectorPriority.HIGH
+
     NORMALIZED_MEAN_TH_FLEX = (-2, 5)  # should either be around 0 or around 0.5
     NORMALIZED_MEAN_TH_STRICT = (-0.5, 1)  # should either be around 0 or around 0.5
     NORMALIZED_STD_TH_FLEX = (0.1, 5)  # should either be around 1 or ?

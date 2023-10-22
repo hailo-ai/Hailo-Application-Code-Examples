@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 from hailo_model_optimization.acceleras.utils.acceleras_definitions import PrecisionMode
 from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
 
@@ -18,6 +18,8 @@ class PrecisionLayerInfo:
 class HighPrecisionInspector(BaseInspector):
     # TODO: add measure SNR function in case data is missing?
     # TODO: if advanced LAT was applied, use the output SNR for indication
+    PRIORITY = InspectorPriority.MEDIUM
+
     SQNR_THRESHOLD = 10
 
     def _run(self):

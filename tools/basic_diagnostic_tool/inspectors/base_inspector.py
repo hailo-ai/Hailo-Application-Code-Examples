@@ -1,13 +1,23 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 
 from hailo_sdk_common.logger.logger import create_custom_logger
 from hailo_sdk_client.runner.client_runner import ClientRunner
+
+
+class InspectorPriority(int, Enum):
+    UNSET = 0
+    LOW = 10
+    MEDIUM = 20
+    HIGH = 30
 
 
 class BaseInspector(ABC):
     """
     Base inspector class for the basic diagnotic tool
     """
+    PRIORITY = InspectorPriority.UNSET
+
     def __init__(self, runner: ClientRunner, dataset, logger=None, **kwargs) -> None:
         self._runner = runner
         self._dataset = dataset

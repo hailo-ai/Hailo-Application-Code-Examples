@@ -2,10 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-from inspectors.base_inspector import BaseInspector
+from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 
 class ImageInspector(BaseInspector):
+    PRIORITY = InspectorPriority.LOW
+
     def _run(self):
         if self._dataset is None:
             self._logger.warning("Skipping image inspector, no dataset was provided")
