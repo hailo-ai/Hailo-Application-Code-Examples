@@ -15,9 +15,9 @@ Overview
 Requirements
 ============
 - TAPPAS environment
-   - TAPPAS Docker (tested on TAPPAS 3.24.0 and 3.25.0)
+   - TAPPAS Docker (tested on TAPPAS 3.25.0 and 3.26.0)
    - Halio Suite Docker (tested on hailo_sw_suite_2023-07, and hailo_sw_suite_2023-10)
-   - Note that if you are using TAPPAS 3.24.0 or hailo_sw_suite_2023-07 you should remove the remark on the 'thresholds_str=""' line in the detection.py file. see instructions in the file.
+   - Note that if you are using TAPPAS 3.25.0 or hailo_sw_suite_2023-07 you should remove the remark on the 'thresholds_str=""' line in the detection.py file. see instructions in the file.
 - Hailo device
 
 

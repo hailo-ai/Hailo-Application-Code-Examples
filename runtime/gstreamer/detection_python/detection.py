@@ -26,7 +26,7 @@ nms_score_threshold=0.3
 nms_iou_threshold=0.45
 thresholds_str=f"nms-score-threshold={nms_score_threshold} nms-iou-threshold={nms_iou_threshold} output-format-type=HAILO_FORMAT_TYPE_FLOAT32"
 # else (TAPPAS version is 3.25.0)
-thresholds_str=""
+# thresholds_str=""
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Detection App")
