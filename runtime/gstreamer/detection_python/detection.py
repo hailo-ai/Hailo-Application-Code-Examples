@@ -25,13 +25,13 @@ video_sink = "xvimagesink"
 nms_score_threshold=0.3 
 nms_iou_threshold=0.45
 thresholds_str=f"nms-score-threshold={nms_score_threshold} nms-iou-threshold={nms_iou_threshold} output-format-type=HAILO_FORMAT_TYPE_FLOAT32"
-# else
-# thresholds_str=""
+# else (TAPPAS version is 3.25.0)
+thresholds_str=""
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Detection App")
-    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source")
-    parser.add_argument("--python-module", "-py", type=str, default="callback_template.py", help="Python module to use for post processing")
+    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source. Can be a file, USB or MIPI camera")
+    parser.add_argument("--python-module", "-py", type=str, default="callback_template.py", help="Python module with your callback function")
     parser.add_argument("--show-fps", "-f", action="store_true", help="Print FPS on sink")
     parser.add_argument("--disable-sync", action="store_true", help="Disables display sink sync, will run as fast possible.")
     parser.add_argument("--dump-dot", action="store_true", help="Dump the pipeline graph to a dot file pipeline.dot")
@@ -71,12 +71,11 @@ class GStreamerApp:
             exit(1)
         self.current_path = os.getcwd()
         self.postprocess_dir = os.path.join(tappas_workspace, 'apps/h8/gstreamer/libs/post_processes')
-        self.resources_dir = os.path.join(tappas_workspace, 'apps/h8/gstreamer/raspberrypi/detection/resources')
         self.default_postprocess_so = os.path.join(self.postprocess_dir, 'libyolo_hailortpp_post.so')
         self.default_network_name = "yolov5"
         self.video_source = self.options_menu.input
         self.source_type = get_source_type(self.video_source)
-        self.hef_path = os.path.join(tappas_workspace, 'apps/h8/gstreamer/general/detection/resources/yolov5m_wo_spp_60p.hef')
+        self.hef_path = os.path.join(tappas_workspace, 'apps/h8/gstreamer/resources/hef/yolov5m_wo_spp_60p.hef')
         
         if (self.options_menu.disable_sync):
             self.sync = "false" 
