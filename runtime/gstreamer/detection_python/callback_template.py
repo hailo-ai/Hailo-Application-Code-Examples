@@ -5,6 +5,7 @@ import hailo
 from gsthailo import VideoFrame
 from gi.repository import Gst
 import numpy as np
+import sys
 
 # This is the callback function that will be called for each frame
 def run(video_frame: VideoFrame):
@@ -32,7 +33,10 @@ def run(video_frame: VideoFrame):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
         if label == "person":
-            print(f"Detection: {label} {confidence}")
+            string_to_print = (f"Detection: {label} {confidence}")
+            sys.stdout.write(string_to_print)
+            sys.stdout.write("\r")
+            sys.stdout.flush()
     return Gst.FlowReturn.OK
 
 # This function will be called when the pipeline is closed
