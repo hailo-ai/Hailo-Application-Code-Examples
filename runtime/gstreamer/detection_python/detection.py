@@ -30,7 +30,7 @@ thresholds_str=f"nms-score-threshold={nms_score_threshold} nms-iou-threshold={nm
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Detection App")
-    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source. Can be a file, USB or MIPI camera")
+    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source. Can be a file, USB or MIPI camera. Defaults to /dev/video0")
     parser.add_argument("--python-module", "-py", type=str, default="callback_template.py", help="Python module with your callback function")
     parser.add_argument("--show-fps", "-f", action="store_true", help="Print FPS on sink")
     parser.add_argument("--disable-sync", action="store_true", help="Disables display sink sync, will run as fast possible.")
@@ -49,6 +49,8 @@ def get_source_type(input_source):
             if 'usb' in output.lower():
                 return 'usb'
             elif 'mipi' in output.lower():
+                return 'mipi'
+            elif 'bcm2835' in output.lower():
                 return 'mipi'
             else:
                 exit(f"Unknown source type: {output}")
@@ -101,7 +103,7 @@ class GStreamerApp:
         self.loop = GLib.MainLoop()
     
     def on_fps_measurement(self, sink, fps, droprate, avgfps):
-        print(f"FPS: {fps}, Droprate: {droprate}, Avg FPS: {avgfps}")
+        print(f"FPS: {fps:.2f}, Droprate: {droprate:.2f}, Avg FPS: {avgfps:.2f}")
         return True
 
     def create_pipeline(self):
@@ -129,7 +131,7 @@ class GStreamerApp:
     def get_pipeline_string(self):
         if (self.source_type == "mipi"):
             source_element = f"v4l2src device={self.video_source} name=src_0 ! "
-            source_element += f"video/x-raw, format={network_format}, width={network_width}, height={network_height}, , framerate=30/1, pixel-aspect-ratio=1/1 ! "
+            source_element += f"video/x-raw, format={network_format}, width={network_width}, height={network_height}, framerate=30/1 ! "
         
         elif (self.source_type == "usb"):
             source_element = f"v4l2src device={self.video_source} name=src_0 ! "
