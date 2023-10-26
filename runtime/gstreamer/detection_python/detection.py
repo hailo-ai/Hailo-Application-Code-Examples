@@ -50,6 +50,8 @@ def get_source_type(input_source):
                 return 'usb'
             elif 'mipi' in output.lower():
                 return 'mipi'
+            elif 'bcm2835' in output.lower():
+                return 'mipi'
             else:
                 exit(f"Unknown source type: {output}")
         except Exception as e:
@@ -129,7 +131,7 @@ class GStreamerApp:
     def get_pipeline_string(self):
         if (self.source_type == "mipi"):
             source_element = f"v4l2src device={self.video_source} name=src_0 ! "
-            source_element += f"video/x-raw, format={network_format}, width={network_width}, height={network_height}, , framerate=30/1, pixel-aspect-ratio=1/1 ! "
+            source_element += f"video/x-raw, format={network_format}, width={network_width}, height={network_height}, framerate=30/1 ! "
         
         elif (self.source_type == "usb"):
             source_element = f"v4l2src device={self.video_source} name=src_0 ! "
