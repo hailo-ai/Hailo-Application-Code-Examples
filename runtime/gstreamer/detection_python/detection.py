@@ -30,7 +30,7 @@ thresholds_str=f"nms-score-threshold={nms_score_threshold} nms-iou-threshold={nm
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Detection App")
-    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source. Can be a file, USB or MIPI camera")
+    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="Input source. Can be a file, USB or MIPI camera. Defaults to /dev/video0")
     parser.add_argument("--python-module", "-py", type=str, default="callback_template.py", help="Python module with your callback function")
     parser.add_argument("--show-fps", "-f", action="store_true", help="Print FPS on sink")
     parser.add_argument("--disable-sync", action="store_true", help="Disables display sink sync, will run as fast possible.")
