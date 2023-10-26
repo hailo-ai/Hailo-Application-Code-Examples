@@ -101,7 +101,7 @@ class GStreamerApp:
         self.loop = GLib.MainLoop()
     
     def on_fps_measurement(self, sink, fps, droprate, avgfps):
-        print(f"FPS: {fps}, Droprate: {droprate}, Avg FPS: {avgfps}")
+        print(f"FPS: {fps:.2f}, Droprate: {droprate:.2f}, Avg FPS: {avgfps:.2f}")
         return True
 
     def create_pipeline(self):
