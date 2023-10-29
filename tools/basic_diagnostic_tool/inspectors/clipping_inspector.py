@@ -17,7 +17,7 @@ class ClippingInspector(BaseInspector):
             self._logger.warning(f"Skipping {self.name}, dataset was not provided")
             return
         # TODO: Is there an indication whether the range was matched?
-        self._logger.info(f"Items threshold is {self.THRESHOLD}."
+        self._logger.info(f"Items threshold is {self.THRESHOLD}. "
                           f"Warning is printed if more than 20% of the range has only 3 items. "
                           f"Info is printed if more than 5% of the range has only 3 items. "
                           f"Consider analyzing the data in depth before applying clipping")
