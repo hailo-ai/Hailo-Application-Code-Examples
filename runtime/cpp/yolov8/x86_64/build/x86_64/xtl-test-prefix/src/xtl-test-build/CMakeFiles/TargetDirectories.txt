@@ -1,6 +1,0 @@
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/edit_cache.dir
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/rebuild_cache.dir
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/list_install_components.dir
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/install.dir
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/install/local.dir
-/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-build/CMakeFiles/install/strip.dir

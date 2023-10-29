@@ -1,1 +1,0 @@
-cmd='/usr/local/bin/cmake;-DCMAKE_INSTALL_PREFIX=/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/external;-GUnix Makefiles;<SOURCE_DIR><SOURCE_SUBDIR>'

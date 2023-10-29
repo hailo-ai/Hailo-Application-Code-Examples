@@ -1,7 +1,0 @@
-prefix=/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/external
-includedir=${prefix}/include
-
-Name: xtensor
-Description: xtensor is a C++ library meant for numerical analysis with multi-dimensional array expressions.
-Version: 0.24.7
-Cflags: -I${includedir}

@@ -1,7 +1,0 @@
-prefix=/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/external
-includedir=${prefix}/include
-
-Name: xtl
-Description: Basic tools (containers, algorithms) used by other quantstack packages.
-Version: 0.7.5
-Cflags: -I${includedir}
