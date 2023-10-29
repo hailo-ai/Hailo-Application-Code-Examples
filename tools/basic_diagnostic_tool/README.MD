@@ -18,14 +18,15 @@ optional arguments:
   -d DATASET, --dataset DATASET
                         Calibration Dataset, npy / npz file formats
   -a HW_ARCH, --hw_arch HW_ARCH
-                        Target HW arch {hailo8, hailo8r, hailo8l, hailo15h, hailo15m}
+                        Target HW arch {hailo8, hailo8r, hailo8l, hailo15h}
   --log-path LOG_PATH   Default path: diagnostic_tool.log
 
 Advanced:
   Advanced diagnostic tool features
 
   --order INSPECTOR [INSPECTOR ...]
-                        Choose which inspectors to run and set a custom order {normalization, compression, output_concat, high_precision, clipping}
+                        Choose which inspectors to run and set a custom order {NormInspector, CompressionInspector, ImageInspector, BatchNormInspector, ConcatenatedOutputsInspector, ClippingInspector,
+                        HighPrecisionInspector}
 ```
 
 Example:
@@ -70,36 +71,36 @@ A custom inspector can be added by adding a new python module in inspectors/ and
 
 The diagnostic tool is composed of different inspectors, each module assists in identifying common issues within the model.
 
-### normalization
+### NormInspector
 
 - Search for normalization layers at the start of the model.
 - Check the input, and post normalization data distributions.
 
-### compression
+### CompressionInspector
 
 - Inform the user of any compression.
 - If no explicit compression level was detect, warns of implicit compression.
 
-### output_concat
+### ConcatenatedOutputsInspector
 
 - Having some layers concatenated prior the output layer, forces an expanded dynamic range for the concatenated layers, which might reduce the accuracy. Selecting the pre-concat layers can improve the quantization results.
 
-### high_precision
+### HighPrecisionInspector
 
 - Simple heurstic for assisting with 16 bit layers configuration
 
 [//]: <> (Should use the advanced LAT results, or maybe 2 different inspectors?)
 
-### clipping
+### ClippingInspector
 
 - The clipping inspectors informs the user if more than 5% of the range (warning if more than 20%) is occupied by less than 3 or less values. It is highly recommended to use the same calibration data used of quantization / optimization. 
 
-### batch_norm
+### BatchNormInspector
 
 - The batch norm inspector checks if the layers of the model has fused batch norm layers.
 - In case the model is exported from torch, the batch norm layers might be folded pre-export (and won't appear in the hn). If dataset sample is provided, pre-act distriubtion will be collected and checked for likelyhood of folded batch-norm in the layers.
 
-### image
+### ImageInspector
 
 - Saves few image samples as RGB and as BGR (standard.jpg, inverse.jpg). if the inverse file seems more natural, it means the data has been saved as BGR format. If none of the samples look natural, the images might be stored as YUV, YUY2, or other formats.
 
