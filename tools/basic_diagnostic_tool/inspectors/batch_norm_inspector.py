@@ -2,6 +2,7 @@
 import numpy as np
 import tensorflow as tf
 
+import inspectors.messages as msg
 from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
@@ -30,14 +31,14 @@ class BatchNormInspector(BaseInspector):
                 self._logger.warning("The model doesn't have batch norm layers. "
                                      "This means that either the layers of the model aren't normalized correctly, "
                                      "or that the model was batch norm layers were fused during export (from torch)")
-                self._logger.info("Dataset was not provided, so data distirbution won't be checked")
+                self._logger.warning(f"Skipping distribution check, {msg.SKIP_NO_DATASET}")
                 # TODO: collect pre-act distribution and check data
             else:
                 outliers = self._get_outliers()
                 if outliers:
                     self._logger.warning(f"The model doesn't have batch norm layers. "
-                                         f"The following layers had abnormal ratio of distribution outliers: "
-                                         f"{list(outliers.keys())}")
+                                         f"Some layers had abnormal distribution. "
+                                         f"Outliers: {list(outliers.keys())}")
                     self._logger.error("This might indicate the model wasn't trained properly, or that the input isn't distributed properly")
 
     def _get_distributions(self):

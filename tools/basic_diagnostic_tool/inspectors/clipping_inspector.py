@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import logging
 
+import inspectors.messages as msg 
 from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_client.exposed_definitions import InferenceContext
@@ -9,17 +10,12 @@ from hailo_sdk_client.exposed_definitions import InferenceContext
 
 class ClippingInspector(BaseInspector):
     PRIORITY = InspectorPriority.LOW
-    THRESHOLD = 3
-
+    ITEM_TH = 3
 
     def _run(self):
-        if self._dataset is None:
-            self._logger.warning(f"Skipping {self.name}, dataset was not provided")
-            return
         # TODO: Is there an indication whether the range was matched?
-        self._logger.info(f"Items threshold is {self.THRESHOLD}. "
-                          f"Warning is printed if more than 20% of the range has only 3 items. "
-                          f"Info is printed if more than 5% of the range has only 3 items. "
+        self._logger.info(f"Warning is printed if more than 20% of the range has only {self.ITEM_TH} items. "
+                          f"Info is printed if more than 5% of the range has only {self.ITEM_TH} items. "
                           f"Consider analyzing the data in depth before applying clipping")
         self._logger.info("In some cases the range might not be fixable and affected by other factors.")
         self._logger.info("In general, activation clipping suggestion if very sensitive to the calibration set. "
@@ -27,6 +23,11 @@ class ClippingInspector(BaseInspector):
 
         hist_data, hist_ranges = self._collect_hist_per_layer()
         self.check_histograms(hist_data, hist_ranges)
+
+    def should_skip(self) -> str:
+        if self._dataset is None:
+            return msg.SKIP_NO_DATASET
+        return ""
 
     def _collect_hist_per_layer(self):
         qparams = self._runner.get_params_translated()
@@ -69,9 +70,9 @@ class ClippingInspector(BaseInspector):
         for layer, hist in hist_data.items():
             bin_size = (hist_ranges[layer][1] - hist_ranges[layer][0]) / len(hist)
             right_msg = left_msg = ""
-            min_bins = np.where(np.cumsum(hist) <= self.THRESHOLD)[0]
+            min_bins = np.where(np.cumsum(hist) <= self.ITEM_TH)[0]
             bin1 = 0 if len(min_bins) == 0 else np.min(min_bins)
-            bin2 = np.max(np.where(np.cumsum(hist[::-1])[::-1] > self.THRESHOLD)[0]) + 1
+            bin2 = np.max(np.where(np.cumsum(hist[::-1])[::-1] > self.ITEM_TH)[0]) + 1
             count_left = np.sum(hist[:bin1])
             count_right = np.sum(hist[bin2:])
             log_level = 0

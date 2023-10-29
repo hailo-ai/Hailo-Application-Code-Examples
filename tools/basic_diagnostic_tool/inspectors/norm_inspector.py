@@ -6,6 +6,7 @@ import networkx as nx
 import numpy as np
 import tensorflow as tf
 
+import inspectors.messages as msg
 from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_client.runner.client_runner import ClientRunner
@@ -77,7 +78,7 @@ class NormInspector(BaseInspector):
         - If the model has a normalization layer, check if the layer output is normalized.
         """
         if self._dataset is None:
-            self._logger.warning("Dataset has not been validated")
+            self._logger.warning(f"Normalization layer has not been validated, {msg.SKIP_NO_DATASET}")
             return
 
         ch_mean_by_layer, ch_std_by_layer = self._get_mean_and_std_per_sample(measured_layers)
