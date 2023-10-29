@@ -103,7 +103,3 @@ The diagnostic tool is composed of different inspectors, each module assists in 
 ### ImageInspector
 
 - Saves few image samples as RGB and as BGR (standard.jpg, inverse.jpg). if the inverse file seems more natural, it means the data has been saved as BGR format. If none of the samples look natural, the images might be stored as YUV, YUY2, or other formats.
-
-## Code
-
-The tool is composed of "Inspector" modules, each Inspector diagnoses different common issue. If you'd like to read more about the inspectors, read [here](inspectors/README.md)
