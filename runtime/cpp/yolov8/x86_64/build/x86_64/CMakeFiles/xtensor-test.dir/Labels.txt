@@ -1,0 +1,13 @@
+# Target labels
+ xtensor-test
+# Source files and their labels
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test-complete.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-build.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-configure.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-download.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-install.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-mkdir.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-patch.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-update.rule

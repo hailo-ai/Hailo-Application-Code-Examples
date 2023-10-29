@@ -1,0 +1,13 @@
+# Target labels
+ xtl-test
+# Source files and their labels
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test-complete.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-build.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-configure.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-download.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-install.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-mkdir.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-patch.rule
+/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-update.rule

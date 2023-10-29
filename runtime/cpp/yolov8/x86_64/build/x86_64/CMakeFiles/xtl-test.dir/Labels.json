@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtl-test-complete.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-build.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-configure.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-download.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-install.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-mkdir.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-patch.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtl-test-prefix/src/xtl-test-stamp/xtl-test-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"xtl-test"
+		],
+		"name" : "xtl-test"
+	}
+}

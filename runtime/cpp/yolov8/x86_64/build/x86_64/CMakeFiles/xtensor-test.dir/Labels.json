@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/CMakeFiles/xtensor-test-complete.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-build.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-configure.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-download.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-install.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-mkdir.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-patch.rule"
+		},
+		{
+			"file" : "/home/omerw/Hailo/repo/Hailo-Application-Code-Examples-1/runtime/cpp/yolov8/x86_64/build/x86_64/xtensor-test-prefix/src/xtensor-test-stamp/xtensor-test-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"xtensor-test"
+		],
+		"name" : "xtensor-test"
+	}
+}
