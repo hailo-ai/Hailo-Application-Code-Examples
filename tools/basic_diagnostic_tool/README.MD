@@ -1,6 +1,7 @@
 # Hailo Optimization diagnostic tool
 
 First Aid Kit for common quantization and optimization issues
+The tool was tested on `Hailo Dataflow Compiler v3.25.0`
 
 ## Usage
 
@@ -61,9 +62,9 @@ The error messages usually indicates that the behavior is most likely problemati
 
 The `--order` flag can be used to select custom inspector modules.
 
-There are no additional advanced usages yet.
+#### Add custom inspector
 
-[//]: <> (Add a behavior that will allow user made inspectors)
+A custom inspector can be added by adding a new python module in inspectors/ and subclassing the BaseInspector module.
 
 ## Modules Explanation
 
@@ -91,10 +92,16 @@ The diagnostic tool is composed of different inspectors, each module assists in 
 
 ### clipping
 
+- The clipping inspectors informs the user if more than 5% of the range (warning if more than 20%) is occupied by less than 3 or less values. It is highly recommended to use the same calibration data used of quantization / optimization. 
+
 ### batch_norm
 
 - The batch norm inspector checks if the layers of the model has fused batch norm layers.
 - In case the model is exported from torch, the batch norm layers might be folded pre-export (and won't appear in the hn). If dataset sample is provided, pre-act distriubtion will be collected and checked for likelyhood of folded batch-norm in the layers.
+
+### image
+
+- Saves few image samples as RGB and as BGR (standard.jpg, inverse.jpg). if the inverse file seems more natural, it means the data has been saved as BGR format. If none of the samples look natural, the images might be stored as YUV, YUY2, or other formats.
 
 ## Code
 

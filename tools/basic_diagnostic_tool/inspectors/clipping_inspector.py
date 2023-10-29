@@ -9,11 +9,22 @@ from hailo_sdk_client.exposed_definitions import InferenceContext
 
 class ClippingInspector(BaseInspector):
     PRIORITY = InspectorPriority.LOW
+    THRESHOLD = 3
+
 
     def _run(self):
         if self._dataset is None:
             self._logger.warning(f"Skipping {self.name}, dataset was not provided")
             return
+        # TODO: Is there an indication whether the range was matched?
+        self._logger.info(f"Items threshold is {self.THRESHOLD}."
+                          f"Warning is printed if more than 20% of the range has only 3 items. "
+                          f"Info is printed if more than 5% of the range has only 3 items. "
+                          f"Consider analyzing the data in depth before applying clipping")
+        self._logger.info("In some cases the range might not be fixable and affected by other factors.")
+        self._logger.info("In general, activation clipping suggestion if very sensitive to the calibration set. "
+                          "Applying activation clipping in some cases might reduce accuracy.")
+
         hist_data, hist_ranges = self._collect_hist_per_layer()
         self.check_histograms(hist_data, hist_ranges)
 
@@ -52,14 +63,12 @@ class ClippingInspector(BaseInspector):
         return full_result, hist_ranges
 
     def check_histograms(self, hist_data, hist_ranges):
-        any_clip_rec = False
-        THRESHOLD = 3
         for layer, hist in hist_data.items():
             bin_size = (hist_ranges[layer][1] - hist_ranges[layer][0]) / len(hist)
             right_msg = left_msg = ""
-            min_bins = np.where(np.cumsum(hist) <= THRESHOLD)[0]
+            min_bins = np.where(np.cumsum(hist) <= self.THRESHOLD)[0]
             bin1 = 0 if len(min_bins) == 0 else np.min(min_bins)
-            bin2 = np.max(np.where(np.cumsum(hist[::-1])[::-1] > THRESHOLD)[0]) + 1
+            bin2 = np.max(np.where(np.cumsum(hist[::-1])[::-1] > self.THRESHOLD)[0]) + 1
             count_left = np.sum(hist[:bin1])
             count_right = np.sum(hist[bin2:])
             log_level = 0
@@ -84,18 +93,10 @@ class ClippingInspector(BaseInspector):
             should_right = len(right_msg) > 0
             should_left = len(left_msg) > 0
             if should_right or should_left:
-                any_clip_rec = True
                 spacer = ', ' if should_left and should_right else ''
                 max_range = hist_ranges[layer][0] + bin_size * (bin2) if should_right else hist_ranges[layer][1]
                 min_range = hist_ranges[layer][0] + bin_size * (bin1) if should_left else hist_ranges[layer][0]
                 message = f"Layer {layer}, {left_msg}{spacer}{right_msg}. Suggested manual range [{min_range:.03f}, {max_range:.03f}]"
                 self._logger.log(log_level, message)
-        if any_clip_rec:
-            self._logger.info(f"Items threshold is {THRESHOLD}, Histogram has {len(hist)} bins. "
-                              f"Warning is printed if more than 5% of the range has only 3 items. "
-                              f"Consider analyzing the data in depth before applying clipping")
-            self._logger.info("In some cases the range might not be fixable and affected by other factors.")
-            self._logger.info("In general, activation clipping suggestion if very sensitive to the calibration set. "
-                              "Applying activation clipping in some cases might reduce accuracy.")
 
     # TODO: filter by snr?

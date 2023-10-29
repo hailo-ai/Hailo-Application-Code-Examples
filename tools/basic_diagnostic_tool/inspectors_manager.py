@@ -42,6 +42,5 @@ INSPECTORS_BY_NAME = fetch_inspectors()
 def run_inspectors(runner, dataset, logger=None, custom_order=None, **kwargs):
     if custom_order is None:
         custom_order = sorted(INSPECTORS_BY_NAME.keys(), key=lambda x: (-INSPECTORS_BY_NAME[x].PRIORITY, x))
-        breakpoint()
     for inspector in custom_order:
         INSPECTORS_BY_NAME[inspector](runner, dataset, logger=logger, **kwargs).run()

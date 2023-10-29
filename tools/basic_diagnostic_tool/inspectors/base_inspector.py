@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -27,9 +28,11 @@ class BaseInspector(ABC):
             self._logger = logger
 
     def run(self):
-        self._logger.info(f"Running inspector module: {self.name}")
+        self._logger.info(f"Module: {self.name}")
         self._run()
         # TODO: consider adding error / warning counters?
+        term_size = os.get_terminal_size()
+        print('=' * term_size.columns)
         self._logger.debug(f"Inspector module has finished ({self.name})")
 
     @abstractmethod
