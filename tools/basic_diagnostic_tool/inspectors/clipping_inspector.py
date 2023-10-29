@@ -18,6 +18,7 @@ class ClippingInspector(BaseInspector):
                           f"Info is printed if more than 5% of the range has only {self.ITEM_TH} items. "
                           f"Consider analyzing the data in depth before applying clipping")
         self._logger.info("In some cases the range might not be fixable and affected by other factors.")
+        self._logger.info("In some cases QFT might utilize the unused range and improve performance.")
         self._logger.info("In general, activation clipping suggestion if very sensitive to the calibration set. "
                           "Applying activation clipping in some cases might reduce accuracy.")
 
