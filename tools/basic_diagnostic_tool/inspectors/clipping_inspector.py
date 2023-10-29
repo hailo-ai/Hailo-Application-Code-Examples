@@ -38,7 +38,10 @@ class ClippingInspector(BaseInspector):
             # TODO: Find correct ranges or collect them based on the dataset...
             hist_ranges = {}
             for lname in hist_layers:
-                l_min, l_max = qparams[lname]['limvals_out:0']
+                l_min, l_max = 0, 0
+                for i in range(model.layers[lname].num_outputs):
+                    i_min, i_max = qparams[lname][f'stats/output_{i}/stats_limvals:0']
+                    l_min, l_max = min(l_min, i_min), max(l_max, i_max)
                 hist_ranges[lname] = np.array([l_min, l_max])
             full_result = {lname: np.zeros(100, dtype=np.uint32) for lname in hist_layers}
 
@@ -98,5 +101,3 @@ class ClippingInspector(BaseInspector):
                 min_range = hist_ranges[layer][0] + bin_size * (bin1) if should_left else hist_ranges[layer][0]
                 message = f"Layer {layer}, {left_msg}{spacer}{right_msg}. Suggested manual range [{min_range:.03f}, {max_range:.03f}]"
                 self._logger.log(log_level, message)
-
-    # TODO: filter by snr?
