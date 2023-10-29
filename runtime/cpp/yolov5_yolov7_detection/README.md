@@ -24,7 +24,7 @@ To compile the example run `./build.sh`
 
 To run the compiled example:
 
-`./build/x86_64/vstream_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4 -arch=ARCH` (where ARCH is yolov5 or yolov7)
+`./build/x86_64/vstream_yolov5_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4 -arch=ARCH` (where ARCH is yolov5 or yolov7)
 
 NOTE: When using a HEF file that was compiled with NMS on-Hailo, the `-arch` is redundant. For the regular compiled model, it is mandatory. 
 
