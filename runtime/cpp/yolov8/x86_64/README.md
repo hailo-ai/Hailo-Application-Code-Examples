@@ -7,8 +7,8 @@ The example does the following:
 1. Creates a device (pcie)
 2. Reads the network configuration from a yolov8 HEF file
 3. Prepares the application for inference
-4. Runs inference and postprocess (using xtensor library) on a given image\video file 
-5. Draws the detection boxes on the original image\video
+4. Runs inference and postprocess (using xtensor library) on a given image\video file or a camera 
+5. Draws the detection boxes on the original image\video\camera input
 6. Prints the object detected + confidence to the screen
 5. Prints statistics
 
@@ -38,6 +38,9 @@ For an image:
 `./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=IMAGE_FILE.jpg`
 For a video:
 `./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=VIDEO_FILE.mp4`
+For a camera input:
+`./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=`
+
 
 **NOTE**: This example uses xtensor C++ ibrary compiled from the xtl git as an external source. 
 
