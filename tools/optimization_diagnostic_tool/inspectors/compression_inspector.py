@@ -50,10 +50,11 @@ class CompressionInspector(BaseInspector):
             self._logger.warning("Model might have implicit compression")
             # TODO (Optional): Replace it with multiple log message
             # TODO (Optional): Do we need to inform the user about both alternatives?
-            self._logger.info(
-                "Disable it using the following commands:\n"
-                "\tmodel_optimization_flavor(compression_level=0)\n"
-                "\tmodel_optimization_config(compression_params, auto_4bit_weights_ratio=0)")
+            self._logger.info("Consider disabling compression")
+            should_add_command = self.yes_no_prompt("Would you like to disable compression?")
+            if should_add_command:
+                self._new_commands.append("model_optimization_flavor(compression_level=0)")
+                self._new_commands.append("model_optimization_config(compression_params, auto_4bit_weights_ratio=0)")
         elif explicit_compression == compression_level:
             self._logger.info(f"Model has explicit compression_level: {explicit_compression}")
         else:

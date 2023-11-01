@@ -23,7 +23,8 @@ class ClippingInspector(BaseInspector):
                           "Applying activation clipping in some cases might reduce accuracy.")
 
         hist_data, hist_ranges = self._collect_hist_per_layer()
-        self.check_histograms(hist_data, hist_ranges)
+        recommendations = self.check_histograms(hist_data, hist_ranges)
+        self.add_to_model_script(recommendations)
 
     def should_skip(self) -> str:
         if self._dataset is None:
@@ -68,6 +69,7 @@ class ClippingInspector(BaseInspector):
         return full_result, hist_ranges
 
     def check_histograms(self, hist_data, hist_ranges):
+        recommendations = {}
         for layer, hist in hist_data.items():
             bin_size = (hist_ranges[layer][1] - hist_ranges[layer][0]) / len(hist)
             right_msg = left_msg = ""
@@ -103,3 +105,23 @@ class ClippingInspector(BaseInspector):
                 min_range = hist_ranges[layer][0] + bin_size * (bin1) if should_left else hist_ranges[layer][0]
                 message = f"Layer {layer}, {left_msg}{spacer}{right_msg}. Suggested manual range [{min_range:.03f}, {max_range:.03f}]"
                 self._logger.log(log_level, message)
+                recommendations[layer] = (log_level, (min_range, max_range))
+        return recommendations
+
+    def add_to_model_script(self, recommendations):
+        if self._interactive:
+            selection = input("Would you like to add recommendation to model script? (none/warning/all) ").lower()
+            while selection not in ('none', 'warning', 'all'):
+                selection = input("Invalid selection, choose one of: none/warning/all").lower()
+        else:
+            selection = 'warning'
+        commands = []
+        if selection == 'none':
+            return commands
+        cmd_tmp = "pre_quantization_optimization(activation_clipping, layers=[{layer}], mode=manual, clipping_values=[{lim_low:.03f},{lim_high:.03f}])"
+        for layer, (log_level, limvals) in recommendations.items():
+            if selection == 'all':
+                commands.append(cmd_tmp.format(layer=layer, lim_low=limvals[0], lim_high=limvals[1]))
+            elif selection == 'warning' and log_level == logging.WARNING:
+                commands.append(cmd_tmp.format(layer=layer, lim_low=limvals[0], lim_high=limvals[1]))
+        self._new_commands = commands

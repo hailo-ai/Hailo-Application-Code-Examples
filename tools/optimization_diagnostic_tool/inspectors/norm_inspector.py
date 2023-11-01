@@ -37,8 +37,8 @@ class NormInspector(BaseInspector):
     NORMALIZED_STD_TH_FLEX = (0.1, 5)  # should either be around 1 or ?
     NORMALIZED_STD_TH_STRICT = (0.1, 2)  # should either be around 1 or ?
 
-    def __init__(self, runner: ClientRunner, dataset, logger=None, **kwargs) -> None:
-        super().__init__(runner, dataset, logger, **kwargs)
+    def __init__(self, runner: ClientRunner, dataset, interactive=True, logger=None, **kwargs) -> None:
+        super().__init__(runner, dataset, interactive, logger, **kwargs)
         self._nn_model = runner.get_hn_model()
 
     def _run(self):

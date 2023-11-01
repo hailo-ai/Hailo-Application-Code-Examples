@@ -3,7 +3,7 @@ import argparse
 
 from inspectors_manager import INSPECTORS_BY_NAME  # this import takes a sec~
 
-from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS
+from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS, States
 
 
 def get_parser():
@@ -32,6 +32,14 @@ def get_parser():
         type=str,
         default="diagnostic_tool.log"
     )
+    parser.add_argument('--no-interactive', dest='interactive', action='store_false')
+
+    parser.add_argument(
+        "--output-model-script",
+        help="Create output model script with new recommended commands in the provided path.",
+        type=str,
+        default=""
+    )
 
     advanced_parser = parser.add_argument_group("Advanced", description="Advanced diagnostic tool features")
     inspectors = [name for name in INSPECTORS_BY_NAME]
@@ -58,11 +66,11 @@ def _data_initialization(args):
     from hailo_sdk_client.runner.client_runner import ClientRunner
     from hailo_sdk_common.logger.logger import create_custom_logger
     from hailo_model_optimization.acceleras.utils.dataset_util import data_to_dataset
-
     runner = ClientRunner(hw_arch=args.hw_arch)
     # Override the logger to suppress and warning, and control the log of this logic
     # TODO: remove this assignment once ClientRunner supports logger as a kwarg
-    runner._logger = create_custom_logger('diagnostic_client_runner.log')
+    suppress_logger = create_custom_logger('diagnostic_client_runner.log')
+    runner._logger = suppress_logger
     runner.load_har(har=args.har)
     if args.dataset:
         dataset, _ = data_to_dataset(args.dataset, 'auto')
@@ -75,11 +83,18 @@ def main(args):
     from inspectors_manager import run_inspectors
     from hailo_sdk_common.logger.logger import create_custom_logger
 
-    runner, dataset = _data_initialization(args)
     logger = create_custom_logger(log_path=args.log_path, console=True)
-    run_inspectors(runner, dataset, logger=logger)
+    logger.info("Running optimization diagnostic tool")
+    runner, dataset = _data_initialization(args)
+    if runner.state not in {States.COMPILED_MODEL, States.QUANTIZED_MODEL}:
+        logger.error("Model is not Quantized.")
+        return 1
 
+    run_inspectors(runner, dataset, interactive=args.interactive,
+                   output_model_script=args.output_model_script, logger=logger)
+    return 0
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args)
+    retval = main(args)
+    exit(retval)

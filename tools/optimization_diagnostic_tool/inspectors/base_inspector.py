@@ -2,6 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from enum import Enum
 
+from inspectors.cli import yes_no_prompt
+
 from hailo_sdk_common.logger.logger import create_custom_logger
 from hailo_sdk_client.runner.client_runner import ClientRunner
 
@@ -19,16 +21,21 @@ class BaseInspector(ABC):
     """
     PRIORITY = InspectorPriority.UNSET
 
-    def __init__(self, runner: ClientRunner, dataset, logger=None, **kwargs) -> None:
+    def __init__(self, runner: ClientRunner, dataset, interactive=True, logger=None, **kwargs) -> None:
         self._runner = runner
         self._dataset = dataset
+        self._interactive = interactive
         if logger is None:
             self._logger = create_custom_logger(log_path="diagnostic_tool.log", console=True)
         else:
             self._logger = logger
+        self._new_commands = []
 
     def should_skip(self) -> str:
         return ""
+
+    def get_new_commands(self):
+        return self._new_commands
 
     def run(self):
         self._logger.info(f"Module: {self.name}")
@@ -55,3 +62,9 @@ class BaseInspector(ABC):
     @property
     def name(self) -> str:
         return self.__class__.__name__
+
+    def yes_no_prompt(self, msg, default=True):
+        if self._interactive:
+            return yes_no_prompt(msg, default=default)
+        else:
+            return default
