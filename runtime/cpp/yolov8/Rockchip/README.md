@@ -60,11 +60,7 @@ If not used, the number of images will be the number of images supplied (1 if im
 **NOTE**: In case you prefer to perform the Sigmoid on host, you can comment in the relevant line to do that. Please notice that you'll need a HEF file that does not have an on-chip sigmoid if you choose to use the example in such a way.   
 
 
-**IMPORTANT NOTE**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled with a 16-bit output layer.
-In the example we assume that this is the case.
-Both scores and data dequantization is done manually in the postprocessing functions. 
-This means that you will not get good detection (or detections at all) with a Yolov8 with 8-bit. 
-If you choose to work with your own HEF that is with an 8-bit output, you need to change the code from **uint16_t** to **uint8_t** in the following lines:
+**IMPORTANT NOTE**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled to 8-bit. Hailo supply the option to compile the model with 16-bit output layers for those who desire it. Both scores and data dequantization is done manually in the postprocessing functions. This means that you will not get good detection (or detections at all) with a Yolov8 with 16-bit output layers. If you choose to work with your own HEF that is with a 16-bit output, you need to change the code from uint8_t to uint16_t in the following lines:
 
 double_buffer.hpp - lines 32, 43, 61, 69, 97
 

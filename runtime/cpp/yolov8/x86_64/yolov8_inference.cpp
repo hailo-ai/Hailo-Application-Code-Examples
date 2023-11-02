@@ -65,7 +65,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         HailoROIPtr roi = std::make_shared<HailoROI>(HailoROI(HailoBBox(0.0f, 0.0f, 1.0f, 1.0f)));
         
         for (uint j = 0; j < features.size(); j++) {
-            roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint16_t*>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
+            roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint8_t*>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
         }
 
         filter(roi);
@@ -96,6 +96,8 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         // cv::imwrite("output_image.jpg", frames[0]);
         frames[0].release();
         frames.erase(frames.begin());
+        if (frame_count == 1.0)
+            i--;
     }
     postprocess_time = std::chrono::high_resolution_clock::now();
     // video.release();
@@ -110,13 +112,26 @@ hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData
     std::cout << GREEN << "-I- Started read thread: " << info_to_str(output_vstream.get_info()) << std::endl << RESET;
     m.unlock(); 
 
-    for (size_t i = 0; i < (size_t)frame_count; i++) {
-        auto& buffer = feature->m_buffers.get_write_buffer();
-        hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
-        feature->m_buffers.release_write_buffer();
-        if (HAILO_SUCCESS != status) {
-            std::cerr << "Failed reading with status = " <<  status << std::endl;
-            return status;
+    if (frame_count == 1.0){
+        for (;;) {
+            auto& buffer = feature->m_buffers.get_write_buffer();
+            hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
+            feature->m_buffers.release_write_buffer();
+            if (HAILO_SUCCESS != status) {
+                std::cerr << "Failed reading with status = " <<  status << std::endl;
+                return status;
+            }
+        }
+    }
+    else {
+        for (size_t i = 0; i < (size_t)frame_count; i++) {
+            auto& buffer = feature->m_buffers.get_write_buffer();
+            hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
+            feature->m_buffers.release_write_buffer();
+            if (HAILO_SUCCESS != status) {
+                std::cerr << "Failed reading with status = " <<  status << std::endl;
+                return status;
+            }
         }
     }
 
@@ -135,9 +150,18 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
     int height = input_shape.height;
     int width = input_shape.width;
 
-    cv::VideoCapture capture(video_path);
-    if(!capture.isOpened())
-        throw "Unable to read video file";
+    cv::VideoCapture capture;
+    if (video_path.empty()) {
+        capture.open(0, cv::CAP_ANY);
+        if (!capture.isOpened()) {
+            throw "Unable to read camera input";
+        }
+    }
+    else{
+        capture.open(video_path, cv::CAP_ANY);
+        if(!capture.isOpened())
+            throw "Unable to read video file";
+    }
     
     cv::Mat org_frame;
 
@@ -328,11 +352,23 @@ int main(int argc, char** argv) {
 
     print_net_banner(vstreams);
 
-    cv::VideoCapture capture(video_path);
-    if (!capture.isOpened()){
-        throw "Error when reading video";
+    cv::VideoCapture capture;
+    double frame_count;
+    if (video_path.empty()) {
+        capture.open(0, cv::CAP_ANY);
+        if (!capture.isOpened()) {
+            throw "Error in camera input";
+        }
+        frame_count = 1.0;
     }
-    double frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+    else{
+        capture.open(video_path, cv::CAP_ANY);
+        if (!capture.isOpened()){
+            throw "Error when reading video";
+        }
+        frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+    }
+
     double org_height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     double org_width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
 

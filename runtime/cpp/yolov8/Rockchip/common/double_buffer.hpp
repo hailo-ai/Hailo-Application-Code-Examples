@@ -29,7 +29,7 @@ public:
         m_write_ptr(&m_first_buffer), m_read_ptr(&m_first_buffer)
     {}
 
-    std::vector<uint16_t> &get_write_buffer()
+    std::vector<uint8_t> &get_write_buffer()
     {
         return m_write_ptr->acquire_write_buffer();
     }
@@ -40,7 +40,7 @@ public:
         m_write_ptr = (m_write_ptr == &m_first_buffer) ? &m_second_buffer : &m_first_buffer;
     }
 
-    std::vector<uint16_t> &get_read_buffer()
+    std::vector<uint8_t> &get_read_buffer()
     {
         return m_read_ptr->acquire_read_buffer();
     }
@@ -58,7 +58,7 @@ private:
         m_state(State::WRITE), m_cv(), m_mutex(), m_buffer(size)
         {}
 
-        std::vector<uint16_t> &acquire_write_buffer()
+        std::vector<uint8_t> &acquire_write_buffer()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cv.wait(lock, [this]{ return (State::WRITE == m_state); });
@@ -66,7 +66,7 @@ private:
             return m_buffer;
         }
 
-        std::vector<uint16_t> &acquire_read_buffer()
+        std::vector<uint8_t> &acquire_read_buffer()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cv.wait(lock, [this]{ return (State::READ == m_state); });
@@ -94,7 +94,7 @@ private:
         State m_state;
         std::condition_variable m_cv;
         std::mutex m_mutex;
-        std::vector<uint16_t> m_buffer;
+        std::vector<uint8_t> m_buffer;
     };
 
     SafeBuffer m_first_buffer;
