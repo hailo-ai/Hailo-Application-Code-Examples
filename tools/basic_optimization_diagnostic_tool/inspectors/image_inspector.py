@@ -15,9 +15,11 @@ class ImageInspector(BaseInspector):
         ds_inv = self._ds_inverse(ds)
         self._preview_images(ds, 'standard.jpg')
         self._preview_images(ds_inv, 'inverse.jpg')
+        if not self._interactive:
+            self._logger.info("The images are assumed to be in RGB / BGR format")
         self._logger.warning("Please check `standard.jpg` and `inverse.jpg`, "
-                             "if the images in `inverse.jpg` look more natural - "
-                             "the calibration data might be stored as bgr.")
+                            "if the images in `inverse.jpg` look more natural - "
+                            "the calibration data might be stored as BGR.")
     
     def should_skip(self) -> str:
         if self._dataset is None:
@@ -27,6 +29,9 @@ class ImageInspector(BaseInspector):
         sample = next(iter(self._dataset))[0].numpy()
         if np.any(sample < 0):
             return msg.SKIP_NEG_VALUES
+        is_rgb = self.yes_no_prompt("Are images in RGB / BGR format")
+        if not is_rgb:
+            return msg.SKIP_NON_RGB
         return ""
 
     def _preview_images(self, dataset, filename, rows=4, cols=4):
