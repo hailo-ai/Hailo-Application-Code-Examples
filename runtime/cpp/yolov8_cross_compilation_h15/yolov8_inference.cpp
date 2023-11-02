@@ -48,7 +48,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
         HailoROIPtr roi = std::make_shared<HailoROI>(HailoROI(HailoBBox(0.0f, 0.0f, 1.0f, 1.0f)));
         
         for (auto& feature : features) {
-            roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint16_t*>(feature->m_buffers.get_read_buffer().data()), feature->m_vstream_info));
+            roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint8_t*>(feature->m_buffers.get_read_buffer().data()), feature->m_vstream_info));
         }
 
         filter(roi);
