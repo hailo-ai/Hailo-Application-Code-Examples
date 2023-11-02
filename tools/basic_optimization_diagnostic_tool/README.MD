@@ -3,6 +3,10 @@
 First Aid Kit for common quantization and optimization issues
 The tool was tested on `Hailo Dataflow Compiler v3.25.0`
 
+This is an early version of the tool, and it hasn't been heavily tested. 
+Please let us know if you encounter any problems, bugs, unexpected behavior, or false positive detections.
+
+
 ## Usage
 
 [//]: <> (markdown lacks the feature of embedding text from other file, maybe use rst files instead?)
