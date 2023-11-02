@@ -8,7 +8,7 @@ The tool was tested on `Hailo Dataflow Compiler v3.25.0`
 [//]: <> (markdown lacks the feature of embedding text from other file, maybe use rst files instead?)
 
 ```
-usage: main.py [-h] [-d DATASET] [-a HW_ARCH] [--log-path LOG_PATH] [--order INSPECTOR [INSPECTOR ...]] har
+usage: main.py [-h] [-d DATASET] [-a HW_ARCH] [--log-path LOG_PATH] [--no-interactive] [--output-model-script OUTPUT_MODEL_SCRIPT] [--order INSPECTOR [INSPECTOR ...]] har
 
 positional arguments:
   har                   Path to HAR file
@@ -20,13 +20,16 @@ optional arguments:
   -a HW_ARCH, --hw_arch HW_ARCH
                         Target HW arch {hailo8, hailo8r, hailo8l, hailo15h}
   --log-path LOG_PATH   Default path: diagnostic_tool.log
+  --no-interactive
+  --output-model-script OUTPUT_MODEL_SCRIPT
+                        Create output model script with new recommended commands in the provided path.
 
 Advanced:
   Advanced diagnostic tool features
 
   --order INSPECTOR [INSPECTOR ...]
-                        Choose which inspectors to run and set a custom order {NormInspector, CompressionInspector, ImageInspector, BatchNormInspector, ConcatenatedOutputsInspector, ClippingInspector,
-                        HighPrecisionInspector}
+                        Choose which inspectors to run and set a custom order {CompressionInspector, ActivationInspector, NormInspector, ImageInspector, HighPrecisionInspector, ClippingInspector,
+                        ConcatenatedOutputsInspector, BatchNormInspector}
 ```
 
 Example:
