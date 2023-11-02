@@ -15,7 +15,7 @@ Please let us know if you encounter any problems, bugs, unexpected behavior, or 
 usage: main.py [-h] [-d DATASET] [-a HW_ARCH] [--log-path LOG_PATH] [--no-interactive] [--output-model-script OUTPUT_MODEL_SCRIPT] [--order INSPECTOR [INSPECTOR ...]] har
 
 positional arguments:
-  har                   Path to HAR file
+  har                   Path to quantized HAR file
 
 optional arguments:
   -h, --help            show this help message and exit
