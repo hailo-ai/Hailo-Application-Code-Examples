@@ -43,6 +43,8 @@ class PostQuantAlgoInspector(BaseInspector):
             elif opt_level == 2 and feautres_count == 1 and features_summary['finetune']['enabled']:
                 if self.yes_no_prompt("Would you like to set optimization level to 3?"):
                     self._new_commands.append("model_optimization_flavor(optimization_level=3)")
+            else:
+                self._logger.info("Non-default config with implicit optimization level")
         else:
             if opt_level != 4 and self.yes_no_prompt("Would you like to increase the optimization level? (Optimization will take a longer time)"):
                 self._new_commands.append(f"model_optimization_flavor(optimization_level={opt_level+1})")
