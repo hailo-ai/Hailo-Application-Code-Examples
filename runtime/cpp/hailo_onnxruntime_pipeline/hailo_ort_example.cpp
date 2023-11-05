@@ -11,7 +11,7 @@
  * You shall not reproduce, modify or distribute this software without prior written permission.
  **/
 /**
- * @ file vstreams_example
+ * @ file hailo_ort_example
  * This example demonstrates using virtual streams over c++
  **/
 
