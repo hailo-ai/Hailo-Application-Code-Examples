@@ -12,15 +12,17 @@ class ActivationInspector(BaseInspector):
             self._logger.warning(
                 "Some layers in the model has SiLU activation, these layers might reduce the accuracy. "
                 "If possible, consider retraining the model with ReLU activation.")
+            self._logger.debug(f"SiLU layers: {silu_layers}")  # TODO: use original names?
         
-        swich_blocks = self.get_swish_blocks()
-        if len(swich_blocks) != 0:
+        swish_blocks = self.get_swish_blocks()
+        if len(swish_blocks) != 0:
             self._logger.warning(
                 "Original model might've had swish activation with beta != 1. "
                 "That activation cannot be represented natively in Hailo, and might cause lower accuracy or lower FPS. "
                 "If possible, consider retraining the model with ReLU activation. "
                 "(or with SiLU activation, but accuracy might still be affected)"
             )
+            self._logger.debug(f"Swish blocks: {swish_blocks}")  # TODO: use original names?
         
     
     def get_silu_layers(self):
