@@ -102,8 +102,6 @@ def _data_initialization(args):
     return runner, dataset
 
 
-
-
 def main(args):
     from inspectors_manager import run_inspectors
     logger = init_logger("optimization_diagnostic", args.log_path, debug_log=args.debug_log)
