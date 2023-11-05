@@ -23,7 +23,7 @@ This example was tested on this setup:
     ``` bash
     ./download_files.sh
     ```
-    This will download the scdepthv3 hef and a video example.
+    This will download the scdepthv3 hef and a video example input_video.mp4.
 3. Build the project 
     ``` bash
     ./build.sh
@@ -32,8 +32,8 @@ This example was tested on this setup:
     ``` bash
     ./build/depth_estimation_example_cpp -hef=HEF_PATH -path=VIDEO_PATH
     ```
-    - This example contains the hef file scdepthv3.hef and the video instance_segmentation.mp4, so for a quick demo you can run:
+    - To use the downloaded files, run:
         ``` bash
-        ./build/segmentation_example_cpp -hef=scdepthv3.hef -path=instance_segmentation.mp4
+        ./build/depth_estimation_example_cpp -hef=scdepthv3.hef -path=input_video.mp4
         ```
 The output processed video is saved as **output_video.mp4**
