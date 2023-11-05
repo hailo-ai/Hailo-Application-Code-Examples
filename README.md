@@ -18,3 +18,6 @@ Under the `model_compilation` directory you would find
 Under the `resources` directory you would find
 * documents for specific issues
 * different files & general stuff
+
+Under the `tools` directory you would find
+* basic optimization diagnostic tool, which help with diagnostic common optimization issues and mistakes
