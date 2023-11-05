@@ -39,8 +39,10 @@ class ImageInspector(BaseInspector):
         dataset = dataset.take(rows * cols)
 
         for ax, im in zip(axarr.ravel(), dataset):
-            ax.imshow(im, cmap='gray')
-        fig.savefig(filename)
+            ax.imshow(im, cmap='gray', aspect='auto')
+        for ax in axarr.ravel():
+            ax.set_axis_off()
+        fig.savefig(filename, bbox_inches='tight', pad_inches=0)
 
     def _ds_dtype_correction(self, dataset):
         sample = next(iter(dataset))

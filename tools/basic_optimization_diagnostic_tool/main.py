@@ -1,9 +1,24 @@
 #!/usr/bin/env python
+try:
+    import hailo_sdk_client
+except ModuleNotFoundError:
+    print("ERROR: Hailo SDK is not installed")
+    exit(2)
+else:
+    sdk_version = hailo_sdk_client.__version__.split('.')
+    if sdk_version[0] != '3' or sdk_version[1] != '25':
+        print(f"ERROR: Incompatible Hailo sdk version. Expected: 3.25, Version: {hailo_sdk_client.__version__}")
+        exit(2)
+    elif len(sdk_version) > 3:
+        print(f"WARNING: Hailo sdk version {hailo_sdk_client.__version__} are you using a released version?")
+
+
 import argparse
 
 from inspectors_manager import INSPECTORS_BY_NAME  # this import takes a sec~
 
 from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS, States
+
 
 
 def get_parser():

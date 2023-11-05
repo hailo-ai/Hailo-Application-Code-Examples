@@ -47,7 +47,7 @@ class ClippingInspector(BaseInspector):
                     l_min, l_max = min(l_min, i_min), max(l_max, i_max)
                 hist_ranges[lname] = np.array([l_min, l_max])
                 self._logger.debug(f"{lname}: activation range is ({l_min}, {l_max})")
-                if l_max - l_min > 30:
+                if l_max - l_min > 40:
                     self._logger.warning(f"Activation range of layer {lname} is high ({l_min}, {l_max})")
             full_result = {lname: np.zeros(100, dtype=np.uint32) for lname in hist_layers}
 
