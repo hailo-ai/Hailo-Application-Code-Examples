@@ -1,2 +1,2 @@
 loguru
-python-opencv
+opencv-python

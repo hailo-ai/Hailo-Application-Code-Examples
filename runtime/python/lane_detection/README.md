@@ -13,7 +13,7 @@ This example was tested with the following setup:
 
 1. Install Requirements:
     ``` bash
-    pip install -r requiremets.txt
+    pip install -r requirements.txt
     ```
 2. Download files
     ``` bash
