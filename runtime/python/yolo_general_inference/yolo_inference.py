@@ -149,11 +149,11 @@ def postproc_yolov8(height, width, anchors, meta_arch, num_of_classes, raw_detec
     layer_from_shape: dict = {raw_detections[key].shape:key for key in raw_detections_keys}
 
     detections = [raw_detections[layer_from_shape[1, 20, 20, 64]],
-                    raw_detections[layer_from_shape[1, 20, 20, 80]],
+                    raw_detections[layer_from_shape[1, 20, 20, num_of_classes]],
                     raw_detections[layer_from_shape[1, 40, 40, 64]],
-                    raw_detections[layer_from_shape[1, 40, 40, 80]],
+                    raw_detections[layer_from_shape[1, 40, 40, num_of_classes]],
                     raw_detections[layer_from_shape[1, 80, 80, 64]],
-                    raw_detections[layer_from_shape[1, 80, 80, 80]]]    
+                    raw_detections[layer_from_shape[1, 80, 80, num_of_classes]]]    
    
     return post_proc.postprocessing(detections, device_pre_post_layers=yolov8_cls.device_pre_post_layers)
 
@@ -269,11 +269,11 @@ def postproc_yolov6t(height,width, anchors, meta_arch, num_of_classes, raw_detec
     # The detections that go in the postprocessing should have very specific order. so,
     # we take the name of the layer name according to it's shape -  layer_from_shape(OUTPUT_SHAPE)-->LAYER_NAME
     detections = [raw_detections[layer_from_shape[1, 80, 80, 4]],
-                    raw_detections[layer_from_shape[1, 80, 80, 80]],
+                    raw_detections[layer_from_shape[1, 80, 80, num_of_classes]],
                     raw_detections[layer_from_shape[1, 40, 40, 4]],
-                    raw_detections[layer_from_shape[1, 40, 40, 80]],
+                    raw_detections[layer_from_shape[1, 40, 40, num_of_classes]],
                     raw_detections[layer_from_shape[1, 20, 20, 4]],
-                    raw_detections[layer_from_shape[1, 20, 20, 80]]]
+                    raw_detections[layer_from_shape[1, 20, 20, num_of_classes]]]
     
     return post_proc.postprocessing(detections, **kwargs)
 
@@ -297,13 +297,13 @@ def postproc_yolox_yolov6(height,width, anchors, meta_arch, num_of_classes, raw_
     # we take the name of the layer name according to it's shape -  layer_from_shape(OUTPUT_SHAPE)-->LAYER_NAME
     detections = [raw_detections[layer_from_shape[1, 80, 80, 4]],
                     raw_detections[layer_from_shape[1, 80, 80, 1]],
-                    raw_detections[layer_from_shape[1, 80, 80, 80]],
+                    raw_detections[layer_from_shape[1, 80, 80, num_of_classes]],
                     raw_detections[layer_from_shape[1, 40, 40, 4]],
                     raw_detections[layer_from_shape[1, 40, 40, 1]],
-                    raw_detections[layer_from_shape[1, 40, 40, 80]],
+                    raw_detections[layer_from_shape[1, 40, 40, num_of_classes]],
                     raw_detections[layer_from_shape[1, 20, 20, 4]],
                     raw_detections[layer_from_shape[1, 20, 20, 1]],
-                    raw_detections[layer_from_shape[1, 20, 20, 80]]]
+                    raw_detections[layer_from_shape[1, 20, 20, num_of_classes]]]
     
     return post_proc.postprocessing(detections, **kwargs)
 
