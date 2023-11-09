@@ -52,6 +52,7 @@ For a camera input:
 
 **NOTE**: In case you prefer to perform the Sigmoid on host, you can comment in the relevant line to do that. Please notice that you'll need a HEF file that does not have an on-chip sigmoid if you choose to use the example in such a way. 
 
+**NOTE**: The example was built for yolov8 model trained on COCO dataset with 80 classes. From random testing, the example works with yolov8 models that are trained on less classes, but for it to work a change is to be made in `yolov8_postprocess.cpp` at line 26, changing `#define NUM_CLASSES 80` to `#define NUM_CLASSES X` where `X` is the number of classes the model was trained on.
 
 **NOTE**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled to 8-bit. Hailo supply the option to compile the model with 16-bit output layers for those who desire it.
 Both scores and data dequantization is done manually in the postprocessing functions. 
