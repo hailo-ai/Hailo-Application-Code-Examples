@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(hailo_ort_example)
 
-set(HAILORT_VER $ENV{HAILORT_VER})
-# set(CMAKE_CXX_STANDARD 20)
-
 find_library(ONNXRUNTIME onnxruntime /opt/onnxruntime-linux-x64-1.13.1/lib)
 message(STATUS "ONNXRUNTIME: ${ONNXRUNTIME}")
 set(ONNXRUNTIME_INCLUDE_DIR /opt/onnxruntime-linux-x64-1.13.1/include)
@@ -18,9 +15,7 @@ set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads)
-
 find_package(HailoRT REQUIRED)
-
 find_package( OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
