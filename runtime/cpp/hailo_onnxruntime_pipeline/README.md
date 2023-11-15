@@ -32,7 +32,7 @@ The command line arguments are as follows:
 To compile the example run ./build.sh
 
 To run the compiled example:
-./build/x86_64/hailo_ort_example -hef=HEF_PATH.hef -onnx=ONNX_PATH.onnx [-num=NUM_OF_FRAMES -image=IMAGE_PATH]
+./build/x86_64/hailo_ort_example -hef=yolov5m_wo_spp_60p_nms_on_hailo.hef -onnx=yolov5m_wo_spp_postprocess.onnx [-num=NUM_OF_FRAMES -image=IMAGE_PATH]
 
 **_NOTE:_** If there is a space after the "=" sign (for example: -onnx= ResNet18.onnx) the argument will not catch and you will get an error \ wrong results.
 

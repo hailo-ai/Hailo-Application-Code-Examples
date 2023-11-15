@@ -8,16 +8,16 @@
 #include <algorithm>
 #include <sstream>
 
-#include "yolo_postprocess.hpp"
+#include "common/yolo_postprocess.hpp"
 #include "common/nms.hpp"
 #include "common/labels/coco_eighty.hpp"
 #include "common/json_config.hpp"
 
-#include "document.h"
-#include "stringbuffer.h"
-#include "error/en.h"
-#include "filereadstream.h"
-#include "schema.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/error/en.h"
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/schema.h"
 
 // #if __GNUC__ > 8
 // #include <filesystem>

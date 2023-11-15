@@ -3,8 +3,24 @@ project(async_infer VERSION 0.1.0)
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+set(SYMLINK_PATH "/usr/lib/libhailort.so")
+
+# Run the readlink command to get the target of the symbolic link
+execute_process(
+    COMMAND readlink -f ${SYMLINK_PATH}
+    OUTPUT_VARIABLE SYMLINK_TARGET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the version of the libhailort
+string(LENGTH ${SYMLINK_TARGET} TARGET_LENGTH)
+math(EXPR START_INDEX "${TARGET_LENGTH} - 6")
+string(SUBSTRING ${SYMLINK_TARGET} ${START_INDEX} 6 HAILORT_VERSION)
+
+message("HailoRT lib version is: ${HAILORT_VERSION}")
+
 # x86_64 Linux-based configuration
-find_package(HailoRT 4.14.0 EXACT REQUIRED)
+find_package(HailoRT ${HAILORT_VERSION} EXACT REQUIRED)
 find_package(OpenCV REQUIRED)
 
 # Common configuration

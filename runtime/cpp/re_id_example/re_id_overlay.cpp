@@ -10,8 +10,8 @@
 #include <math.h>
 
 // Hailo includes
-#include "re_id_overlay.hpp"
-#include "hailo_common.hpp"
+#include "common/re_id_overlay.hpp"
+#include "common/hailo_common.hpp"
 
 // Open source includes
 #include <opencv2/opencv.hpp>

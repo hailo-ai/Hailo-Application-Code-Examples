@@ -6,11 +6,11 @@
 
 #include <iostream>
 
-#include "document.h"
-#include "stringbuffer.h"
-#include "error/en.h"
-#include "filereadstream.h"
-#include "schema.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/error/en.h"
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/schema.h"
 
 namespace common
 {

@@ -1,6 +1,6 @@
 # Hailo RE-ID example code
 
-**Last HailoRT version checked - 4.14.0**
+**Last HailoRT version checked - 4.15.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -13,7 +13,7 @@ and then saving them in a database for further identification, in case a person 
 Requirements for compiling and running the sample code:
 * C++20
 * Haio-8 attached to the system
-* HailoRT version 4.10.0
+* HailoRT version 4.15.0
 * xtensor library (submodule)
 * xtl, required by xtensor library (submodule)
 * rapidjson (submodule)

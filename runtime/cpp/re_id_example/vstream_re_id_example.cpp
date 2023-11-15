@@ -16,11 +16,11 @@
  **/
 
 #include "hailo/hailort.hpp"
-#include "yolo_output.hpp"
-#include "yolo_postprocess.hpp"
-#include "re_id_overlay.hpp"
-#include "hailo_common.hpp"
-#include "hailo_objects.hpp"
+#include "common/yolo_output.hpp"
+#include "common/yolo_postprocess.hpp"
+#include "common/re_id_overlay.hpp"
+#include "common/hailo_common.hpp"
+#include "common/hailo_objects.hpp"
 
 #include <cxxabi.h>
 #include <iostream>
@@ -38,7 +38,7 @@
 #include <array>
 #include <typeinfo>
 #include <iomanip>
-
+#include <thread>
 
 #include "xtensor/xarray.hpp"
 #include "xtensor/xadapt.hpp"
