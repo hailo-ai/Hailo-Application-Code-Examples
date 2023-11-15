@@ -4,7 +4,8 @@
 A set of stand-alone canned examples for compiling NN models and exercising different tasks on Hailo devices.
 
 **Disclaimer:**
-The code examples in this github repository are provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running one of the repository's examples, please open a ticket in the "Issues" tab.
+The code examples in this github repository are provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running one of the repository's examples, please open a ticket in the "Issues" tab.<br />
+Please note that the examples were tested on specific versions and we can only guarantee the expected results using the exact versions on the exact environment. The specific version and environment will be mentioned in the README.md of each example.
 
 Under the `runtime` directory you would find
 * Examples for using different coding languages (Python, c, c#, c++) and performs different tasks
