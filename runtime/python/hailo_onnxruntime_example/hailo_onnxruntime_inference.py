@@ -21,8 +21,8 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Running a Hailo + ONNXRUntime inference')
-parser.add_argument('--hef', help="HEF file path")
-parser.add_argument('--onnx', help="ONNX file of path, when the output of the HEF is the input of the ONNX")
+parser.add_argument('hef', help="HEF file path")
+parser.add_argument('onnx', help="ONNX file of path, when the output of the HEF is the input of the ONNX")
 parser.add_argument('--input-images', help="Images path to perform inference on. Could be either a single image or a folder containing the images. In case the input path is not defined, the input will be a 300 randomly generated tensors.")
 parser.add_argument('--output-images-path', help="Inferenced output images folder path. If no input images were defined this will have no effect.")
 args = parser.parse_args()
@@ -92,9 +92,6 @@ def set_resized_input(resize, width=320, height=320, normalize=False):
 
 
 # ---------------- Start of the example --------------------- #
-
-if (not args.hef or not args.onnx):
-    raise ValueError('You must define hef path, onnx path and output images path in the command line. Run with -h for additional info')
 
 hef = HEF(args.hef)
 height, width, channels = hef.get_input_vstream_infos()[0].shape

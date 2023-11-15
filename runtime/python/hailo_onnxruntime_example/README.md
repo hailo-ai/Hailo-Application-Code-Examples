@@ -5,14 +5,10 @@ This code example is provided by Hailo solely on an “AS IS” basis and “wit
 Please note that this example was tested on specific versions and we can only guarantee the expected results using the exact version mentioned above on the exact environment. The example might work for other versions, other environment or other HEF file, but there is no guarantee that it will.
 
 
+This is a general Hailo + ONNXRuntime inference example.  
 
-This is a general YOLO architecture Hailo inference example.  
-
-The example takes one or more images, performs inference using the input HEF file and draws the detection boxes, claas type and confidence on the resized image.  
+The example takes one or more images, performs inference using the input HEF file and then finishing the postprocessing using an ONNX file..  
 The example works with .jpg, .jpeg, .png and .bmp image files.  
-
-The example was tested with the following Hailo Models Zoo networks:  
-yolov3, yolov3_gluon, yolov4_leaky, yolov5s, yolov5m_wo_spp, yolox_l_leaky, yolov6n, yolov7, yolov7_tiny, yolov8m
 
 ## Prerequesities:  
 numpy  
@@ -26,10 +22,10 @@ Install the hailo model-zoo, and hailort whl, and then the requirements:
 
 
 ## Running the example:  
-```./yolo_inference.py HEF.hef PATH_TO_IMAGES_FOLDER_OR_IMAGE YOLO_ARCH [--class-num NUM_OF_CLASSES] [--labels LABELS_PATH]```
+```./hailo_onnxruntime_inference.py HEF.hef ONNX.onnx [--input-images PATH_TO_IMAGES_FOLDER_OR_IMAGE [ --output-images-path OUTPUT_PATH]```
 
-You can download a sample image and a HEF with the `get_sources.sh` script, and then execute the inference.
+You can download a sample image and a HEF with the `get_hef_and_onnx.sh` script, and then execute the inference.
 for example:  
-```CUDA_VISIBLE_DEVICES=9 ./yolo_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
+```CUDA_VISIBLE_DEVICES=9 ./hailo_onnxruntime_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
 
-For more information, run ```./yolo_inference.py --help```   
+For more information, run ```././hailo_onnxruntime_inference.py --help```   
