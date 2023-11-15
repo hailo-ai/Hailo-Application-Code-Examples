@@ -46,6 +46,9 @@ For a video:
 For a camera input:
 `./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=`
 
+Example:
+`./build/x86_64/vstream_yolov8_example_cpp -hef=yolov8s.hef -input=full_mov_slow.mp4`
+
 
 **NOTE**: This example uses xtensor C++ ibrary compiled from the xtl git as an external source. 
 

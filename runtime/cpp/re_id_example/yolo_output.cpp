@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include "yolo_output.hpp"
+#include "common/yolo_output.hpp"
 
 std::pair<uint, float> YoloOutputLayer::get_class(uint row, uint col, uint anchor)
 {
