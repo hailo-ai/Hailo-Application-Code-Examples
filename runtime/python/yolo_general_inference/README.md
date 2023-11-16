@@ -1,4 +1,4 @@
-**Last HailoRT version checked - 4.14.0**
+**Last HailoRT version checked - 4.15.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -8,7 +8,7 @@ Please note that this example was tested on specific versions and we can only gu
 
 This is a general YOLO architecture Hailo inference example.  
 
-The example takes one or more images, performs inference using the input HEF file and draws the detection boxes, claas type and confidence on the resized image.  
+The example takes one or more images, performs inference using the input HEF file and draws the detection boxes, class type and confidence on the resized image.  
 The example works with .jpg, .jpeg, .png and .bmp image files.  
 
 The example was tested with the following Hailo Models Zoo networks:  
@@ -19,7 +19,7 @@ numpy
 zenlog  
 Pillow  
 hailo_platform >= 4.14.0 (installed from the HailoRT .whl, tested on version 4.14.0)  
-Hailo Model Zoo prerequesities (tested on version 2.8.0)
+Hailo Model Zoo prerequesities (tested on versions >=2.8.0)
 
 Install the hailo model-zoo, and hailort whl, and then the requirements:
 `pip install -r requiremets.txt`
@@ -33,3 +33,6 @@ for example:
 ```CUDA_VISIBLE_DEVICES=9 ./yolo_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
 
 For more information, run ```./yolo_inference.py --help```   
+
+## IMPORTANT NOTE
+As the example, as mentioned above, made to work with COCO trained yolo models, when using a customly trained yolo model, please notice that some values may need to be changed in the relevant functions.  

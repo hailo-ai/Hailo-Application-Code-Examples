@@ -1,4 +1,4 @@
-**Last HailoRT version checked - 4.13.0**
+**Last HailoRT version checked - 4.15.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -11,10 +11,14 @@ This example shows SR (Super-Resolution) inference example.
 It uses the model espcn_x4_540_960.hef
 It takes image in 540x960 resolution and enlarged it to 4k resolution.
 
-## Requirements
-HailoRT  (tested on 4.13.0)   
-loguru   (tested on 0.7.0)
+## Prerequesities: 
+Pillow
+loguru
+opencv-python
+hailo_platform (installed from the HailoRT .whl of version >= 4.13.0)  
+
 ## Usage
 ```
-./espcn_infer.py --hef espcn_x4_540x960.hef --image images/ -o output_dir
+./espcnx4_infer.py --hef espcn_x4_540x960.hef --image images/ -o output_dir
 ```   
+

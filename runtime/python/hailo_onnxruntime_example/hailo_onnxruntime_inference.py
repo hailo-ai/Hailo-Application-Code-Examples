@@ -5,7 +5,7 @@ import numpy as np
 import onnxruntime
 from hailo_platform import __version__
 from multiprocessing import Process, Queue
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, ConfigureParams,
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, ConfigureParams,
  InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams, FormatType)
 from zenlog import log
 import time
@@ -24,7 +24,6 @@ parser = argparse.ArgumentParser(description='Running a Hailo + ONNXRUntime infe
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('onnx', help="ONNX file of path, when the output of the HEF is the input of the ONNX")
 parser.add_argument('--input-images', help="Images path to perform inference on. Could be either a single image or a folder containing the images. In case the input path is not defined, the input will be a 300 randomly generated tensors.")
-parser.add_argument('--output-images-path', help="Inferenced output images folder path. If no input images were defined this will have no effect.")
 args = parser.parse_args()
 
 
@@ -73,8 +72,6 @@ def ort_inference(read_q, images, num_images):
         if(read_q.empty() == False):
             inference_dict = read_q.get(0)
             inference_output = nms.run(None, inference_dict)
-            print(inference_output[0].shape)
-            image = images[i]
             post_processing(inference_output, i)
             i = i + 1
 
@@ -104,42 +101,54 @@ images = []
 if not images_path:
     images = np.zeros((300, height, width, channels), dtype=np.float32)
 else:
-    if (images_path.endswith('.jpg') or images_path.endswith('.png')):
+    # if running inference on a single image:
+    if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp') or images_path.endswith('.jpeg')):
         images.append(Image.open(images_path))
+    # if running inference on an images directory:
     if (os.path.isdir(images_path)):
-        for image in os.listdir(images_path):
-            if (image.endswith(".jpg") or image.endswith(".png")):
-                images.append(Image.open(os.path.join(images_path, image)))
+        for img in os.listdir(images_path):
+            if (img.endswith(".jpg") or img.endswith(".png") or img.endswith('.bmp') or img.endswith('.jpeg')):
+                images.append(Image.open(os.path.join(images_path, img)))
+
 
 num_images = len(images)
 
-with PcieDevice() as target:
-        configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
-        network_group = target.configure(hef, configure_params)[0]
-        network_group_params = network_group.create_params()
-        queue = Queue()
-        
-        # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
-        if images_path:
-            resized_images = [set_resized_input(lambda size: image.resize(size, Image.LANCZOS), width=width, height=height) for image in images]
-        else:
-            resized_images = images
-        
-        send_process = Process(target=send, args=(network_group, resized_images, num_images))
-        recv_process = Process(target=recv, args=(network_group, queue, num_images))
-        nms_process = Process(target=ort_inference, args=(queue, images, num_images)) 
-        start_time = time.time()
-        recv_process.start()
-        send_process.start()
-        nms_process.start()
-        with network_group.activate(network_group_params):
-            recv_process.join()
-            send_process.join()
-            nms_process.join()
+devices = Device.scan()
+hef = HEF(args.hef)
 
-        end_time = time.time()
-print('Inference was successful!\n')
-log.info('-------------------------------------')
-log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
-log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
-log.info('-------------------------------------')
+inputs = hef.get_input_vstream_infos()
+outputs = hef.get_output_vstream_infos()
+
+with VDevice(device_ids=devices) as target:
+    configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
+    network_group = target.configure(hef, configure_params)[0]
+    network_group_params = network_group.create_params()
+    queue = Queue()
+    
+    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in inputs]
+    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in outputs]
+
+    # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
+    if images_path:
+        resized_images = [set_resized_input(lambda size: image.resize(size, Image.LANCZOS), width=width, height=height) for image in images]
+    else:
+        resized_images = images
+
+    send_process = Process(target=send, args=(network_group, resized_images, num_images))
+    recv_process = Process(target=recv, args=(network_group, queue, num_images))
+    nms_process = Process(target=ort_inference, args=(queue, images, num_images)) 
+    start_time = time.time()
+    recv_process.start()
+    send_process.start()
+    nms_process.start()
+    with network_group.activate(network_group_params):
+        recv_process.join()
+        send_process.join()
+        nms_process.join()
+
+    end_time = time.time()
+    print('Inference was successful!\n')
+    log.info('-------------------------------------')
+    log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
+    log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
+    log.info('-------------------------------------')

@@ -1,4 +1,4 @@
-**Last HailoRT version checked - 4.14.0**
+**Last HailoRT version checked - 4.15.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -7,25 +7,25 @@ Please note that this example was tested on specific versions and we can only gu
 
 This is a general Hailo + ONNXRuntime inference example.  
 
-The example takes one or more images, performs inference using the input HEF file and then finishing the postprocessing using an ONNX file..  
+The example takes one or more images, performs inference using the input HEF file and then finishing the postprocessing using an ONNX file.  
 The example works with .jpg, .jpeg, .png and .bmp image files.  
 
 ## Prerequesities:  
 numpy  
 zenlog  
-Pillow  
-hailo_platform >= 4.14.0 (installed from the HailoRT .whl, tested on version 4.14.0)  
-Hailo Model Zoo prerequesities (tested on version 2.8.0)
+Pillow
+onnxruntime  
+hailo_platform >= 4.14.0 (installed from the HailoRT .whl from the Hailo website or already installed in the Suite docker release of 10.2023)  
 
-Install the hailo model-zoo, and hailort whl, and then the requirements:
+Install the hailort whl. (if you are not using the Suite docker), and then the requirements:
 `pip install -r requiremets.txt`
 
 
 ## Running the example:  
-```./hailo_onnxruntime_inference.py HEF.hef ONNX.onnx [--input-images PATH_TO_IMAGES_FOLDER_OR_IMAGE [ --output-images-path OUTPUT_PATH]```
+```./hailo_onnxruntime_inference.py HEF.hef ONNX.onnx [--input-images PATH_TO_IMAGES_FOLDER_OR_IMAGE```
 
 You can download a sample image and a HEF with the `get_hef_and_onnx.sh` script, and then execute the inference.
 for example:  
-```CUDA_VISIBLE_DEVICES=9 ./hailo_onnxruntime_inference.py ./yolov7.hef ./zidane.jpg yolo_v7```
+```CUDA_VISIBLE_DEVICES=9 ../hailo_onnxruntime_inference.py yolov5m_wo_spp.hef yolov5m_wo_spp_postprocess.onnx```
 
 For more information, run ```././hailo_onnxruntime_inference.py --help```   

@@ -147,12 +147,14 @@ def postproc_yolov8(height, width, anchors, meta_arch, num_of_classes, raw_detec
                                 **kwargs)
     
     layer_from_shape: dict = {raw_detections[key].shape:key for key in raw_detections_keys}
+    
+    num_channels_scores = (yolov8_cls.regression_length + 1) * 4 # for COCO: (15+1)*4=64
 
-    detections = [raw_detections[layer_from_shape[1, 20, 20, 64]],
+    detections = [raw_detections[layer_from_shape[1, 20, 20, num_channels_scores]],
                     raw_detections[layer_from_shape[1, 20, 20, num_of_classes]],
-                    raw_detections[layer_from_shape[1, 40, 40, 64]],
+                    raw_detections[layer_from_shape[1, 40, 40, num_channels_scores]],
                     raw_detections[layer_from_shape[1, 40, 40, num_of_classes]],
-                    raw_detections[layer_from_shape[1, 80, 80, 64]],
+                    raw_detections[layer_from_shape[1, 80, 80, num_channels_scores]],
                     raw_detections[layer_from_shape[1, 80, 80, num_of_classes]]]    
    
     return post_proc.postprocessing(detections, device_pre_post_layers=yolov8_cls.device_pre_post_layers)

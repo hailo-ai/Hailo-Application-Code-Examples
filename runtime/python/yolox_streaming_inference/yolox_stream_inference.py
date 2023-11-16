@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 import cv2
 import os, random, time
 import numpy as np
 from multiprocessing import Process
 import yolox_stream_report_detections as report
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
     InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams, FormatType)
 
 # yolox_s_leaky input resolution
@@ -17,7 +19,9 @@ video_dir = './resources/video/'
 hef = HEF(hef_path)
 mp4_files = [f for f in os.listdir(video_dir) if os.path.isfile(os.path.join(video_dir, f)) and f.endswith('.mp4')]
 
-with PcieDevice() as target:
+devices = Device.scan()
+
+with VDevice(device_ids=devices) as target:
         configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
         network_group = target.configure(hef, configure_params)[0]
         network_group_params = network_group.create_params()
