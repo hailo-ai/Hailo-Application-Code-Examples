@@ -3,18 +3,18 @@
 import numpy as np
 from hailo_platform import __version__
 from multiprocessing import Process
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, ConfigureParams, InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams, FormatType)
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, ConfigureParams, InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams, FormatType)
 from zenlog import log
 import time
-from PIL import Image
 import os
 import argparse
 import cv2
 
 
 parser = argparse.ArgumentParser(description='Running a Hailo inference with OpenCV')
-parser.add_argument('--hef', help="HEF file path")
-parser.add_argument('--input-images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
+parser.add_argument('hef', help="HEF file path")
+parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
+parser.add_argument('--labels', default='imagenet1000_clsidx_to_labels.txt', help="Path to lables .txt file. Defualt to imagenet1000_clsidx_to_labels")
 args = parser.parse_args()
 
 
@@ -23,7 +23,7 @@ args = parser.parse_args()
 def post_processing(inference_output):
    print('Here create your relevant post-processing functions. In the case, it is a classification post-processing:')
    labels = []
-   with open('imagenet1000_clsidx_to_labels.txt','r') as f:
+   with open(args.labels,'r') as f:
     labels = eval(f.read()) 
     print(labels[np.argmax(inference_output)])
 
@@ -58,12 +58,11 @@ def recv(configured_network, num_images):
 
 # ----------------Pre-processing functions ------------------- #
 
-def prepare_image(image_path, images):
-    raw_image = cv2.imread(image_path)
-    image_RGB = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
-    cv2.normalize(image_RGB, image_RGB, 0, 255, norm_type=cv2.NORM_MINMAX)
-    image = np.array(image_RGB, np.float32)
-    images.append(image)
+def prepare_image(images):
+    for i, image in enumerate(images):
+        cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
+        processed_image = np.array(image, np.float32)
+        images[i] = processed_image
 
 
 # ------------------------------------------------------------ #
@@ -71,54 +70,62 @@ def prepare_image(image_path, images):
 
 # ---------------- Start of the example --------------------- #
 
-if (not args.hef or not args.input_images):
-    raise ValueError('You must define hef path and input images path in the command line. Run with -h for additional info')
+hef = HEF(args.hef)
+height, width, channels = hef.get_input_vstream_infos()[0].shape
 
-images_path = args.input_images
+images_path = args.images
 
 images = []
-if (images_path.endswith('.jpg') or images_path.endswith('.png')):
-    prepare_image(images_path, images)
-if (os.path.isdir(images_path)):
+# if running inference on a single image:
+if images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp') or images_path.endswith('.jpeg'):
+    images.append(cv2.cvtColor(cv2.imread(images_path), cv2.COLOR_BGR2RGB))
+# if running inference on an images directory:
+elif os.path.isdir(images_path):
     for img in os.listdir(images_path):
-        if (img.endswith(".jpg") or img.endswith(".png")):
-            prepare_image(images_path + img, images)
+        if (img.endswith(".jpg") or img.endswith(".png") or img.endswith('.bmp') or img.endswith('.jpeg')):
+            images.append(cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB))
+else:
+    raise ValueError('You must define input images path to a specific image or to a folder containing images. Run with -h for additional info')
+
 
 num_images = len(images)
 
-hef = HEF(args.hef)
+devices = Device.scan()
 
-with PcieDevice() as target:
-        configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
-        network_group = target.configure(hef, configure_params)[0]
-        network_group_params = network_group.create_params()
+inputs = hef.get_input_vstream_infos()
+outputs = hef.get_output_vstream_infos()
 
-        [log.info('Input  layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_input_vstream_infos()]
-        [log.info('Output layer: {:20.20} {}'.format(li.name, li.shape)) for li in hef.get_output_vstream_infos()]
+with VDevice(device_ids=devices) as target:
+    configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
+    network_group = target.configure(hef, configure_params)[0]
+    network_group_params = network_group.create_params()
+    
+    [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in inputs]
+    [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in outputs]
 
-        height, width, channels = hef.get_input_vstream_infos()[0].shape
-        
-        # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
-        resized_images = [cv2.resize(img, (height, width), interpolation = cv2.INTER_AREA) for img in images]
-        
-        send_process = Process(target=send, args=(network_group, resized_images, num_images))
-        recv_process = Process(target=recv, args=(network_group, num_images))
-        start_time = time.time()
-        recv_process.start()
-        send_process.start()
-        with network_group.activate(network_group_params):
-            recv_process.join()
-            send_process.join()
+    height, width, channels = hef.get_input_vstream_infos()[0].shape
+    
+    # Note: If you need to normalize the image, choose and change the set_resized_input function to right values
+    resized_images = [cv2.resize(img, (height, width), interpolation = cv2.INTER_AREA) for img in images]
+    
+    send_process = Process(target=send, args=(network_group, resized_images, num_images))
+    recv_process = Process(target=recv, args=(network_group, num_images))
+    start_time = time.time()
+    recv_process.start()
+    send_process.start()
+    with network_group.activate(network_group_params):
+        recv_process.join()
+        send_process.join()
 
-        end_time = time.time()
-print('Inference was successful!\n')
-# NOTICE: The avrage FPS can onlt be achieved by a large enough number of frames. The FPS that will be recieved from
-# one image does not reflect the average FPS of the model
- 
-log.info('-------------------------------------')
-log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
-log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
-log.info('-------------------------------------')
+    end_time = time.time()
+    print('Inference was successful!\n')
+    # NOTICE: The avrage FPS can only be achieved by a large enough number of frames. The FPS that will be recieved from
+    # one image does not reflect the average FPS of the model
+    
+    log.info('-------------------------------------')
+    log.info(' Infer Time:      {:.3f} sec'.format(end_time - start_time))
+    log.info(' Average FPS:     {:.3f}'.format(num_images/(end_time - start_time)))
+    log.info('-------------------------------------')
 
 
 
