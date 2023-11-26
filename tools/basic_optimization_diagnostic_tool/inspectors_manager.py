@@ -60,7 +60,6 @@ def save_model_script(runner, new_commands, output_model_script, interactive, lo
     new_path = output_model_script
     index = 1
     overwrite = False
-    breakpoint()
     if os.path.exists(new_path) and interactive:
         overwrite = yes_no_prompt(f"Would you like to overwrite file {new_path}?")
 

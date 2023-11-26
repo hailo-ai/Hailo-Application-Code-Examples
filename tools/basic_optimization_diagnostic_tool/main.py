@@ -35,7 +35,14 @@ def get_parser():
         "-d", "--dataset",
         help="Calibration Dataset, npy / npz file formats",
         type=str,
-        required=False)
+        required=True)
+    parser.add_argument(
+        "-c", "--data-count",
+        help="Number of data samples that will be used in the inspectors",
+        type=int,
+        required=False,
+        default=64
+    )
     parser.add_argument(
         "-a", "--hw_arch",
         help="Target HW arch {%(choices)s}",
@@ -99,7 +106,7 @@ def _data_initialization(args):
         dataset, _ = data_to_dataset(args.dataset, 'auto')
     else:
         dataset = None
-    return runner, dataset
+    return runner, dataset.take(args.data_count)
 
 
 def main(args):
