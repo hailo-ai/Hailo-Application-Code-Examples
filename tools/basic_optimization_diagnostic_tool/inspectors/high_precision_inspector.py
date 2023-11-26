@@ -13,6 +13,9 @@ class PrecisionLayerInfo:
     layer_name: str
     sqnr: float
     prec_mode: PrecisionMode
+    
+    def __str__(self) -> str:
+        return f"layer_name={self.layer_name}, sqnr={float(self.sqnr):0.3f}, precision_mode={self.prec_mode.value}"
 
 
 class HighPrecisionInspector(BaseInspector):
@@ -51,6 +54,7 @@ class HighPrecisionInspector(BaseInspector):
                 sqnr=sqnr,
                 prec_mode=layer.precision_config.precision_mode
             )
+            self._logger.debug(layer_info)
             layer_info_list.append(layer_info)
         if missing_advanced_lat:
             self._logger.warning("Missing data from layer_noise_analysis. Data from simple analysis was used.")

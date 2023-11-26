@@ -18,6 +18,7 @@ import argparse
 from inspectors_manager import INSPECTORS_BY_NAME  # this import takes a sec~
 
 from hailo_sdk_client.exposed_definitions import SUPPORTED_HW_ARCHS, States
+from logger import init_logger
 
 
 
@@ -34,7 +35,14 @@ def get_parser():
         "-d", "--dataset",
         help="Calibration Dataset, npy / npz file formats",
         type=str,
-        required=False)
+        required=True)
+    parser.add_argument(
+        "-c", "--data-count",
+        help="Number of data samples that will be used in the inspectors",
+        type=int,
+        required=False,
+        default=64
+    )
     parser.add_argument(
         "-a", "--hw_arch",
         help="Target HW arch {%(choices)s}",
@@ -65,6 +73,13 @@ def get_parser():
         required=False,
         metavar='INSPECTOR',
         nargs="+")
+    advanced_parser.add_argument(
+        "--no-debug",
+        help="By default, an additional hidden log file with debug info is created. "
+             "If this flag is present, the debug log won't be created.",
+        action="store_false",
+        dest="debug_log"
+    )
     return parser
 
 
@@ -91,15 +106,15 @@ def _data_initialization(args):
         dataset, _ = data_to_dataset(args.dataset, 'auto')
     else:
         dataset = None
-    return runner, dataset
+    return runner, dataset.take(args.data_count)
 
 
 def main(args):
     from inspectors_manager import run_inspectors
-    from hailo_sdk_common.logger.logger import create_custom_logger
+    logger = init_logger("optimization_diagnostic", args.log_path, debug_log=args.debug_log)
 
-    logger = create_custom_logger(log_path=args.log_path, console=True)
-    logger.info("Running optimization diagnostic tool")
+    logger.info(f"Running optimization diagnostic tool {args.har}")
+    logger.debug(f"Arguments: {vars(args)}")
     runner, dataset = _data_initialization(args)
     if runner.state not in {States.COMPILED_MODEL, States.QUANTIZED_MODEL}:
         logger.error("Model is not Quantized.")
