@@ -87,6 +87,7 @@ void dequantize_box_values(xt::xarray<float>& box, int index, xt::xarray<uint8_t
     }
 }
 
+
 std::vector<xt::xarray<double>> get_centers(std::vector<int>& strides, std::vector<int>& network_dims,
                                         std::size_t boxes_num, int strided_width, int strided_height){
 
