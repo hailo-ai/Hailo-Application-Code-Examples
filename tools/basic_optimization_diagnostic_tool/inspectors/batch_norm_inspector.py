@@ -81,10 +81,12 @@ class BatchNormInspector(BaseInspector):
 
     def _get_outliers(self, mean_ratio_th=0.05, std_ratio_th=0.05):
         per_layer_ch_mean, per_layer_ch_std = self._get_distributions()
+        
         outliers = {}
         for layer in per_layer_ch_mean:
             ch_means = per_layer_ch_mean[layer]
             ch_stds = per_layer_ch_std[layer]
+            self._logger.debug(f"{layer}, mean: {ch_means}, std: {ch_stds}")
             mean_outliers_ratio = np.sum(ch_means > self.MEAN_TH) / len(ch_means)
             std_outliers_ratio = np.sum(ch_stds > self.STD_TH) / len(ch_stds)
             if mean_outliers_ratio > mean_ratio_th or std_outliers_ratio > std_ratio_th:

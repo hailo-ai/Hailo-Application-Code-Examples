@@ -24,6 +24,9 @@ class MeasuredLayerType(Enum):
 class MeasuredLayer:
     name: str
     type_: MeasuredLayerType
+    
+    def __str__(self) -> str:
+        return f"{self.name}, {self.type_.value}"
 
 
 class NormInspector(BaseInspector):
@@ -84,6 +87,7 @@ class NormInspector(BaseInspector):
         ch_mean_by_layer, ch_std_by_layer = self._get_mean_and_std_per_sample(measured_layers)
         # TODO: We could create a different behavior if the data is normalized around [0, 1] and [-1, 1]
         for layer in measured_layers:
+            self._logger.debug(f"{layer}, mean: {ch_mean_by_layer[layer.name]}, std: {ch_std_by_layer[layer.name]}")
             if layer.type_ in {MeasuredLayerType.NORM_LAYER, MeasuredLayerType.NON_NORM_INPUT_LAYER}:
                 mean_th_low, mean_th_high = self.NORMALIZED_MEAN_TH_FLEX
                 mean_over_th = np.any(ch_mean_by_layer[layer.name] > mean_th_high)

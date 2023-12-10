@@ -3,7 +3,7 @@ project(vstream_yolov5_yolov7_example_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -Wno-reorder -std=c++11 -Wno-ignored-qualifiers -Wno-extra -Wno-unused-parameter)
+set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -Wno-reorder -Wno-ignored-qualifiers -Wno-extra -Wno-unused-parameter)
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
