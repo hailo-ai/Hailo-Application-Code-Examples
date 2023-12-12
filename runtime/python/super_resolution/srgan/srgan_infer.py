@@ -8,7 +8,7 @@ from loguru import logger
 import argparse
 import time
 
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
                 InputVStreamParams, OutputVStreamParams, FormatType)
 
 
@@ -48,8 +48,8 @@ def run_inference(images, hef, output_path):
     output_path.mkdir(parents=True, exist_ok=True)
 
     # configuration
-    devices = PcieDevice.scan_devices()
-    with PcieDevice(devices[0]) as target:
+    devices = Device.scan()
+    with VDevice(device_ids=devices) as target:
         network_group = configure_and_get_network_group(hef, target)
         network_group_params = network_group.create_params()
         input_vstreams_params, output_vstreams_params = create_input_output_vstream_params(network_group)
@@ -59,6 +59,7 @@ def run_inference(images, hef, output_path):
         
         output_images = list()
         total_inference_time = 0
+        images_num = 0
         with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
             for idx, image in enumerate(images):
                 # assuming one input to the model              
@@ -75,7 +76,8 @@ def run_inference(images, hef, output_path):
                     output_image = Image.fromarray(raw_image)
                     output_images.append(output_image)
                     output_image.save(output_path/image_name, format='png')
-        logger.info("Total inference time: {} sec, {} images", total_inference_time, idx+1)
+                    images_num = images_num + 1
+        logger.info("Total inference time: {} sec, {} images", total_inference_time, images_num)
         return output_images
 
 
@@ -87,8 +89,7 @@ def parser_init():
     parser = argparse.ArgumentParser(description="SRgan inference")
 
     parser.add_argument(
-        "-m",
-        "--hef",
+        "hef",
         help="Path of srgan.hef",
         default="srgan.hef"
     )

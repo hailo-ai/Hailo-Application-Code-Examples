@@ -15,7 +15,7 @@ The example does the following:
 4. Runs inference and postprocess (using xtensor library) on a given image\video file or a camera 
 5. Draws the detection boxes on the original image\video\camera input
 6. Prints the object detected + confidence to the screen
-5. Prints statistics
+7. Prints statistics
 
 **NOTE**: Currently support only devices connected on a PCIe link.
 
