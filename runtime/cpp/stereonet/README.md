@@ -45,5 +45,5 @@ Example:
 
 **NOTE**: In case you use a cemera input, the initial number of frames the example would perform inference on is 300. To change it, update the CAMERA_INPUT_IMAGE_NUM global variable inside the code. 
 
-**NOTE**: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other stereoNet models, so in case you try a different HEF and not the default one, please check the relevant code in run_inference function and change it accordingly if needed. 
+**NOTE**: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other StereoNet models, so in case you try a different HEF and not the default one, please check the relevant code in run_inference function and change it accordingly if needed. 
 

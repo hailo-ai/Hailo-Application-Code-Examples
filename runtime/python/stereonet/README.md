@@ -23,6 +23,6 @@ hailo_platform (installed from the HailoRT .whl of version >= 4.14.0)
 You can get example HEF files to test the example with by running ```./get_hef.sh``` and the run:
 ```./stereo_inference_run.py stereonet.hef --right right.jpg --left left.jpg```
 
-NOTE: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other stereoNet models, so in case you try a different HEF and not the default one, please perform the relevant changes in the code.
+NOTE: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other StereoNet models, so in case you try a different HEF and not the default one, please perform the relevant changes in the code.
 
 For more information, run ```./stereo_inference_run.py -h```
