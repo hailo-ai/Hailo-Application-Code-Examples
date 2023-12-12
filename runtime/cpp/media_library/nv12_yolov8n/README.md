@@ -1,5 +1,12 @@
 This is example application of using the Media Library, it works only for yolov8, receives data in 4K, NV12 format.
 
+
+Requirements:
+xtensor library (submodule)
+xtl, required by xtensor library (submodule)
+opencv version 4.5.5
+
+
 To build for hailo-15:
 
 1 Install one of the latest releases for Hailo15(1.1.1/1.1.2)
@@ -14,7 +21,6 @@ To build for hailo-15:
 hailo-media-library/api/src/detection/yolov8.cpp
 hailo-media-library/api/src/detection/yolov8_postprocess.cpp
 hailo-media-library/api/include/media_library/common (all the common directory)
-hailo-media-library/api/include/media_library/open_source (all the open_source directory)
 hailo-media-library/api/examples/vision_preproc_example.cpp
 hailo-media-library/api/include/media_library/yolov8.hpp
 hailo-media-library/api/include/media_library/yolov8_postprocess.hpp
