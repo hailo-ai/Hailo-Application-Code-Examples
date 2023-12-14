@@ -20,19 +20,16 @@ args = parser.parse_args()
 
 # ---------------- Post-processing functions ----------------- #
 
-def post_processing(inference_output):
-   print('Here create your relevant post-processing functions. In the case, it is a classification post-processing:')
-   labels = []
-   with open(args.labels,'r') as f:
-    labels = eval(f.read()) 
-    print(labels[np.argmax(inference_output)])
+def post_processing(image_name, inference_output, labels):
+    # Create your relevant post-processing functions
+    print(f"{image_name}: {labels[np.argmax(inference_output)]}")
 
 # ------------------------------------------------------------ #
 
 # ---------------- Inferences threads functions -------------- #
 
 def send(configured_network, images_list, num_images):
-    vstreams_params = InputVStreamParams.make_from_network_group(configured_network, quantized=False, format_type=FormatType.FLOAT32)
+    vstreams_params = InputVStreamParams.make_from_network_group(configured_network, quantized=True, format_type=FormatType.UINT8)
     configured_network.wait_for_activation(100)
     log.info('\nPerforming inference on input images...\n')
     with InputVStreams(configured_network, vstreams_params) as vstreams:
@@ -43,16 +40,17 @@ def send(configured_network, images_list, num_images):
                 vstream.send(data)
 
                 
-def recv(configured_network, num_images):
+def recv(configured_network, image_names, num_images, labels):
     vstreams_params = OutputVStreamParams.make_from_network_group(configured_network, quantized=False, format_type=FormatType.FLOAT32)
     configured_network.wait_for_activation(100)
     with OutputVStreams(configured_network, vstreams_params) as vstreams:
         for _ in range(num_images):
             values = []
+            image_name= image_names.pop(0)
             for vstream in vstreams:
                 data = vstream.recv()
                 values.append(data)
-            post_processing(values)
+            post_processing(image_name, values, labels)
 
 # ------------------------------------------------------------ #
 
@@ -89,6 +87,10 @@ else:
 
 
 num_images = len(images)
+
+labels = []
+with open(args.labels, 'r') as f:
+    labels = eval(f.read())
 
 devices = Device.scan()
 
