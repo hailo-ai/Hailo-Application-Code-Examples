@@ -17,8 +17,11 @@ Pillow
 psutil    
 hailo_platform (installed from the HailoRT .whl of version >= 4.14.0)  
 
+## Install Prerequesities (after installinf hailo_platform from the HailoRT .whl):
+```pip install -r requirements.txt```
+
 ## Running the example:
-```./stereo_inference_run.py --right RIGHT_IMAGES_PATH --left KEFT_IMAGES_PATH [--output-path path/to/output/images/folder]```
+```./stereo_inference_run.py HEF_PATH --right RIGHT_IMAGES_PATH --left KEFT_IMAGES_PATH [--output-path path/to/output/images/folder]```
 
 You can get example HEF files to test the example with by running ```./get_hef.sh``` and the run:
 ```./stereo_inference_run.py stereonet.hef --right right.jpg --left left.jpg```
