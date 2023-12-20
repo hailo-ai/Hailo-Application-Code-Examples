@@ -5,6 +5,7 @@
 #include <chrono>
 #include <mutex>
 #include <future>
+#include <filesystem>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -49,7 +50,7 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
 
 
 template <typename T>
-hailo_status read_all(OutputVStream& output_vstream, std::vector<cv::Mat>& frames, size_t frame_count, 
+hailo_status read_all(OutputVStream& output_vstream, size_t frame_count, 
                     std::chrono::time_point<std::chrono::system_clock>& read_time_vec) { 
 
     m.lock();
@@ -62,11 +63,11 @@ hailo_status read_all(OutputVStream& output_vstream, std::vector<cv::Mat>& frame
         hailo_status status = output_vstream.read(MemoryView(buffer.data(), buffer.size()));
         cv::Mat imageMat(output_vstream.get_info().shape.height, output_vstream.get_info().shape.width, CV_8U, buffer.data());
         //// Display
-        // cv::imshow("Display window", frames[0]);
+        // cv::imshow("Display window", imageMat);
         // cv::waitKey(0);
 
         //// Save inferred image
-        cv::imwrite("output_image.jpg", imageMat);
+        cv::imwrite("output_image_" + std::to_string(i) + ".jpg", imageMat);
         if (HAILO_SUCCESS != status) {
             std::cerr << "Failed reading with status = " <<  status << std::endl;
             return status;
@@ -97,8 +98,9 @@ cv::Mat stereonet_preprocess(cv::Mat image, int target_height, int target_width)
 }
 
 
-hailo_status write_all(InputVStream& input_vstream, std::vector<cv::Mat>& frames, 
-                        std::string input_path, std::chrono::time_point<std::chrono::system_clock>& write_time_vec) {
+hailo_status write_all(InputVStream& input_vstream,std::vector<std::string> input_path, 
+                        std::chrono::time_point<std::chrono::system_clock>& write_time_vec, 
+                        size_t frame_count, bool are_directories) {
     m.lock();
     std::cout << CYAN << "-I- Started write thread: " << info_to_str(input_vstream.get_info()) << std::endl << RESET;
     m.unlock();
@@ -109,32 +111,106 @@ hailo_status write_all(InputVStream& input_vstream, std::vector<cv::Mat>& frames
     int height = input_shape.height;
     int width = input_shape.width;
 
-    cv::VideoCapture capture(input_path);
-    if(!capture.isOpened())
-        throw "Unable to read video file";
-    
-    int i = 0;
     cv::Mat org_frame;
     cv::Mat frame;
 
-    write_time_vec = std::chrono::high_resolution_clock::now();
-    for(;;) {
-        capture >> org_frame;
-        if(org_frame.empty()) {
-            break;
+    if (are_directories) {
+        write_time_vec = std::chrono::high_resolution_clock::now();
+        for (auto& image_path : input_path) {
+            cv::VideoCapture capture(image_path);
+            if(!capture.isOpened())
+                throw "Unable to read video file";
+
+            capture >> org_frame;
+            if(org_frame.empty()) {
+                break;
             }
-        cv::cvtColor(org_frame, org_frame, cv::COLOR_BGR2RGB);
+            
+            cv::cvtColor(org_frame, org_frame, cv::COLOR_BGR2RGB);
 
-        frames[i] = stereonet_preprocess(org_frame, height, width);
+            frame = stereonet_preprocess(org_frame, height, width);
 
-        input_vstream.write(MemoryView(frames[i].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
-        if (HAILO_SUCCESS != status)
-            return status;
-        i++;
+            input_vstream.write(MemoryView(frame.data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
+            if (HAILO_SUCCESS != status)
+                return status;
+            
+            capture.release();
+        }
+
     }
+    else {
+        cv::VideoCapture capture(input_path[0]);
+        if(!capture.isOpened())
+            throw "Unable to read video file";
+        
+        write_time_vec = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i < frame_count; i++) {
+            capture >> org_frame;
+            if(org_frame.empty()) {
+                break;
+            }
+            cv::cvtColor(org_frame, org_frame, cv::COLOR_BGR2RGB);
 
-    capture.release();
+            frame = stereonet_preprocess(org_frame, height, width);
+
+            input_vstream.write(MemoryView(frame.data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
+            if (HAILO_SUCCESS != status)
+                return status;
+        }
+
+        capture.release();
+    }
     return HAILO_SUCCESS;
+}
+
+void get_inputs_from_dir(std::vector<std::string>& images_vector, std::filesystem::path images_directory){
+    try {
+        for (const auto& file : std::filesystem::directory_iterator(images_directory)) {
+            if (file.is_regular_file()) {
+                std::string curr_file_name = file.path().generic_string();
+                if (curr_file_name.find(".jpg") || 
+                    curr_file_name.find(".bmp") || 
+                    curr_file_name.find(".jpeg") || 
+                    curr_file_name.find(".png")){
+                        images_vector.push_back(curr_file_name);
+                }
+            }
+        }
+        } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error accessing folder: " << e.what() << std::endl;
+    }
+}
+
+void get_input(std::vector<InputVStream>& input_vstreams, std::map<std::string, std::vector<std::string>>& input_name_to_images_path,
+                size_t& frame_count, std::string right_input, std::string left_input, bool are_directories) {
+    for (size_t i = 0; i < input_vstreams.size(); i++) {
+        std::string input_name = input_vstreams[i].get_info().name;
+        if (are_directories){
+            std::filesystem::path images_path(right_input);
+            std::filesystem::path images_path_left(left_input);
+            input_name_to_images_path[input_name] = std::vector<std::string>();
+            if (input_name.find("input_layer1") != std::string::npos) {
+                get_inputs_from_dir(std::ref(input_name_to_images_path[input_name]), images_path_left);
+                frame_count = input_name_to_images_path[input_name].size();
+            }
+            else
+                get_inputs_from_dir(std::ref(input_name_to_images_path[input_name]), images_path);
+            
+            if (i == input_vstreams.size() - 1) {
+                if(frame_count != input_name_to_images_path[input_name].size()) {
+                    std::cerr << "Number of images of left and right inputs inside the directories must be equal." << std::endl;
+                    exit(-1);
+                }
+            }
+        }
+        else {
+            input_name_to_images_path[input_name] = std::vector<std::string>(1);
+            if (input_name.find("input_layer1") != std::string::npos)
+                input_name_to_images_path[input_name][0] =  left_input;
+            else
+                input_name_to_images_path[input_name][0] = right_input;
+        }
+    }
 }
 
 
@@ -143,36 +219,27 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstreams, std::vecto
                     std::string right_input, std::string left_input,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
-                    std::chrono::duration<double>& inference_time, size_t frame_count) {
+                    std::chrono::duration<double>& inference_time, size_t& frame_count, bool are_directories) {
 
     hailo_status input_status = HAILO_UNINITIALIZED;
     hailo_status status = HAILO_UNINITIALIZED;
-
-    std::vector<cv::Mat> frames(frame_count);
     
     auto input_vstreams_size = input_vstreams.size();
 
-    std::map<std::string, std::string> input_name_to_images_path;
-
-    for (auto& inp_vstm : input_vstreams) {
-        std::string input_name = inp_vstm.get_info().name;
-        if (input_name.find("input_layer1") != std::string::npos)
-            input_name_to_images_path[input_name] =  left_input;
-        else
-            input_name_to_images_path[input_name] = right_input;
-    }
+    std::map<std::string, std::vector<std::string>> input_name_to_images_path;
     
+    get_input(input_vstreams, std::ref(input_name_to_images_path), frame_count, right_input, left_input, are_directories);
 
     // Create write threads
     std::vector<std::future<hailo_status>> input_threads;
     input_threads.reserve(input_vstreams_size);
     for (size_t i = 0; i < input_vstreams_size; i++) {
         input_threads.emplace_back(std::async(write_all, std::ref(input_vstreams[i]), 
-                                            std::ref(frames), input_name_to_images_path.at(input_vstreams[i].get_info().name), 
-                                            std::ref(write_time_vec[i]))); 
+                                            input_name_to_images_path.at(input_vstreams[i].get_info().name), 
+                                            std::ref(write_time_vec[i]), frame_count, are_directories)); 
     }
 
-    auto output_thread(std::async(read_all<T>, std::ref(output_vstreams[0]), std::ref(frames), frame_count, std::ref(read_time_vec[0])));
+    auto output_thread(std::async(read_all<T>, std::ref(output_vstreams[0]), frame_count, std::ref(read_time_vec[0])));
 
     for (size_t i = 0; i < input_threads.size(); i++) {
         input_status = input_threads[i].get();
@@ -251,6 +318,54 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevic
     return std::move(network_groups->at(0));
 }
 
+
+size_t validate_inputs_and_get_frame_count(std::string right_input, std::string left_input, bool& are_directories) {
+    size_t frame_count = 0;
+    if (!right_input.empty() && !left_input.empty()) {
+        std::filesystem::path images_path(right_input);
+        std::filesystem::path images_path_left(left_input);
+        if ((!std::filesystem::is_directory(images_path) && std::filesystem::is_directory(images_path_left)) ||
+            (std::filesystem::is_directory(images_path) && !std::filesystem::is_directory(images_path_left))) {
+                std::cerr << "One of the directoy paths provided is not actually a directory path." << std::endl;
+                exit(-1);
+            }
+        else if (std::filesystem::is_directory(images_path) && std::filesystem::is_directory(images_path_left)) {
+            are_directories = true;
+            return frame_count;
+        }
+        else {
+            if (
+            (!right_input.find(".avi") && !right_input.find(".mp4") && 
+            !right_input.find(".jpg") && !right_input.find(".jpeg") && !right_input.find(".bmp") && !right_input.find(".png")) 
+            &&
+            (!left_input.find(".avi") && !left_input.find(".mp4") && 
+            !left_input.find(".jpg") && !left_input.find(".jpeg") && !left_input.find(".bmp") && !left_input.find(".png"))) {
+                std::cout << "The provided inputs are both a path for a camera" << std::endl;
+                return CAMERA_INPUT_IMAGE_NUM;
+            }
+            else {
+                if (
+                ((right_input.find(".avi") || right_input.find(".mp4")) && (!left_input.find(".avi") && !left_input.find(".mp4"))) ||
+                ((!right_input.find(".avi") && !right_input.find(".mp4")) && (left_input.find(".avi") || left_input.find(".mp4")))) {
+                    std::cerr << "You cannot have one input that is a video of extension .avi or .mp4 while the other is not" << std::endl;
+                    exit(-1);
+                }
+                
+                frame_count = get_frame_count(right_input);
+                if (frame_count != get_frame_count(left_input)){
+                    std::cerr << "Number of images of left and right inputs must be equal" << std::endl;
+                    exit(-1);
+                }
+                return frame_count;
+            }
+        }
+    }
+    else {
+        std::cerr << "Please define inputs for both left and right" << std::endl;
+        exit(-1);
+    }
+}
+
 std::string getCmdOption(int argc, char *argv[], const std::string &option)
 {
     std::string cmd;
@@ -279,6 +394,10 @@ int main(int argc, char** argv) {
     std::string left_input      = getCmdOption(argc, argv, "-left=");
 
     std::chrono::duration<double> inference_time;
+
+    bool are_directories = false;
+
+    size_t frame_count = validate_inputs_and_get_frame_count(right_input, left_input, std::ref(are_directories));
 
     auto vdevice_exp = VDevice::create();
     if (!vdevice_exp) {
@@ -324,27 +443,11 @@ int main(int argc, char** argv) {
 
     print_net_banner(vstreams);
 
-    size_t frame_count;
-
-    if (!right_input.empty() && !left_input.empty()) {
-        frame_count = get_frame_count(right_input);
-
-        if (frame_count != get_frame_count(left_input)){
-            std::cerr << "Number of images of left and right inputs must be equal" << std::endl;
-        }
-    }
-    else if (right_input.empty() && left_input.empty()){
-        frame_count = CAMERA_INPUT_IMAGE_NUM;
-    }
-    else{
-        std::cerr << "Please define inputs for both left and right" << std::endl;
-    }
-
     status = run_inference<uint8_t>(std::ref(vstreams.first), 
                                     std::ref(vstreams.second), 
                                     right_input, left_input,
                                     write_time_vec, read_time_vec, 
-                                    inference_time, frame_count);
+                                    inference_time, std::ref(frame_count), are_directories);
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
