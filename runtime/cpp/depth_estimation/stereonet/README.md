@@ -32,12 +32,11 @@ HailoRT >= 4.10.0
 To compile the example run `./build.sh`
 
 To run the compiled example:
-
 `./build/x86_64/stereonet_example_cpp -hef=STREONET_HEF_FILE.hef -right=RIGHT_INPUT -left=LEFT_INPUT`
 
-Example:
-`./build/x86_64/stereonet_example_cpp -hef=stereonet.hef -right=right.jpg -left=left.jpg`
-Example of directories inputs:
+Example:<br />
+`./build/x86_64/stereonet_example_cpp -hef=stereonet.hef -right=right.jpg -left=left.jpg`<br />
+Example of directories inputs:<br />
 `./build/x86_64/stereonet_example_cpp -hef=stereonet.hef -right=/path/to/right/images/directory/ -left=/path/to/left/images/directory/`
 
 
