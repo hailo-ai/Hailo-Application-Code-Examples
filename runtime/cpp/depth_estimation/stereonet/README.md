@@ -37,13 +37,15 @@ To run the compiled example:
 
 Example:
 `./build/x86_64/stereonet_example_cpp -hef=stereonet.hef -right=right.jpg -left=left.jpg`
+Example of directories inputs:
+`./build/x86_64/stereonet_example_cpp -hef=stereonet.hef -right=/path/to/right/images/directory/ -left=/path/to/left/images/directory/`
 
 
-**NOTE**: By default the example will run on a single input (two images for right and left). To display the output, comment in\out the relevant lines in the code in the read_all function.
+**NOTE**: This example supports single pair of images, pair of videos or multiple images from given folders as inputs. By default, the example would save the inferred images to the current directory. To display the output, comment in\out the relevant lines in the code in the read_all function.
 
 **NOTE**: There should be no spaces between "=" given in the command line arguments and the file name itself.
 
 **NOTE**: In case you use a cemera input, the initial number of frames the example would perform inference on is 300. To change it, update the CAMERA_INPUT_IMAGE_NUM global variable inside the code. 
 
-**NOTE**: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other StereoNet models, so in case you try a different HEF and not the default one, please check the relevant code in run_inference function and change it accordingly if needed. 
+**NOTE**: Since this example is based on using the stereonet HEF file from the Hailo Model Zoo, the left image goes to "input_layer1" and the right image goes to "input_layer2". This might not be the case for other stereoNet models, so in case you try a different HEF and not the default one, please check the relevant code in run_inference function and change it accordingly if needed. 
 
