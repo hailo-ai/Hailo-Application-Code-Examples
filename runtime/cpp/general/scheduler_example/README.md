@@ -15,8 +15,6 @@ The example does the following:
 
 **NOTE**: Currently support only devices connected on a PCIe link.
 
-**NOTE**: This example currently supports running inference on one device only.
-
 
 Prequisites:
 
