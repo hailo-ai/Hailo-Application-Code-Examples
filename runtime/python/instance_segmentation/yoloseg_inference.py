@@ -159,10 +159,7 @@ else:
     raise ValueError(error)
 
 kwargs['meta_arch'] = meta_arch
-if args.class_num:
-    kwargs['classes'] = int(args.class_num)
-else:
-    kwargs['classes'] = 80
+kwargs['classes'] = int(args.class_num)
 
 output_dir = args.output_dir
 
