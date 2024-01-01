@@ -26,6 +26,6 @@ Install the hailort whl. (if you are not using the Suite docker), and then the r
 
 You can download a sample image and a HEF with the `get_hef_and_onnx.sh` script, and then execute the inference.
 for example:  
-```CUDA_VISIBLE_DEVICES=9 ../hailo_onnxruntime_inference.py yolov5m_wo_spp.hef yolov5m_wo_spp_postprocess.onnx```
+```CUDA_VISIBLE_DEVICES=9 ./hailo_onnxruntime_inference.py yolov5m_wo_spp.hef yolov5m_wo_spp_postprocess.onnx```
 
-For more information, run ```././hailo_onnxruntime_inference.py --help```   
+For more information, run ```./hailo_onnxruntime_inference.py --help```   
