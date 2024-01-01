@@ -1,53 +1,71 @@
 cmake_minimum_required(VERSION 3.11)
 project(vstream_yolov5seg_example_cpp)
 
-set(CMAKE_CXX_STANDARD 20)
+set(COMPILE_OPTIONS -Wall -Wextra -Wconversion -ffast-math -O3 -DNDEBUG -Wno-ignored-qualifiers -Wno-conversion -Wno-unused-but-set-parameter -Wno-extra -Wno-reorder -Wno-unused-local-typedefs -std=c++17 -fconcepts)
 
-set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -Wno-reorder -std=c++11 -Wno-ignored-qualifiers -Wno-extra -Wno-unused-local-typedefs -Wno-conversion)
-
-set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-set(CMAKE_HAVE_THREADS_LIBRARY 1)
-set(CMAKE_USE_WIN32_THREADS_INIT 0)
-set(CMAKE_USE_PTHREADS_INIT 1)
-set(THREADS_PREFER_PTHREAD_FLAG ON)
+set(BASE_DIR /path/to/yolov5seg/example/folder)
 
 find_package(Threads)
-
 find_package(HailoRT REQUIRED)
+find_package(OpenCV REQUIRED)
 
-find_package( OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
-    ./yolov5seg_example.cpp
-    ./common/overlay.cpp
-    ./common/yolov5seg.cpp
+./*.cpp
+./common/*.cpp
 )
 
-include(ExternalProject)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    include(FetchContent)
 
-set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+    FetchContent_Declare(xtl
+        GIT_REPOSITORY https://github.com/xtensor-stack/xtl
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+        OVERRIDE_FIND_PACKAGE
+    )
 
-ExternalProject_Add(xtl-test
-    GIT_REPOSITORY https://github.com/xtensor-stack/xtl
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
-)
+    FetchContent_Declare(xtensor
+        GIT_REPOSITORY https://github.com/xtensor-stack/xtensor
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${BASE_DIR}/build/x86_64/external/share/cmake/xtl/
+        OVERRIDE_FIND_PACKAGE
+    )
 
-ExternalProject_Add(xtensor-test
-    GIT_REPOSITORY https://github.com/xtensor-stack/xtensor
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${BASE_DIR}/build/x86_64/external/share/cmake/xtl/
-)
+    FetchContent_Declare(xsimd
+        GIT_REPOSITORY https://github.com/xtensor-stack/xsimd
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${BASE_DIR}/build/x86_64/external/share/cmake/xtl/
+        OVERRIDE_FIND_PACKAGE
+    )
 
-include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
-link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
+    FetchContent_MakeAvailable(xtl xtensor xsimd)
+else()
+    include(ExternalProject)
+
+    set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+
+    ExternalProject_Add(xtl
+        GIT_REPOSITORY https://github.com/xtensor-stack/xtl
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+    )
+
+    ExternalProject_Add(xtensor
+        GIT_REPOSITORY https://github.com/xtensor-stack/xtensor
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${BASE_DIR}/build/x86_64/external/share/cmake/xtl/
+    )
+
+    ExternalProject_Add(xsimd
+        GIT_REPOSITORY https://github.com/xtensor-stack/xsimd
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${BASE_DIR}/build/x86_64/external/share/cmake/xtl/
+    )
+
+    include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
+    link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
+endif()
 
 link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
-add_dependencies(${PROJECT_NAME} xtl-test xtensor-test)
 include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${ONNXRUNTIME_INCLUDE_DIR})
 include_directories(rapidjson/include)
-target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS} -fconcepts)
-target_link_libraries(${PROJECT_NAME} HailoRT::libhailort ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS})
-
+target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
+target_link_libraries(${PROJECT_NAME} Threads::Threads HailoRT::libhailort xtl xtensor xsimd)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
