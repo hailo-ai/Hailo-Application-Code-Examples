@@ -19,6 +19,6 @@ hailo_platform (installed from the HailoRT .whl of version >= 4.13.0)
 
 ## Usage
 ```
-./espcnx4_infer.py --hef espcn_x4_540x960.hef --image images/ -o output_dir
+./espcnx4_infer.py espcn_x4_540x960.hef --image images/ -o output_dir
 ```   
 
