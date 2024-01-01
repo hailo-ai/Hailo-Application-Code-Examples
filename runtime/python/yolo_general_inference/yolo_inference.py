@@ -418,7 +418,7 @@ with VDevice(device_ids=devices) as target:
             with network_group.activate(network_group_params):
                 raw_detections = infer_pipeline.infer(input_data)
                 
-                if len(outputs) == 1 and ('nms' in outputs[0].name or 'format_conversion' in outputs[0].name)::
+                if len(outputs) == 1 and ('nms' in outputs[0].name or 'format_conversion' in outputs[0].name):
                     is_nms = True 
                     results = post_nms_infer(raw_detections, outputs[0].name)
                 else:
