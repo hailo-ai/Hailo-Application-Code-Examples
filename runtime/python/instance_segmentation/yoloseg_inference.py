@@ -10,14 +10,14 @@ import argparse
 
 from hailo_model_zoo.core.postprocessing.instance_segmentation_postprocessing import yolov5_seg_postprocess
 from hailo_model_zoo.core.postprocessing.instance_segmentation_postprocessing import yolov8_seg_postprocess
-from hailo_model_zoo.core.postprocessing.instance_segmentation_postprocessing import visualize_yolov5_seg_results # Uses also for the v8 visualization
+from hailo_model_zoo.core.postprocessing.instance_segmentation_postprocessing import visualize_yolov5_seg_results # Uses also for the v8 and fast_sam visualization
         
 
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: v5 or v8")
-parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
+parser.add_argument('arch', help="The architecture type of the model: v5, v8 or fast")
+parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80 for v5 and v8, and 1 for fast_sam.", default=80)
 parser.add_argument('--output_dir', help="The path to the output directory where the images would be save. Default to the output_images folder in currect directory.")
 args = parser.parse_args()
 
@@ -37,9 +37,14 @@ arch_dict = {'v5':
              'v8': {'anchors':
                  {'strides': [32,16,8], 
                   'regression_length' : 15}
-                 }}
+                 },
+            'fast': {'anchors':
+                 {'strides': [32,16,8], 
+                  'regression_length' : 15}}
+            }
 
 
+# --------------------------------------------------------- #
 
 # ---------------- Architecture functions ----------------- #
 
@@ -128,10 +133,10 @@ def load_input_images(images_path, images):
 func_dict = {
             'yolov5_seg': postproc_yolov5seg,
             'yolov8_seg': postproc_yolov8seg,
+            'fast_sam': postproc_yolov8seg,
             }
 
 images_path = args.images
-num_of_classes = args.class_num
 
 images = []
 
@@ -142,6 +147,8 @@ meta_arch = ''
 
 arch = args.arch
 arch_list = arch_dict.keys()
+
+num_of_classes = args.class_num
 
 if arch in arch_list:
     anchors = arch_dict[arch]
@@ -154,12 +161,21 @@ if arch in arch_list:
         meta_arch = 'yolov8_seg'
         kwargs['score_threshold'] = 0.001
         kwargs['nms_iou_thresh'] = 0.7
+        kwargs['meta_arch'] = 'yolov8_seg_postprocess'
+    if arch == 'fast':
+        meta_arch = 'fast_sam'
+        kwargs['score_threshold'] = 0.25
+        kwargs['nms_iou_thresh'] = 0.7
+        kwargs['meta_arch'] = 'yolov8_seg_postprocess'
+        num_of_classes = '1'
+        kwargs['classes'] = 1
+        
 else:
-    error = 'Not a valid architecture. Please choose an architecture from the this list: v5, v8'
+    error = 'Not a valid architecture. Please choose an architecture from the this list: v5, v8, fast'
     raise ValueError(error)
 
-kwargs['meta_arch'] = meta_arch
-kwargs['classes'] = int(args.class_num)
+
+kwargs['classes'] = int(num_of_classes)
 
 output_dir = args.output_dir
 
@@ -203,7 +219,7 @@ with VDevice(device_ids=devices) as target:
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
-                                                    
-                processed_img = Image.fromarray(visualize_yolov5_seg_results(results, np.expand_dims(np.array(processed_image), axis=0), score_thres=0.3, **kwargs))
+                                                   
+                processed_img = Image.fromarray(visualize_yolov5_seg_results(results, np.expand_dims(np.array(processed_image), axis=0), score_thres=0.3, class_names=num_of_classes, **kwargs))
                 
                 processed_img.save(f'{output_dir}/output_image{i}.jpg', 'JPEG')
