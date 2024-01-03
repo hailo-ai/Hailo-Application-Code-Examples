@@ -30,6 +30,8 @@ Install the hailo model-zoo, and hailort whl, and then the requirements:
 You can download a sample image and a HEF with the `get_sources.sh` script, and then execute the inference.
 For example:  
 ```./yoloseg_inference.py yolov8s_seg.hef dog_bicycle.jpg v8```
+or
+```./yoloseg_inference.py fast_sam_s.hef zidane.jpg fast```
 
 For more information, run ```./yoloseg_inference.py --help```   
 
