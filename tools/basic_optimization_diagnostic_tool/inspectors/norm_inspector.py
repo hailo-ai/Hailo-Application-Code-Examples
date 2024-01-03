@@ -59,18 +59,23 @@ class NormInspector(BaseInspector):
                 self._logger.warning(f"Input layer {layer.name} doesn't have normalization. "
                                      f"Was the data normalized manually?")
             elif layer.type_ == MeasuredLayerType.NORM_LAYER:
-                std = 1 / params[layer.name]['kernel'][0, 0, :, 0]
-                mean = -params[layer.name]['bias'] * std
-                bad_std = np.all(std < 1)
-                bad_mean = np.all(np.logical_and(mean > 0, mean < 1))
-                new_std = std * 255 if bad_std else std
-                new_mean = mean * 255 if bad_mean else mean
+                hn_layer = self._nn_model.get_layer_by_name(layer.name)
+                if hn_layer.op == LayerType.normalization:
+                    std = 1 / params[layer.name]['kernel'][0, 0, :, 0]
+                    mean = -params[layer.name]['bias'] * std
+                    bad_std = np.all(std < 1)
+                    bad_mean = np.all(np.logical_and(mean > 0, mean < 1))
+                    new_std = std * 255 if bad_std else std
+                    new_mean = mean * 255 if bad_mean else mean
 
-                if bad_std or bad_mean:
-                    self._logger.warning("Mean or std values were less than 1. Expected values in range of [0, 255]")
-                    new_mean = map(lambda x: f"{x:.3f}", new_mean)
-                    new_std = map(lambda x: f"{x:.3f}", new_std)
-                    self._logger.info(f"{layer.name} = normalization([{', '.join(new_mean)}], [{', '.join(new_std)}])")
+                    if bad_std or bad_mean:
+                        self._logger.warning("Mean or std values were less than 1. Expected values in range of [0, 255]")
+                        new_mean = map(lambda x: f"{x:.3f}", new_mean)
+                        new_std = map(lambda x: f"{x:.3f}", new_std)
+                        self._logger.info(f"{layer.name} = normalization([{', '.join(new_mean)}], [{', '.join(new_std)}])")
+                else:
+                    # TODO: consider recoverting mean and std values from model script.
+                    self._logger.info("Normalization layer has been fused. Cannot verify mean and std values.")
 
         return measured_layers
 
@@ -130,6 +135,9 @@ class NormInspector(BaseInspector):
         """
         norm_layers = list(filter(lambda x: x.op == LayerType.normalization,
                                   self._nn_model.stable_toposort()))
+        # TODO: add normalization layer name validation based on the model script lines.
+        fused_norm_layers = [layer for layer in self._nn_model.stable_toposort() if layer._get_fused_model_script_layer_names()]
+        norm_layers.extend(fused_norm_layers)
         input_layers = self._nn_model.get_input_layers()
         measured_layers = list()
         for input_l in input_layers:
@@ -150,7 +158,7 @@ class NormInspector(BaseInspector):
         with self._runner.infer_context(InferenceContext.SDK_FP_OPTIMIZED) as ctx:
             model = self._runner.get_keras_model(ctx)._model
             model.compile(save_interlayer=measured_layers_names)
-            axes = np.arange(len(self._dataset.element_spec[0].shape))
+            axes = np.arange(3)  # Assumes 4 dimensions with batch, channels is last
 
             ch_mean_by_layer = {layer: [] for layer in measured_layers_names}
             ch_std_by_layer = {layer: [] for layer in measured_layers_names}
