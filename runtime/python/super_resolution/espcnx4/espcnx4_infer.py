@@ -2,7 +2,6 @@
 
 import numpy as np
 from PIL import Image
-import PIL as pil
 from pathlib import Path
 import os
 from loguru import logger
@@ -11,7 +10,7 @@ import cv2
 
 
 
-from hailo_platform import (HEF, PcieDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
+from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
                 InputVStreamParams, OutputVStreamParams, FormatType)
 
 
@@ -94,9 +93,10 @@ def run_inference_and_save_sr_images(images, hef, output_path):
     # Create folder for output images if doesn't exist
     output_path.mkdir(parents=True, exist_ok=True)
 
+    devices = Device.scan()
+
     # Configuration
-    devices = PcieDevice.scan_devices()
-    with PcieDevice(devices[0]) as target:
+    with VDevice(device_ids=devices) as target:
         network_group = configure_and_get_network_group(hef, target)
         network_group_params = network_group.create_params()
         input_vstreams_params, output_vstreams_params = create_input_output_vstream_params(network_group)
@@ -125,8 +125,7 @@ def parser_init():
     parser = argparse.ArgumentParser(description="SRgan inference")
 
     parser.add_argument(
-        "-m",
-        "--hef",
+        "hef",
         help="Path of espcn_x4_540_960.hef",
         default="espcn_x4_540_960.hef"
     )

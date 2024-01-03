@@ -2,9 +2,11 @@
 This example shows SR (Super-Resolution) inference example.  
 It uses the model srgan.hef.  
 
-## Requirements
-HailoRT  (tested on 4.11.0)  
-loguru  (tested on 0.6.0)  
+## Prerequesities: 
+Pillow
+loguru
+opencv-python
+hailo_platform (installed from the HailoRT .whl of version >= 4.13.0) 
 
 ## Usage
 ```
