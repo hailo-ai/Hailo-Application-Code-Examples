@@ -91,12 +91,12 @@ class HighPrecisionInspector(BaseInspector):
             self._logger.warning("The following layers are relative outliers")
             for linfo in relative_ourliers:
                 prec_mode = linfo.prec_mode.value
-                self._logger.warning(f"\t{linfo.layer_name}, SQNR: {linfo.sqnr}, Precision Mode: {prec_mode}")
+                self._logger.warning(f"\t{linfo.layer_name}, SQNR: {float(linfo.sqnr):.03f}, Precision Mode: {prec_mode}")
         if len(absolute_outliers) > 0:
             self._logger.warning(f"The following layers have SQNR lower than threshold {self.SQNR_THRESHOLD}")
             for linfo in absolute_outliers:
                 prec_mode = linfo.prec_mode.value
-                self._logger.warning(f"\t{linfo.layer_name}, SQNR: {linfo.sqnr}, Precision Mode: {prec_mode}")
+                self._logger.warning(f"\t{linfo.layer_name}, SQNR: {float(linfo.sqnr):.03f}, Precision Mode: {prec_mode}")
         if len(relative_ourliers) > 0 or len(absolute_outliers) > 0:
             self._logger.warning("If you encounter accuracy issues, consider increasing the preicsion mode of "
                                  "some of these layer. Bottleneck usually have larger effect on accuracy.")

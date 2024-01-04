@@ -121,7 +121,9 @@ def main(args):
         return 1
 
     run_inspectors(runner, dataset, interactive=args.interactive,
-                   output_model_script=args.output_model_script, logger=logger)
+                   output_model_script=args.output_model_script,
+                   custom_order=args.order, data_count=args.data_count,
+                   logger=logger)
     return 0
 
 if __name__ == "__main__":

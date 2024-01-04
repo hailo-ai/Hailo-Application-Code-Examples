@@ -6,6 +6,7 @@ import inspectors.messages as msg
 from inspectors.base_inspector import BaseInspector, InspectorPriority
 
 from hailo_sdk_client.exposed_definitions import InferenceContext
+from hailo_model_optimization.acceleras.hailo_layers.base_hailo_layer import BaseHailoLayer
 
 
 class ClippingInspector(BaseInspector):
@@ -30,12 +31,16 @@ class ClippingInspector(BaseInspector):
         if self._dataset is None:
             return msg.SKIP_NO_DATASET
         return ""
+    
+    @staticmethod
+    def has_activation(layer):
+        return isinstance(layer, BaseHailoLayer) and layer.activation_atomic_op is not None
 
     def _collect_hist_per_layer(self):
         qparams = self._runner.get_params_translated()
         with self._runner.infer_context(InferenceContext.SDK_FP_OPTIMIZED) as ctx:
             model = self._runner.get_keras_model(ctx)._model
-            hist_layers = [lname for lname, layer in model.layers.items() if layer.activation_atomic_op]
+            hist_layers = [lname for lname, layer in model.layers.items() if self.has_activation(layer)]
             model.compile(save_interlayer=hist_layers)
 
             # TODO: Find correct ranges or collect them based on the dataset...
@@ -48,7 +53,7 @@ class ClippingInspector(BaseInspector):
                 hist_ranges[lname] = np.array([l_min, l_max])
                 self._logger.debug(f"{lname}: activation range is ({l_min}, {l_max})")
                 if l_max - l_min > 40:
-                    self._logger.warning(f"Activation range of layer {lname} is high ({l_min}, {l_max})")
+                    self._logger.warning(f"Activation range of layer {lname} is high ({l_min:.03f}, {l_max:.03f})")
             full_result = {lname: np.zeros(100, dtype=np.uint32) for lname in hist_layers}
 
             @tf.function
@@ -84,19 +89,15 @@ class ClippingInspector(BaseInspector):
             log_level = 0
             if bin1 != 0 and (hist_ranges[layer][0] + bin_size * (bin1)) < 0:
                 left_msg = f"{bin1}% of the range (of the low range) has {count_left} items"
-                if bin1 <= 5:
+                if bin1 <= 20:
                     new_log_level = logging.DEBUG
-                elif bin1 > 5 and bin1 <= 20:
-                    new_log_level = logging.INFO
                 else:
                     new_log_level = logging.WARNING
                 log_level = max(log_level, new_log_level)
             if bin2 != len(hist) and (hist_ranges[layer][0] + bin_size * (bin2)) > 0:
                 right_msg = f"{len(hist) - bin2}% of the range (of the high range) has {count_right} items"
-                if bin2 >= 95:
+                if bin2 >= 80:
                     new_log_level = logging.DEBUG
-                elif bin2 < 95 and bin2 >= 80:
-                    new_log_level = logging.INFO
                 else:
                     new_log_level = logging.WARNING
                 log_level = max(log_level, new_log_level)

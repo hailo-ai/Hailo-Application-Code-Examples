@@ -40,12 +40,13 @@ def fetch_inspectors():
 INSPECTORS_BY_NAME = fetch_inspectors()
 
 
-def run_inspectors(runner, dataset, interactive, output_model_script, logger=None, custom_order=None, **kwargs):
+def run_inspectors(runner, dataset, interactive, output_model_script, data_count, logger=None, custom_order=None, **kwargs):
     if custom_order is None:
         custom_order = sorted(INSPECTORS_BY_NAME.keys(), key=lambda x: (-INSPECTORS_BY_NAME[x].PRIORITY, x))
     new_commands = []
     for inspector_name in custom_order:
         inspector = INSPECTORS_BY_NAME[inspector_name](runner, dataset, interactive, logger=logger, **kwargs)
+        inspector.add_info(data_count=data_count)
         inspector.run()
         new_commands.extend(inspector.get_new_commands())
     save_model_script(runner, new_commands, output_model_script, interactive, logger)

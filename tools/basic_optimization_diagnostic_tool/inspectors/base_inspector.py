@@ -1,4 +1,4 @@
-import os
+import shutil
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -30,9 +30,13 @@ class BaseInspector(ABC):
         else:
             self._logger = logger
         self._new_commands = []
+        self._additional_info = {}
 
     def should_skip(self) -> str:
         return ""
+    
+    def add_info(self, **kwargs):
+        self._additional_info.update(kwargs)
 
     def get_new_commands(self):
         return self._new_commands
@@ -55,7 +59,7 @@ class BaseInspector(ABC):
     
     def print_line_seperator(self, c="=", length=None):
         if length is None:
-            term_size = os.get_terminal_size()
+            term_size = shutil.get_terminal_size(fallback=(120, 50))
             length = term_size.columns
         print(c * length)
 
