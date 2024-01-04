@@ -12,6 +12,8 @@ from inspectors.base_inspector import BaseInspector, InspectorPriority
 from hailo_sdk_client.runner.client_runner import ClientRunner
 from hailo_sdk_client.exposed_definitions import InferenceContext
 from hailo_sdk_common.hailo_nn.hn_definitions import LayerType
+from hailo_model_optimization.tools.simple_alls_parser import CommandInfo, parse_model_script
+
 
 
 class MeasuredLayerType(Enum):
@@ -52,15 +54,33 @@ class NormInspector(BaseInspector):
         """
         Basic sanity, check if the model has a normalization layer.
         """
-        measured_layers = self._get_layers_to_sample()
+        commands = parse_model_script(self._runner.model_script)
+        norm_layers_from_alls = {command.return_val[0].split('/')[-1]: command.args  # Get layer name without prefix
+                                 for command in commands
+                                 if isinstance(command, CommandInfo) and command.command == 'normalization'}
+        measured_layers = self._get_layers_to_sample(norm_layers_from_alls)
         params = self._runner.get_params_fp_optimized()
+
         for layer in measured_layers:
             if layer.type_ == MeasuredLayerType.NON_NORM_INPUT_LAYER:
                 self._logger.warning(f"Input layer {layer.name} doesn't have normalization. "
                                      f"Was the data normalized manually?")
             elif layer.type_ == MeasuredLayerType.NORM_LAYER:
-                std = 1 / params[layer.name]['kernel'][0, 0, :, 0]
-                mean = -params[layer.name]['bias'] * std
+                hn_layer = self._nn_model.get_layer_by_name(layer.name)
+                if hn_layer.op == LayerType.normalization:
+                    std = 1 / params[layer.name]['kernel'][0, 0, :, 0]
+                    mean = -params[layer.name]['bias'] * std
+                else:
+                    # Fetch values from model script command
+                    fused_names = hn_layer._get_fused_model_script_layer_names()
+                    norm_layers = set(fused_names) & set(norm_layers_from_alls)
+                    if len(norm_layers) != 1:
+                        self._logger.info("Normalization layer has been fused. and cannot be identified and verified.")
+                        continue
+                    args = norm_layers_from_alls[norm_layers.pop()]
+                    mean = np.array(args[0], dtype=float)
+                    std = np.array(args[1], dtype=float)
+
                 bad_std = np.all(std < 1)
                 bad_mean = np.all(np.logical_and(mean > 0, mean < 1))
                 new_std = std * 255 if bad_std else std
@@ -123,13 +143,17 @@ class NormInspector(BaseInspector):
                         f"The input data of {layer.name} appears to be normalized, is it normalized twice? "
                         f"mean: {ch_mean_by_layer[layer.name]}, std: {ch_std_by_layer[layer.name]}")
 
-    def _get_layers_to_sample(self) -> List[MeasuredLayer]:
+    def _get_layers_to_sample(self, norm_layers_from_alls) -> List[MeasuredLayer]:
         """
         Find which layers should be sampled (mean and std)
         If an input has a norm layer as a decendent - pick the norm layer, otherwise pick the input layer.
         """
         norm_layers = list(filter(lambda x: x.op == LayerType.normalization,
                                   self._nn_model.stable_toposort()))
+
+        fused_norm_layers = [layer for layer in self._nn_model.stable_toposort()
+                             if set(layer._get_fused_model_script_layer_names()) & set(norm_layers_from_alls)]
+        norm_layers.extend(fused_norm_layers)
         input_layers = self._nn_model.get_input_layers()
         measured_layers = list()
         for input_l in input_layers:
@@ -150,7 +174,7 @@ class NormInspector(BaseInspector):
         with self._runner.infer_context(InferenceContext.SDK_FP_OPTIMIZED) as ctx:
             model = self._runner.get_keras_model(ctx)._model
             model.compile(save_interlayer=measured_layers_names)
-            axes = np.arange(len(self._dataset.element_spec[0].shape))
+            axes = np.arange(3)  # Assumes 4 dimensions with batch, channels is last
 
             ch_mean_by_layer = {layer: [] for layer in measured_layers_names}
             ch_std_by_layer = {layer: [] for layer in measured_layers_names}
