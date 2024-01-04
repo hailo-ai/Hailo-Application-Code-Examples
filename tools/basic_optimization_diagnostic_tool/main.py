@@ -6,7 +6,7 @@ except ModuleNotFoundError:
     exit(2)
 else:
     sdk_version = hailo_sdk_client.__version__.split('.')
-    if sdk_version[0] != '3' or sdk_version[1] != '25':
+    if sdk_version[0] != '3' or (sdk_version[1] != '25' and sdk_version[1] != '26'):
         print(f"ERROR: Incompatible Hailo sdk version. Expected: 3.25, Version: {hailo_sdk_client.__version__}")
         exit(2)
     elif len(sdk_version) > 3:

@@ -40,7 +40,7 @@ To compile the example run `./build.sh`
 To run the compiled example:
 
 For an image:
-`./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=IMAGE_FILE.jpg`
+`./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=IMAGE_FILE.jpg [-num=NUM_TIMES]`
 For a video:
 `./build/x86_64/vstream_yolov8_example_cpp -hef=YOLOv8_HEF_FILE.hef -input=VIDEO_FILE.mp4`
 For a camera input:
@@ -58,22 +58,21 @@ Example:
 
 **NOTE**: You can play with the values of IOU_THRESHOLD and SCORE_THRESHOLD in the yolov8_postprocess.cpp file for different videos to get more detections.
 
+**NOTE**: In case you run the example with a single image, the "-num=NUM_TIMES" flag will instruct the application how many times to run the same image. This is used to measure the performance without the overhead of ecoding a video file. In case you use a video (.avi or .mp4 file), the "-num" flag will have no effect. 
+
 **NOTE**: In case you prefer to perform the Sigmoid on host, you can comment in the relevant line to do that. Please notice that you'll need a HEF file that does not have an on-chip sigmoid if you choose to use the example in such a way. 
 
 **NOTE**: The example was built for yolov8 model trained on COCO dataset with 80 classes. From random testing, the example works with yolov8 models that are trained on less classes, but for it to work a change is to be made in `yolov8_postprocess.cpp` at line 26, changing `#define NUM_CLASSES 80` to `#define NUM_CLASSES X` where `X` is the number of classes the model was trained on.
 
-**NOTE**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled to 8-bit. Hailo supply the option to compile the model with 16-bit output layers for those who desire it.
+**NOTE (only relevant for non NMS-on-Hailo HEF files)**: The pre-compiled Yolov8 HEF files in the Hailo Model Zoo are compiled to 8-bit. Hailo supply the option to compile the model with 16-bit output layers for those who desire it.
 Both scores and data dequantization is done manually in the postprocessing functions. 
 This means that you will not get good detection (or detections at all) with a Yolov8 with 16-bit output layers. 
 If you choose to work with your own HEF that is with a 16-bit output, you need to change the code from **uint8_t** to **uint16_t** in the following lines:
 
-double_buffer.hpp - lines 32, 43, 61, 69, 97
-
-yolov8_inference.cpp - line 68
+yolov8_inference.cpp - line 430
 
 yolov8_postprocess.cpp - lines 78, 82, 139 
 
 hailo_tensors.hpp - lines 19, 29, 46, 85
 
 tensors.hpp - lines 24, 27, 43
-

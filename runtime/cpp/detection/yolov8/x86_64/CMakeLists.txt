@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(vstream_yolov8_example_cpp)
 
-set(COMPILE_OPTIONS -Wall -Wextra -Wconversion -ffast-math -O3 -DNDEBUG -Wno-ignored-qualifiers -Wno-conversion -Wno-unused-but-set-parameter -Wno-extra -Wno-reorder -Wno-unused-local-typedefs)
+set(COMPILE_OPTIONS -Wall -Wextra -Wconversion -fconcepts -ffast-math -O3 -DNDEBUG -Wno-ignored-qualifiers -Wno-conversion -Wno-unused-but-set-parameter -Wno-extra -Wno-reorder -Wno-unused-local-typedefs)
 
 set(BASE_DIR /path/to/yolov8/example/folder)
 
@@ -13,6 +13,7 @@ message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
 ./*.cpp
+./common/*.cpp
 )
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
