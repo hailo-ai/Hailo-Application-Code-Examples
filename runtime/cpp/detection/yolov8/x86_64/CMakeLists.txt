@@ -3,8 +3,7 @@ project(vstream_yolov8_example_cpp)
 
 set(COMPILE_OPTIONS -Wall -Wextra -Wconversion -fconcepts -ffast-math -O3 -DNDEBUG -Wno-ignored-qualifiers -Wno-conversion -Wno-unused-but-set-parameter -Wno-extra -Wno-reorder -Wno-unused-local-typedefs)
 
-# set(BASE_DIR /path/to/yolov8/example/folder)
-set(BASE_DIR /local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/detection/yolov8/x86_64)
+set(BASE_DIR /path/to/yolov8/example/folder)
 
 find_package(Threads)
 find_package(HailoRT REQUIRED)
