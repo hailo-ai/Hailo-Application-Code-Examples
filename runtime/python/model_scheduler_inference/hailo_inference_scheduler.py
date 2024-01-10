@@ -111,13 +111,12 @@ for hef_path in args.hefs:
 params = create_vdevice_params()
 
 with VDevice(params) as target:
+    infer_processes = []
     for i, hef in enumerate(hefs):
         configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
         
         network_group = target.configure(hef, configure_params)[0]
-        
-        infer_processes = []
-        
+
         input_vstreams_params = InputVStreamParams.make(network_group, quantized=False, format_type=FormatType.FLOAT32)
         output_vstreams_params = OutputVStreamParams.make(network_group, quantized=False, format_type=FormatType.FLOAT32)
         
@@ -127,17 +126,17 @@ with VDevice(params) as target:
             resized_images = [set_resized_input(lambda size: image.resize(size, Image.LANCZOS), width=width, height=height) for image in all_images[i]]
         else:
             resized_images = all_images[i]
-        
+                    
         infer_processes.append(Process(target=infer, args=(network_group, input_vstreams_params, output_vstreams_params, resized_images)))
-        
+                
     start_time = time.time()
-    
-    for i in range(len(infer_processes)):
-        infer_processes[i].start()
-    for i in range(len(infer_processes)):    
-        infer_processes[i].join()
 
-        end_time = time.time()
+    for infer_proc in infer_processes:
+        infer_proc.start()
+    for infer_proc in infer_processes:
+        infer_proc.join()
+
+    end_time = time.time()
 print('Inference was successful!\n')
 
 log.info('-------------------------------------')
