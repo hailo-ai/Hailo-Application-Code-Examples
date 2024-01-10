@@ -105,8 +105,12 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
 
         // video.write(frames[0]);
         // cv::imwrite("output_image.jpg", frames[0]);
+        
         frames[0].release();
+        
+        m.lock();
         frames.erase(frames.begin());
+        m.unlock();
         if (frame_count == -1){
             i--;
         }
@@ -156,7 +160,9 @@ hailo_status use_single_frame(InputVStream& input_vstream, std::chrono::time_poi
     hailo_status status = HAILO_SUCCESS;
     write_time_vec = std::chrono::high_resolution_clock::now();
     for(int i = 0; i < frame_count; i++) {
+        m.lock();
         frames.push_back(image);
+        m.unlock();
         status = input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size()));
         if (HAILO_SUCCESS != status)
             return status;
@@ -196,11 +202,11 @@ hailo_status write_all(InputVStream& input_vstream, std::string input_path,
 
     if (!cmd_num_frames.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
         capture >> org_frame;
-        capture.release();
         cv::resize(org_frame, org_frame, cv::Size(width, height), 1);
         status = use_single_frame(input_vstream, write_time_vec, frames, std::ref(org_frame), std::stoi(cmd_num_frames));
         if (HAILO_SUCCESS != status)
             return status;
+        capture.release();
     }
     else {
         write_time_vec = std::chrono::high_resolution_clock::now();
