@@ -217,7 +217,9 @@ hailo_status write_all(InputVStream& input_vstream, std::string input_path,
                 }
             
             cv::resize(org_frame, org_frame, cv::Size(width, height), 1);
+            m.lock();
             frames.push_back(org_frame);
+            m.unlock();
 
             input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
             if (HAILO_SUCCESS != status)
