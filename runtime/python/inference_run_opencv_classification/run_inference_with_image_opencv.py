@@ -84,7 +84,7 @@ elif os.path.isdir(images_path):
     for img in os.listdir(images_path):
         if (img.endswith(".jpg") or img.endswith(".png") or img.endswith('.bmp') or img.endswith('.jpeg')):
             image_names.append(img)
-            images.append(cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB))
+            images.append(cv2.cvtColor(cv2.imread(os.path.join(images_path,img)), cv2.COLOR_BGR2RGB))
 else:
     raise ValueError('You must define input images path to a specific image or to a folder containing images. Run with -h for additional info')
 
