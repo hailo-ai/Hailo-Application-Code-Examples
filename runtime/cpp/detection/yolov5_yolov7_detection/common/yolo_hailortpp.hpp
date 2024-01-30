@@ -8,9 +8,6 @@
 
 
 __BEGIN_DECLS
-void filter_nms(HailoROIPtr roi);
+void filter_nms(HailoROIPtr roi, std::string output_name);
 void yolov5_nms(HailoROIPtr roi);
-void yolox(HailoROIPtr roi);
-void yolov5_no_persons(HailoROIPtr roi);
-void yolov5m_vehicles(HailoROIPtr roi);
 __END_DECLS
