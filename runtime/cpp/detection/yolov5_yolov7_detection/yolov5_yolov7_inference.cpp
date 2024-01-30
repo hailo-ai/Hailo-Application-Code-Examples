@@ -59,9 +59,9 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
     return result;
 }
 
-void postprocess_nms_on_hailo(HailoROIPtr& roi, bool nms_on_hailo) {
+void postprocess_nms_on_hailo(HailoROIPtr& roi, bool nms_on_hailo, std::string output_name) {
     if (nms_on_hailo)
-        filter_nms(roi);
+        filter_nms(roi, output_name);
     else {
         std::string config = model_arch + ".json";
         YoloParams *init_params = init(config, model_arch);
@@ -72,7 +72,7 @@ void postprocess_nms_on_hailo(HailoROIPtr& roi, bool nms_on_hailo) {
 template <typename T>
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &features, double frame_count, 
                                 std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, 
-                                double org_height, double org_width, bool nms_on_hailo)
+                                double org_height, double org_width, bool nms_on_hailo, std::string output_name)
 {
     auto status = HAILO_SUCCESS;   
 
@@ -95,7 +95,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
             roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<T *>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
         }
  
-        postprocess_nms_on_hailo(std::ref(roi), nms_on_hailo);
+        postprocess_nms_on_hailo(std::ref(roi), nms_on_hailo, output_name);
 
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
@@ -209,8 +209,11 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     auto output_vstreams_size = output_vstreams.size();
 
     bool nms_on_hailo = false;
+    std::string output_name = "";
+
     if (output_vstreams_size == 1 && ((std::string)output_vstreams[0].get_info().name).find("nms") != std::string::npos) {
         nms_on_hailo = true;
+	output_name = (std::string)output_vstreams[0].get_info().name;
     }
 
     std::vector<std::shared_ptr<FeatureData<T>>> features;
@@ -237,7 +240,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all<T>, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i]))); 
     }
 
-    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, nms_on_hailo));
+    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, nms_on_hailo, output_name));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
