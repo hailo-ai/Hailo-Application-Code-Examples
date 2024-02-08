@@ -72,13 +72,17 @@ void postprocess_nms_on_hailo(HailoROIPtr& roi, bool nms_on_hailo, std::string o
 template <typename T>
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &features, double frame_count, 
                                 std::chrono::duration<double>& postprocess_time, std::vector<cv::Mat>& frames, 
-                                double org_height, double org_width, bool nms_on_hailo, std::string output_name)
+                                double org_height, double org_width, bool nms_on_hailo, std::string output_name, bool save_output)
 {
     auto status = HAILO_SUCCESS;   
 
     std::sort(features.begin(), features.end(), &FeatureData<T>::sort_tensors_by_size);
 
-    // cv::VideoWriter video("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size((int)org_width, (int)org_height));
+    cv::VideoWriter video;
+    if ( save_output )
+    {
+        video = cv::VideoWriter("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size((int)org_width, (int)org_height));
+    }
 
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
@@ -119,11 +123,16 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
         }
         // cv::imshow("Display window", frames[i]);
         // cv::waitKey(0);
-        // video.write(frames[i]);
+        if ( save_output ){
+            video.write(frames[i]);
+        }
         frames[i].release();
     }
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     postprocess_time = t_end - t_start;
+    if ( save_output ){
+        video.release();
+    }
     // video.release();
 
     return status;
@@ -202,7 +211,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
                     std::chrono::time_point<std::chrono::system_clock>& write_time_vec,
                     std::vector<std::chrono::time_point<std::chrono::system_clock>>& read_time_vec,
                     std::chrono::duration<double>& inference_time, std::chrono::duration<double>& postprocess_time, 
-                    double frame_count, double org_height, double org_width) {
+                    double frame_count, double org_height, double org_width, bool save_output) {
 
     hailo_status status = HAILO_UNINITIALIZED;
     
@@ -240,7 +249,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
         output_threads.emplace_back(std::async(read_all<T>, std::ref(output_vstreams[i]), features[i], frame_count, std::ref(read_time_vec[i]))); 
     }
 
-    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, nms_on_hailo, output_name));
+    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, nms_on_hailo, output_name, save_output));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -330,6 +339,19 @@ std::string getCmdOption(int argc, char *argv[], const std::string &option)
     return cmd;
 }
 
+bool getCmdOptionalOption(int argc, char *argv[], const std::string &option)
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (0 == arg.find(option, 0))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 int main(int argc, char** argv) {
 
     hailo_status status = HAILO_UNINITIALIZED;
@@ -340,6 +362,9 @@ int main(int argc, char** argv) {
     std::string yolo_hef        = getCmdOption(argc, argv, "-hef=");
     std::string video_path      = getCmdOption(argc, argv, "-video=");
     model_arch                  = getCmdOption(argc, argv, "-arch=");
+    bool save_output            = getCmdOptionalOption(argc, argv, "-out");
+
+
 
     std::chrono::time_point<std::chrono::system_clock> write_time_vec;
     std::chrono::duration<double> inference_time;
@@ -402,7 +427,7 @@ int main(int argc, char** argv) {
                                     video_path, 
                                     write_time_vec, read_time_vec, 
                                     inference_time, postprocess_time, 
-                                    frame_count, org_height, org_width);
+                                    frame_count, org_height, org_width, save_output);
 
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed running inference with status = " << status << std::endl;
