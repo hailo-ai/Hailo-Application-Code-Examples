@@ -82,7 +82,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
     {
         video = cv::VideoWriter("./processed_video.mp4", cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size((int)org_width, (int)org_height));
     }
-
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
     m.lock();
@@ -92,7 +91,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
 
     for (size_t i = 0; i < frame_count; i++){
         HailoROIPtr roi = std::make_shared<HailoROI>(HailoROI(HailoBBox(0.0f, 0.0f, 1.0f, 1.0f)));
-
         for (uint j = 0; j < features.size(); j++) {
             roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<T *>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
         }
@@ -102,8 +100,8 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
             feature->m_buffers.release_read_buffer();
         }
         std::vector<HailoDetectionPtr> detections = hailo_common::get_hailo_detections(roi);
-        cv::resize(frames[0], frames[0], cv::Size((int)org_width, (int)org_height), 1);
 
+        cv::resize(frames[0], frames[0], cv::Size((int)org_width, (int)org_height), 1);
         for (auto &detection : detections) {
             if (detection->get_confidence() == 0) {
                 continue;
@@ -115,7 +113,6 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
 
             std::cout << "Detection: " << get_coco_name_from_int(detection->get_class_id()) << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
-
         // cv::imshow("Display window", frames[i]);
         // cv::waitKey(0);
         if ( save_output ){
@@ -409,6 +406,11 @@ size_t getFrameRate(cv::VideoCapture& capture, const std::string& input_path, co
 
     if (!image_num.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos) // Image and Frame Rate
     {
+        capture.open(input_path, cv::CAP_ANY);
+        if(!capture.isOpened())
+        {
+            throw "Error when reading images";
+        }
         video_or_image = true;
         return std::stoi(image_num);
     }
@@ -499,17 +501,8 @@ int main(int argc, char** argv) {
 
     print_net_banner(vstreams);
 
-/*
-    cv::VideoCapture capture(input_path);
-    if (!capture.isOpened()){
-        throw "Error when reading video";
-    }
-    */
     cv::VideoCapture capture;
     size_t frame_count = getFrameRate(capture, input_path, image_num, video_or_image);
-
-
-    //double frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
     double org_height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     double org_width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     capture.release();
