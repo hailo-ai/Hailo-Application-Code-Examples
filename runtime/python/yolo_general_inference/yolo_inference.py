@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description='Running a Hailo inference with act
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
 parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolox, yolov6, yolov6t (yolo_v6_0.2.1 & yolo_v6_0.4.0), yolo_v7 or yolo_v8.")
+parser.add_argument('--batch', default=1, type=int, required=False, help="Number of images to run in one Batch")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
 args = parser.parse_args()
@@ -333,6 +334,16 @@ def preproc(image, width=640, height=640, normalized=True):
     
     return image
 
+def divide_list_to_batch(images_list, batch_size):
+    for i in range(0, len(images_list), batch_size):
+        yield images_list[i : i + batch_size]
+
+
+def divide_list_to_batch(images_list, batch_size):
+    for i in range(0, len(images_list), batch_size):
+        yield images_list[i : i + batch_size]
+
+
 def load_input_images(images_path, images):
     # if running inference on a single image:
     if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp') or images_path.endswith('.jpeg')):
@@ -342,6 +353,7 @@ def load_input_images(images_path, images):
         for img in os.listdir(images_path):
             if (img.endswith(".jpg") or img.endswith(".png") or img.endswith('.bmp') or img.endswith('.jpeg')):
                 images.append(Image.open(os.path.join(images_path, img)))
+
                 
 # ---------------- Start of the example --------------------- #
 
@@ -393,9 +405,14 @@ hef = HEF(args.hef)
 
 inputs = hef.get_input_vstream_infos()
 outputs = hef.get_output_vstream_infos()
+batch_size = args.batch
+if len(images) % batch_size != 0:
+    raise ValueError('The number of input images should be divisiable by the batch size without any remainder. Please either change the batch size to divide the number of images with no remainder or change the number of images!')
 
 with VDevice(device_ids=devices) as target:
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
+    network_name = hef.get_network_group_names()[0]
+    configure_params[network_name].batch_size = batch_size
     network_group = target.configure(hef, configure_params)[0]
     network_group_params = network_group.create_params()
 
@@ -410,24 +427,29 @@ with VDevice(device_ids=devices) as target:
     output_vstreams_params = OutputVStreamParams.make_from_network_group(network_group, quantized=False, format_type=FormatType.FLOAT32)
 
     with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
-        for i, image in enumerate(images):
-            processed_image = preproc(image, height=height, width=width)
-                        
-            input_data = {input_vstream_info.name: np.expand_dims(processed_image, axis=0).astype(np.float32)}
+        batched_images = list(divide_list_to_batch(images, batch_size))
+        for batch_num, batch_images in enumerate(batched_images):
+            print(f"Processing Batch {batch_num + 1}:")
+            processed_input_images = []
             
+            for i, image in enumerate(batch_images):
+                processed_image = preproc(image, height=height, width=width)
+                processed_input_images.append(np.array(processed_image))
+
             with network_group.activate(network_group_params):
-                raw_detections = infer_pipeline.infer(input_data)
-                
+                raw_detections = infer_pipeline.infer(np.array(processed_input_images))
+
                 if len(outputs) == 1 and ('nms' in outputs[0].name or 'format_conversion' in outputs[0].name):
                     is_nms = True 
                     results = post_nms_infer(raw_detections, outputs[0].name)
                 else:
                     results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
-                                        
+
+
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
-                    
-                img = letterbox_image(image, (width,height))
-                                            
-                post_process(results, img, i, output_path, width, height)
+
+                for j in enumerate(batch_images):
+                    img = letterbox_image(batch_images[j], (width, height))
+                    post_process(results, img, j + batch_num*batch_size, output_path, width, height)
