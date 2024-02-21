@@ -339,6 +339,11 @@ def divide_list_to_batch(images_list, batch_size):
         yield images_list[i : i + batch_size]
 
 
+def divide_list_to_batch(images_list, batch_size):
+    for i in range(0, len(images_list), batch_size):
+        yield images_list[i : i + batch_size]
+
+
 def load_input_images(images_path, images):
     # if running inference on a single image:
     if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp') or images_path.endswith('.jpeg')):
@@ -348,6 +353,7 @@ def load_input_images(images_path, images):
         for img in os.listdir(images_path):
             if (img.endswith(".jpg") or img.endswith(".png") or img.endswith('.bmp') or img.endswith('.jpeg')):
                 images.append(Image.open(os.path.join(images_path, img)))
+
                 
 # ---------------- Start of the example --------------------- #
 
@@ -438,6 +444,7 @@ with VDevice(device_ids=devices) as target:
                     results = post_nms_infer(raw_detections, outputs[0].name)
                 else:
                     results = func_dict[meta_arch](height, width, anchors, meta_arch, int(num_of_classes), raw_detections)
+
 
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
