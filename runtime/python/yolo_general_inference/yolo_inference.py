@@ -338,12 +338,6 @@ def divide_list_to_batch(images_list, batch_size):
     for i in range(0, len(images_list), batch_size):
         yield images_list[i : i + batch_size]
 
-
-def divide_list_to_batch(images_list, batch_size):
-    for i in range(0, len(images_list), batch_size):
-        yield images_list[i : i + batch_size]
-
-
 def load_input_images(images_path, images):
     # if running inference on a single image:
     if (images_path.endswith('.jpg') or images_path.endswith('.png') or images_path.endswith('.bmp') or images_path.endswith('.jpeg')):
@@ -407,7 +401,7 @@ inputs = hef.get_input_vstream_infos()
 outputs = hef.get_output_vstream_infos()
 batch_size = args.batch
 if len(images) % batch_size != 0:
-    raise ValueError('The number of input images should be divisiable by the batch size without any remainder. Please either change the batch size to divide the number of images with no remainder or change the number of images!')
+    raise ValueError('The number of input images should be divisiable by the batch size without any remainder. Please either change the batch size to divide the number of images with no remainder or change the number of images')
 
 with VDevice(device_ids=devices) as target:
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
@@ -428,8 +422,8 @@ with VDevice(device_ids=devices) as target:
 
     with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
         batched_images = list(divide_list_to_batch(images, batch_size))
-        for batch_num, batch_images in enumerate(batched_images):
-            print(f"Processing Batch {batch_num + 1}:")
+        for batch_idx, batch_images in enumerate(batched_images):
+            print(f"Processing Batch {batch_idx + 1}:")
             processed_input_images = []
             
             for i, image in enumerate(batch_images):
