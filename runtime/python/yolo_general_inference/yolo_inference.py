@@ -26,7 +26,7 @@ class device_pre_post_layers():
 parser = argparse.ArgumentParser(description='Running a Hailo inference with actual images using Hailo API and OpenCV')
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('images', help="Images path to perform inference on. Could be either a single image or a folder containing the images")
-parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolox, yolov6, yolov6t (yolo_v6_0.2.1 & yolo_v6_0.4.0), yolo_v7 or yolo_v8.")
+parser.add_argument('arch', help="The architecture type of the model: yolo_v3, yolo_v4, yolov_4t (tiny-yolov4), yolo_v5, yolo_v5t7 (yolov5-tag7), yolox, yolov6, yolov6t (yolo_v6_0.2.1 & yolo_v6_0.4.0), yolo_v7 or yolo_v8.")
 parser.add_argument('--batch', default=1, type=int, required=False, help="Number of images to run in one Batch")
 parser.add_argument('--class-num', help="The number of classes the model is trained on. Defaults to 80", default=80)
 parser.add_argument('--labels', help="The path to the labels txt file. Should be in a form of NUM : LABEL. If no labels file is provided, no label will be added to the output")
@@ -52,6 +52,7 @@ arch_dict = {'yolo_v3':
              'yolo_v5': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[116, 90, 156, 198, 373, 326], [30, 61, 62, 45, 59, 119], [10, 13, 16, 30, 33, 23]])},
+             'yolo_v5t7': {}
              'yolox': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[1, 1], [1, 1], [1, 1]])},
@@ -378,7 +379,7 @@ if arch in arch_list:
     anchors = arch_dict[arch]
     if arch == 'yolo_v7':
         meta_arch = 'yolo_v5'
-    elif arch == 'yolo_v8':
+    elif arch == 'yolo_v8' or arch == 'yolo_v5t7':
         meta_arch = 'nanodet_v8'
     else:
         meta_arch = arch
