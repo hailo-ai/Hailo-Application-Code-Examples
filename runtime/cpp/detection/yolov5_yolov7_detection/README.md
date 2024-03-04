@@ -29,13 +29,13 @@ To compile the example run `./build.sh`
 
 To run the compiled example:
 
-`./build/x86_64/vstream_yolov5_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4 -arch=ARCH` (where ARCH is yolov5 or yolov7)
+`./build/x86_64/vstream_yolov5_yolov7_example_cpp -hef=YOLO_HEF_FILE.hef -video=VIDEO_FILE.mp4 -arch=ARCH [-out -display]` (where ARCH is yolov5 or yolov7)
 
 For example:
-`./build/x86_64/vstream_yolov5_yolov7_example_cpp -hef=yolov5m_wo_spp.hef -video=full_mov_slow.mp4 -arch=yolov5`
+`./build/x86_64/vstream_yolov5_yolov7_example_cpp -hef=yolov5m_wo_spp.hef -input=full_mov_slow.mp4 -arch=yolov5`
 
 NOTE: When using a HEF file that was compiled with NMS on-Hailo, the `-arch` is redundant. For the regular compiled model, it is mandatory. 
 
-NOTE: You can also save the processed video by commenting in a few lines at the "post_processing_all" function in yolov5_yolov7_inference.cpp.
+NOTE: You can also save the processed video by using the `-out` command line argument or dispaly the inferred video using the `-display` command line argument.
 
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.  
