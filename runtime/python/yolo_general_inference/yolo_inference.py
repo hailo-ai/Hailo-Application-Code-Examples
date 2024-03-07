@@ -52,7 +52,7 @@ arch_dict = {'yolo_v3':
              'yolo_v5': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[116, 90, 156, 198, 373, 326], [30, 61, 62, 45, 59, 119], [10, 13, 16, 30, 33, 23]])},
-             'yolo_v5t7': {}
+             'yolo_v5t7': {},
              'yolox': 
                  {'strides': [32,16,8], 
                   'sizes': np.array([[1, 1], [1, 1], [1, 1]])},
@@ -335,7 +335,7 @@ def preproc(image, width=640, height=640, normalized=True):
     
     return image
 
-def divide_list_to_batch(images_list, batch_size):
+def divide_list_to_batches(images_list, batch_size):
     for i in range(0, len(images_list), batch_size):
         yield images_list[i : i + batch_size]
 
@@ -422,9 +422,8 @@ with VDevice(device_ids=devices) as target:
     output_vstreams_params = OutputVStreamParams.make_from_network_group(network_group, quantized=False, format_type=FormatType.FLOAT32)
 
     with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
-        batched_images = list(divide_list_to_batch(images, batch_size))
+        batched_images = list(divide_list_to_batches(images, batch_size))
         for batch_idx, batch_images in enumerate(batched_images):
-            print(f"Processing Batch {batch_idx + 1}:")
             processed_input_images = []
             
             for i, image in enumerate(batch_images):
@@ -432,7 +431,7 @@ with VDevice(device_ids=devices) as target:
                 processed_input_images.append(np.array(processed_image))
 
             with network_group.activate(network_group_params):
-                raw_detections = infer_pipeline.infer(np.array(processed_input_images))
+                raw_detections = infer_pipeline.infer(np.array(processed_input_images).astype(np.float32))
 
                 if len(outputs) == 1 and ('nms' in outputs[0].name or 'format_conversion' in outputs[0].name):
                     is_nms = True 
@@ -445,6 +444,6 @@ with VDevice(device_ids=devices) as target:
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
 
-                for j in enumerate(batch_images):
+                for j in range(len(batch_images)):
                     img = letterbox_image(batch_images[j], (width, height))
-                    post_process(results, img, j + batch_num*batch_size, output_path, width, height)
+                    post_process(results, img, (batch_idx*len(batch_images))+j, output_path, width, height)
