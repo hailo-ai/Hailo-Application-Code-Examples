@@ -116,7 +116,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
             std::cout << "Detection: " << get_coco_name_from_int(detection->get_class_id()) << ", Confidence: " << std::fixed << std::setprecision(2) << detection->get_confidence() * 100.0 << "%" << std::endl;
         }
         if (display_images) {
-            cv::imshow("Display window", frames[i]);
+            cv::imshow("Display window", frames[0]);
             cv::waitKey(0);
         }
         if (save_output){
