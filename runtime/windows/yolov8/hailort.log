@@ -1,0 +1,7 @@
+[2024-03-04 11:35:28.728] [23820] [HailoRT] [info] [control.cpp:96] [hailort::control__parse_identify_results] firmware_version is: 4.16.0
+[2024-03-04 11:35:28.730] [23820] [HailoRT] [error] [file_utils.cpp:40] [hailort::read_binary_file] CHECK_AS_EXPECTED failed - Error opening file 
+[2024-03-04 11:35:28.732] [23820] [HailoRT] [error] [hef.cpp:413] [hailort::Hef::Impl::parse_hef_file] CHECK_EXPECTED_AS_STATUS failed with status=HAILO_OPEN_FILE_FAILURE(13) - 
+[2024-03-04 11:35:28.733] [23820] [HailoRT] [error] [hef.cpp:802] [hailort::Hef::Impl::Impl] Failed parsing HEF file
+[2024-03-04 11:35:28.733] [23820] [HailoRT] [error] [hef.cpp:329] [hailort::Hef::Impl::create] Failed creating HEF
+[2024-03-04 11:35:28.734] [23820] [HailoRT] [error] [hef.cpp:160] [hailort::Hef::create] CHECK_EXPECTED failed with status=HAILO_OPEN_FILE_FAILURE(13) - 
+[2024-03-04 11:35:28.735] [23820] [HailoRT] [error] [hailort.cpp:507] [hailo_create_hef_file] CHECK_EXPECTED_AS_STATUS failed with status=HAILO_OPEN_FILE_FAILURE(13) - 
