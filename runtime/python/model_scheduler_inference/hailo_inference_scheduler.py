@@ -49,23 +49,6 @@ def set_resized_input(resize, width=640, height=640, do_normalization=False):
 
 # --------------- Hailo Scheduler service functions ---------- #
 
-def check_if_service_enabled(process_name):
-    '''
-    Check if there is any running process that contains the given name processName.
-    '''
-    #Iterate over the all the running process
-    for proc in psutil.process_iter():
-        try:
-            if process_name.lower() in proc.name().lower():
-                print('HailoRT Scheduler service is enabled!')
-                return
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-    
-    print('HailoRT Scheduler service is disabled. Enabling service...')
-    os.system('sudo systemctl disable hailort.service --now  && sudo systemctl daemon-reload && sudo systemctl enable hailort.service --now')
-    
-
 def create_vdevice_params():
     params = VDevice.create_params()
     params.scheduling_algorithm = HailoSchedulingAlgorithm.ROUND_ROBIN
@@ -76,8 +59,6 @@ def create_vdevice_params():
 # ----------------------------------------------------------- #
 
 # ---------------- Start of the example --------------------- #
-
-check_if_service_enabled('hailort_service')
 
 hefs = []
 all_images = []
