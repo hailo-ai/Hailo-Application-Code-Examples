@@ -24,6 +24,7 @@ You can get example HEF files to test the example with by running ```./get_resou
 
 NOTE: This is a very basic example meant for basis of a Python inference code using the Model Scheduler. You are more than welcome to change it to suite your needs.
 
-IMPORTANT NOTE: The example takes into account that the hailort_serivce is either disabled or enabled. With that saying, there could be a case where the hailort_serivce is enabled, but the inference will fall on "hailort_serivce not enabled". In that case, just run the following command on your terminal:  ```sudo systemctl disable hailort.service --now  && sudo systemctl daemon-reload && sudo systemctl enable hailort.service --now``` and re-run the example.  
+IMPORTANT NOTE: To be able to run this example, the hailort_serivce must be enabled by running ```sudo systemctl enable hailort.service --now``. Notice that there could be a case where hailort_serivce is enabled, but the inference will fall on "hailort_serivce not enabled". In that case, just run the following command on your terminal:  ```sudo systemctl disable hailort.service --now  && sudo systemctl daemon-reload && sudo systemctl enable hailort.service --now``` and re-run the example.</br>
+Some Linux distributions are delivered without the init system ```systemd```, which is required for the multiprocess service. In such a case, it is possible to run the service using the compiled executable ```hailort_service```.
 
 For more information, run ```./hailo_inference_scheduler.py -h```
