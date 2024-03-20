@@ -117,7 +117,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
         }
         if (display_images) {
             cv::imshow("Display window", frames[0]);
-            cv::waitKey(0);
+            cv::waitKey(1);
         }
         if (save_output){
             video.write(frames[0]);
