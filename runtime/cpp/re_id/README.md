@@ -13,7 +13,7 @@ and then saving them in a database for further identification, in case a person 
 Requirements for compiling and running the sample code:
 * C++20
 * Haio-8 attached to the system
-* HailoRT version 4.15.0
+* HailoRT version >= 4.15.0
 * xtensor library (submodule)
 * xtl, required by xtensor library (submodule)
 * rapidjson (submodule)
