@@ -15,8 +15,8 @@ args = parser.parse_args()
 
 # TODO: run the bash file that applies the pipeline
 
-if (not args.hef or not args.input_images):
-    raise ValueError('You must define hef path and input images path in the command line. Run with -h for additional info')
+if (not args.input_images or not args.npz_input or not args.npz_output):
+    raise ValueError('Arguments missing. Run with -h for additional info')
 
 images_path = args.input_images
 new_weights_d = collections.OrderedDict()    
