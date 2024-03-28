@@ -14,7 +14,7 @@ PIPELINE="gst-launch-1.0 \
           ! hailonet hef-path=/home/root/pocs/online_training/hef/resnet_v1_18_featext.hef \
           ! hailofilter function-name=filter \
                so-path=/home/root/pocs/online_training/target/libfeature_extractor_cross_compilation_h15.so 
-	  ! filesink location=stam.txt"
+	        ! fakesink"
 
 
 eval ${PIPELINE}

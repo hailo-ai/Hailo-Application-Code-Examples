@@ -10,8 +10,7 @@ The deployed HEF is feature-extractor (FH) only, while the fully-connected (FC) 
    See runtime/cpp/embedding/H15_img2vec
 
 Copy to H15 the "target" folder, adding the .so, HEF, NPZ
-Alongside that, put the "training-images" folder with contents formatted as: 001/0000.jpg, 001/0001.jpg, .., 002/0000.jpg etc. 
-    subfolders correspond to the new classes. Images need to be in a standard format, e.g. 640x480
+Alongside that, put the "training_data" folder with contents formatted as: 001/0000.jpg, 001/0001.jpg, .., 002/0000.jpg etc. The subfolders correspond to the new classes. Images need to be in a standard format, e.g. 640x480 . The training_data has a couple scripts that can help make an image collection conform
 
 
 ### Running imprint on H15 
