@@ -8,8 +8,8 @@ import argparse
 import collections
 
 parser = argparse.ArgumentParser(description='Retrain the fully connected layer of a model using the HEF file and new samples')
-parser.add_argument('--npz_input', help="Path to the NPY to GET OLD weights&bias of the fully connected layer, that takes the output of the HEF as input")
-parser.add_argument('--npz_output', help="Path to the NPY to SAVE NEW weights&bias of the fully connected layer, that takes the output of the HEF as input")
+parser.add_argument('--npz-input', help="Path to the NPY to GET OLD weights&bias of the fully connected layer, that takes the output of the HEF as input")
+parser.add_argument('--npz-output', help="Path to the NPY to SAVE NEW weights&bias of the fully connected layer, that takes the output of the HEF as input")
 parser.add_argument('--input-images', help="Path to directory structure of samples of new classes to train the model on. The directory structure should be as follows: <input-images>/<#NUM#.class-name>/<image-name>.jpg where #NUM# is an integer (0, 1, ...) enumerating the class")  
 args = parser.parse_args()
 
