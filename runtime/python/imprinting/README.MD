@@ -1,25 +1,25 @@
-# create compilation docker
-sudo docker run --gpus all --name finkel_hrt_dfc -it -p 8147:8147 -v /local:/local_host -v /data:/data -v /work:/work repo-docker.int.hailo.ai/hailo_repo_init_cpu:hrt_dfc /bin/bash --login
+## Weight imprinting POC ## 
 
-# in docker:
-bash build.sh /opt/poky/4.0.2 
+This is a small POC of upgrading a classifier deployed on H15 with additional classes, by providing a few dozen images from each class.
+The deployed HEF is feature-extractor (FH) only, while the fully-connected (FC) layer aka linear classifier is left on the host, performed in python using an NPZ. The FC matrix columns is the centroid vectors for classes in the space of feature vectors that FE creates. So we create centroids for new classes by averaging the FE outputs for the mini-train images, and concat them to the FC matrix, e.g. 512x1000 --> 512x1002. 
 
-# put built .so on H15:
-scp build/aarch64/libfeature_extractor_cross_compilation_h15.so root@192.168.241.118:/home/root/pocs/online_training/target/
 
-# on PC:
-create_calib, parse, optimize, 
-compile (for H15!): ClientRunner(har=quantized_model_har_path, hw_arch='hailo15h')
+### PC preparations
+1. Invoking DFC (parse, calib, optimize, compile (for H15)) to create a decapitated ResNet-18 feature extractor HEF and FC NPZ.
+2. Cross-compile a postproc-filter .so to be used within hailo-gst pipeline to print a FE output vectors into text file, line per image.
+   See runtime/cpp/embedding/H15_img2vec
 
-# move to target:
-FE hef, fc.npz
+Copy to H15 the "target" folder, adding the .so, HEF, NPZ
+Alongside that, put the "training-images" folder with contents formatted as: 001/0000.jpg, 001/0001.jpg, .., 002/0000.jpg etc. 
+    subfolders correspond to the new classes. Images need to be in a standard format, e.g. 640x480
 
-# on target:
-bash imprint.sh
 
-# testing
-..incomplete, the imprint.py retests on the training data itself. maybe can try held-out test..
-   Currently my inference is through the script of jpgs2txt anyways, so a separate "test script" would be a boring duplication
-  Old infer (hailort_infer.py) can't run on H15, but can on a RPi maybe. 
+### Running imprint on H15 
+Just launch 'bash imprint.sh' 
+
+#### testing
+..incomplete, the imprint.py retests on the training data itself. maybe can try a "held-out set" test..
+Currently my inference is through the script of jpgs2txt anyways, so a separate "test script" would be a boring duplication
+Old infer (hailort_infer.py) can't run on H15, but can on a RPi maybe. 
     
 
