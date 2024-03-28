@@ -13,14 +13,10 @@
 #include <fstream>
 
 // Hailo includes
-#include "common/math.hpp"
 #include "common/hailo_objects.hpp"
-#include "common/tensors.hpp"
-#include "common/nms.hpp"
-#include "common/labels/coco_eighty.hpp"
 #include "postprocess.hpp"
 
-using namespace xt::placeholders;
+//using namespace xt::placeholders;
 
 
 //******************************************************************

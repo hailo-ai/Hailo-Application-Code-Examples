@@ -18,23 +18,7 @@ file(GLOB SOURCES
     postprocess.cpp
 )
 
-include(ExternalProject)
-set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
-ExternalProject_Add(xtl-test
-    GIT_REPOSITORY https://github.com/xtensor-stack/xtl
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
-)
-ExternalProject_Add(xtensor-test
-    GIT_REPOSITORY https://github.com/xtensor-stack/xtensor
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -Dxtl_DIR=${CMAKE_CURRENT_SOURCE_DIR}/build/aarch64/external/share/cmake/xtl/
-)
-
-include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
-link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
-
-#add_executable(${PROJECT_NAME} ${SOURCES})
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-add_dependencies(${PROJECT_NAME} xtl-test xtensor-test)
 include_directories(${HAILO_INCLUDE_DIRS} ${USR_OPENCV_INCLUDE_DIRS})
 target_compile_options(${PROJECT_NAME} PRIVATE ${CXXFLAGS})
 target_link_libraries(${PROJECT_NAME} Threads::Threads ${LIB_HAILORT} ${OpenCV_LIBS} ${OPENCV_VIDEOIO_LIBS})
