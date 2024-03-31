@@ -1,4 +1,4 @@
-## Yolov5 C++ Detection Standalone example for Windows
+## Yolov8 C++ Detection Standalone example for Windows
 #### This is an example code for running yolov5 detection using HailoRT and OpenCV on Windows, without TAPPAS dependencies
 
 **Last HailoRT version checked - 4.16.0**
