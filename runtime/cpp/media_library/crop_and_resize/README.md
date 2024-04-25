@@ -24,13 +24,12 @@ The example does the following:
 ### Usage ###
 1. On the development machine
    1. run the cross development toolchain env
-   2. in order to run crop and resize make sure '#define CROP_CHECK'
-   3. in order to just run resize make sure this line is commented '#define CROP_CHECK'
-   4. compile the example by running `make`, the bult application will reside under /bin/crop_and_resize.arm64 
+   2. in order to run performance test on crop and resize make sure '#define CROP_CHECK' is not commented
+   3. in order to performance test only on resize make sure this line is commented '#define CROP_CHECK'
+   4. compile the example by running `make`, the built application will reside under /bin/crop_and_resize.arm64 
    5. Get the required jpg by running `./get_jpg.sh'
 2. On the H15 platform:
    1. Copy the compiled binary and the downloaded jpg from the development machine to the H15.
-
 
    `scp bin/crop_and_resize.arm64 root@10.0.0.1:~/`
 
