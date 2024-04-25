@@ -219,7 +219,7 @@ with VDevice(device_ids=devices) as target:
                 output_path = os.path.join(os.path.realpath('.'), 'output_images')
                 if not os.path.isdir(output_path): 
                     os.mkdir(output_path)
-                                                   
+                                                                       
                 processed_img = Image.fromarray(visualize_yolov5_seg_results(results, np.expand_dims(np.array(processed_image), axis=0), score_thres=0.3, class_names=num_of_classes, **kwargs))
                 
                 processed_img.save(f'{output_dir}/output_image{i}.jpg', 'JPEG')
