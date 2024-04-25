@@ -25,7 +25,7 @@ The example does the following:
 1. On the development machine
    1. run the cross development toolchain env
    2. in order to run performance test on crop and resize make sure '#define CROP_CHECK' is not commented
-   3. in order to performance test only on resize make sure this line is commented '#define CROP_CHECK'
+   3. in order to run performance test only on resize make sure this line is commented '#define CROP_CHECK'
    4. compile the example by running `make`, the built application will reside under /bin/crop_and_resize.arm64 
    5. Get the required jpg by running `./get_jpg.sh'
 2. On the H15 platform:
