@@ -120,19 +120,28 @@ hailo_status write_all(InputVStream& input_vstream, const std::string input_path
     int height = input_shape.height;
     int width = input_shape.width;
 
-    cv::VideoCapture capture(input_path);
-    if(!capture.isOpened())
-        throw "Unable to read video file";
+    cv::VideoCapture capture;
+    if (input_path.empty()) {
+        capture.open(0, cv::CAP_ANY);
+        if (!capture.isOpened()) {
+            throw "Unable to read camera input";
+        }
+    }
+    else{
+        capture.open(input_path, cv::CAP_ANY);
+        if(!capture.isOpened())
+            throw "Unable to read input file";
+    }
     
     cv::Mat org_frame;
 
-    if (!cmd_num_frames.empty()){
+    if (!cmd_num_frames.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
         capture >> org_frame;
-        capture.release();
         cv::resize(org_frame, org_frame, cv::Size(width, height), 1);
         status = use_single_frame(input_vstream, write_time_vec, frames, std::ref(org_frame), std::stoi(cmd_num_frames));
         if (HAILO_SUCCESS != status)
             return status;
+        capture.release();
     }
     else {
         write_time_vec = std::chrono::high_resolution_clock::now();
@@ -325,16 +334,25 @@ int main(int argc, char** argv) {
 
     print_net_banner(vstreams);
 
-    cv::VideoCapture capture(input_path);
-    if (!capture.isOpened()){
-        throw "Error when reading input file";
+    cv::VideoCapture capture;
+    size_t frame_count;
+    if (input_path.empty()) {
+        capture.open(0, cv::CAP_ANY);
+        if (!capture.isOpened()) {
+            throw "Error in camera input";
+        }
+        frame_count = -1;
     }
-
-    double frame_count;
-    if (!image_num.empty())
-        frame_count = std::stod(image_num);
-    else
-        frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+    else{
+        capture.open(input_path, cv::CAP_ANY);
+        if (!capture.isOpened()){
+            throw "Error when reading video";
+        }
+        frame_count = (size_t)capture.get(cv::CAP_PROP_FRAME_COUNT);
+        if (!image_num.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
+            frame_count = std::stoi(image_num);
+        }
+    }
 
     double org_height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     double org_width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
