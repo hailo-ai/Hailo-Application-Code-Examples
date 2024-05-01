@@ -7,6 +7,5 @@ We want a plugin (in .so format), that will write embedding vectors to text file
 4. Removed everything else.
 
 To build, use cross-compile env 
-(e.g. docker, inside Hailo repo-docker.int.hailo.ai/hailo_repo_init_cpu:hrt_dfc) 
-and run ``bash build.sh /opt/poky/4.0.2``, transfer the resultant .so from 
-
+(e.g. docker, inside Hailo repo-docker.int.hailo.ai/hailo_repo_init_cpu:hrt_dfc, with mapped folders) 
+enter this folder, and run ``bash build.sh /opt/poky/4.0.2``, find the resultant .so in build/aarch64/
