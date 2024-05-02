@@ -131,13 +131,6 @@ template <typename T> cv::Mat semseg_post_process(std::vector<T>& logits, int wi
     std::vector<hailo_detection_with_byte_mask_t> detections = convert_nms_with_byte_mask_buffer_to_detections(logits);
     cv::Mat overlay = cv::Mat::zeros(height, width, CV_8UC3);
 
-    // if (frame.channels() == 3){
-    //     cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
-    // }
-
-    // std::cout << "Frame size: " << frame.size() << std::endl;
-    // std::cout << "Overlay size: " << overlay.size() << std::endl;
-
     for(const auto& detection : detections) {
         int box_width = (detection.box.x_max - detection.box.x_min) * width + 1;
         int box_height = (detection.box.y_max - detection.box.y_min) * height + 1;
