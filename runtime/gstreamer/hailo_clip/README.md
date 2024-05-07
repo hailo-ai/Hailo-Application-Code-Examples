@@ -67,8 +67,8 @@ On the first run clip will download the required models. This will happen only o
 ### Arguments
 ```bash
 clip_app -h
-usage: clip_app [-h] [--sync] [--input INPUT] [--dump-dot] [--detection-threshold DETECTION_THRESHOLD] [--detector {person,none}] [--onnx-runtime] [--clip-runtime]
-                [--json-path JSON_PATH]
+usage: clip_app [-h] [--sync] [--input INPUT] [--dump-dot] [--detection-threshold DETECTION_THRESHOLD] 
+                [--detector {person,none}] [-  -clip-runtime] [--json-path JSON_PATH]
 
 Hailo online clip app
 
@@ -82,7 +82,6 @@ options:
                         Detection threshold
   --detector {person,none}, -d {person,none}
                         Which detection pipeline to use.
-  --onnx-runtime        Not supported. Requires ONNX runtime for text embedding.
   --clip-runtime        When set app will use clip pythoch runtime for text embedding.
   --json-path JSON_PATH
                         Path to json file to load and save embeddings. If not set embeddings.json will be used.
