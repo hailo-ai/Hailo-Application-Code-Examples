@@ -68,7 +68,7 @@ On the first run clip will download the required models. This will happen only o
 ```bash
 clip_app -h
 usage: clip_app [-h] [--sync] [--input INPUT] [--dump-dot] [--detection-threshold DETECTION_THRESHOLD] [--detector {person,none}] [--onnx-runtime] [--clip-runtime]
-                [--json-path JSON_PATH] [--multi-stream]
+                [--json-path JSON_PATH]
 
 Hailo online clip app
 
@@ -86,16 +86,12 @@ options:
   --clip-runtime        When set app will use clip pythoch runtime for text embedding.
   --json-path JSON_PATH
                         Path to json file to load and save embeddings. If not set embeddings.json will be used.
-  --multi-stream        When set app will use multi stream pipeline. In this mode detector is set to person.
 ```
 
 ### Modes
 - The default mode (--detector none) will run only the clip inference on the entire frame. This is the mode CLIP is trained for, and will give the best results. In this mode CLIP is acting as a classifier describing the entire frame. CLIP will be ran on every frame.
 - Person mode (--detector person) will run the clip inference only on the detected persons. In this mode we first run a person detector and then run clip on the detected persons. This mode does not exaclty fit the data base CLIP was trained on but gives a good use case for using CLIP as a detector. In this mode CLIP is acting as a person classifier. In this mode CLIP will be ran only on detected persons. To reduce the number of clip inferences we run clip only every second per tracked person. This can be changed in the code.
-- Multi stream mode (--multi-stream) will run clip on 4 streams. This mode is presenting a use case of using CLIP to monitor multiple streams. In this mode we are running with a person detector. The App will bring the most relevant stream to the foreground. If the searched person is not found in any of the streams a random stream will be selected.
   
-**Note Multi stream mode requires a strong machine.**
-
 ### Online text embeddings
 - To run with online text embeddings run with the --clip-runtime flag. 
 - This will run the text embeddings on the host. You will be able to change the text on the fly. This mode might not work on weak machines. It requires a host with enough memory to run the text embeddings model (run on CPU).
