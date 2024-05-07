@@ -1,4 +1,4 @@
-**Last HailoRT version checked - 4.17.0**
+**Last HailoRT version checked - 4.16.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -19,20 +19,15 @@ Prints the object detected + confidence to the screen
 Prints statistics
 NOTE: Currently supports only devices connected on a PCIe link.
 
-1. Dependencies:
-    - OpenCV, and g++-9:
-    ``` bash
-    sudo apt-get install -y libopencv-dev gcc-9 g++-9
-    ```
-2. Build the project build.sh
-3. Run the executable:
-    ``` bash
-    ./build/segmentation_example_cpp -hef=HEF_PATH -path=VIDEO_PATH
-    ```
-    This example contains the hef file yolov5n-seg.hef and the video full_mov_slow.mp4, so for a quick demo you can run:
-    ``` bash
-    ./build/segmentation_example_cpp -hef=yolov5n-seg.hef -path=full_mov_slow.mp4
+Prequisites: OpenCV 4.2.X CMake >= 3.20 HailoRT >= 4.10.0 git - rapidjson repository is cloned when performing build.
 
-The output is a processed segmented video file - 'processed_video.mp4'
+To compile the example run `./build.sh`
+
+To run the compiled example:
+
+
+`./build/vstream_yolov5seg_example_cpp -hef=yolov5n_seg.hef -input=full_mov_slow.mp4`
+
+NOTE: You can also save the processed video by commenting in a few lines at the `post_processing_all` function in yolov5seg_example.cpp.
 
 NOTE: There should be no spaces between "=" given in the command line arguments and the file name itself.
