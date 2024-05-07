@@ -6,7 +6,7 @@ The text embeddings are running on the host. Text embeddings are sparse and shou
 As default the app starts w/o enabling online test embeddings. This is done to speed up load time and save memory. It also allows to run on low memory hosts like the RPi.
 
 ## Prerequisites
-This example was tested on Hailo's TAPPAS rpi_v3.27.0
+This example was tested on Hailo's TAPPAS rpi_v3.28.0
 You'll need it installed on your system.
 
 #### These packages are required for the CLIP
