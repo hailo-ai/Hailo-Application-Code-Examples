@@ -2,7 +2,7 @@ Object Detection
 ================
 
 This example performs object detection using a Hailo8 device.
-It receives an input image and annotates it with detected objects with bounding boxes.
+It receives an input image and annotates it with detected objects and bounding boxes.
 
 Requirements
 ------------
