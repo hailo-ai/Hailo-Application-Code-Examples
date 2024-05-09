@@ -1,0 +1,2 @@
+bytetracker
+supervision==0.19.0
