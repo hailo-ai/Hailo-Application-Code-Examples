@@ -53,7 +53,7 @@ Usage
 
 4. Run the script:
     ```shell script
-    python object_detection_tracking.py -m <model_path> -i <input_video_path> -o <output_video_path> -l <label_file_path>
+    ./eval.py -m <model_path> -i <input_image_path> -o <output_path> -l <label_file_path>
     ```
 
 Arguments
