@@ -1,7 +1,7 @@
 # This CMakeLists.txt may only run after sourcing the cross develeopment toolchain
 
 cmake_minimum_required(VERSION 3.11)
-project(h15_pose_estimation)
+project(cascaded_networks_dynamic_osd)
 
 set(LIB_HAILORT $ENV{SDKTARGETSYSROOT}/usr/lib/libhailort.so)
 set(LIB_HAILO_MEDIALIB
@@ -44,7 +44,7 @@ set(OPENCV_VIDEOIO_LIBS
 
 find_package(Threads)
 file(GLOB SOURCES
-    ./h15_pose_estimation.cpp
+    ./cascaded_networks_dynamic_osd.cpp
     ./yolo_hailortpp.hpp
     ./yolo_hailortpp.cpp
 )

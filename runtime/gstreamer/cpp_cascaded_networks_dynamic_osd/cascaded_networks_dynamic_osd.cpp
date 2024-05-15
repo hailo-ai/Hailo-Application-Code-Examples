@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     const std::string OVERLAY = " ! hailooverlay line-thickness=5 font-thickness=3 qos=false ";
     const std::string ENCODER = " ! hailoencoder enforce-caps=false config-file-path="+CONF_DIR+"/enc_osd.json ! " \
                                 "   h264parse config-interval=-1 ! video/x-h264,framerate=30/1 ";
-    const std::string RTP     = " ! rtph264pay ! application/x-rtp, media=(string)video, encoding-name=(string)H264 ! udpsink host=10.0.0.2 port=5002 "
+    const std::string RTP     = " ! rtph264pay ! application/x-rtp, media=(string)video, encoding-name=(string)H264 ! udpsink host=10.0.0.2 port=5000 "
                                 "  name=udp_sink2 sync=false ";
     const std::string CROPPER = " ! hailocropper so-path=/usr/lib/hailo-post-processes/cropping_algorithms/libmspn.so function-name=create_crops_only_person " \
                                 " internal-offset=true name=cropper hailoaggregator name=agg ";
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
                             "   outputs-min-pool-size=2 ! video/x-raw,framerate=30/1 "+ QUEUE +\
                             " ! hailofilter config-path="+CONF_DIR+"/yolov5.json " \
                             "   so-path="+RES_DIR+"/libyolo_hailortpp.so qos=false function-name=yolov5s_only_persons name=detection ";
-    const std::string POSE_EST_PIPELINE = " ! hailonet hef-path="+RES_DIR+"/mspn_regnetx_800mf_nv12_hailo15h.hef vdevice-group-id=1" \
+    const std::string POSE_EST_PIPELINE = " ! hailonet hef-path="+RES_DIR+"/mspn_regnetx_800mf_nv12.hef vdevice-group-id=1" \
                                     " vdevice-key=1 outputs-max-pool-size=4 outputs-min-pool-size=2 ! video/x-raw, framerate=30/1 "+ QUEUE+ \
                                     " ! hailofilter name=pose-estimation so-path=/usr/lib/hailo-post-processes/libmspn_post.so qos=false ";
 
