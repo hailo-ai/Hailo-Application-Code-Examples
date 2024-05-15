@@ -1,27 +1,37 @@
-# Hailo-15 Gstreamer CPP example for cascaded multi-network dynamic OSD  
+# Hailo-15 example for multi-network pipeline with dynamic OSD  
+## Preivew 
+![gif](https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/images/eran_pose.gif)
+
+## Features
+#### This example application demonstrates the following features
+###### - Running a Gstreamer code wrapped by CPP
+###### - Multiple rescale from frontend (Sensor's 4K to FHD, HD & VGA)
+###### - Yolov5s object detection with postprocessing for person class only 
+###### - mspn regnetx pose estimation network for the cropped human detections
+###### - Yolov8s object detection with postprocessing for all classes but a person
+###### - Hailo Tracker
+###### - Dynamic Update of OSD (Angular change)  
+
+## Pipeline
 ![github_code](https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/images/h15_cascaded_networks_dyn_osd.png)
- 
+<br/>
+## Prerequisites: <br />
+In order to compile this application you'll need the H-15 cross-development toolchain.
+The toolchain can be installed by running the script in the `sdk` folder which is a part of the Vision Processor Software Package.<br/>
+In order to run this application you'll need a Hailo-15 platform connected with ethernet to your development machine.
+For more information please check the EVB/SBC Quick Start Guide.
+<br/>
 
-
-**Disclaimer:** <br />
-The code examples in this github repository are provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running one of the repository's examples, please open a ticket in the "Issues" tab.<br />
-Please note that the examples were tested on specific versions and we can only guarantee the expected results using the exact versions on the exact environment. The specific version and environment will be mentioned in the README.md of each example.
-
-### Usage
-Run get_resources
-* Examples for using different coding languages (Python, c, c#, c++) and performs different tasks
-* Each example was tested on the specified environment
-* The README for that example would highlight any external dependancy
-* Rich GStreamer pipelines, including BASH and c++ implementations
-* Specific platform guides (e.g. TDA4)
-
-Under the `model_compilation` directory you would find
-* Examples for converting a naitve mode in ONNX or tflite formats to Hailo executable - HEF
-* Complete optimization flow, including quantization
-
-Under the `resources` directory you would find
-* documents for specific issues
-* different files & general stuff
-
-Under the `tools` directory you would find
-* basic optimization diagnostic tool, which help with diagnostic common optimization issues and mistakes
+## Running this example
+* On your development machine
+  * Get the resources <code> ./get_resources.sh </code>
+  * The 3 .hef files should have been downloaded and placed under the `resources/` folder
+  * Compile the example for Hailo-15 <code> ./build.sh /opt/poky/4.0.2/ </code>
+* On your Hailo-15 platform
+  * Create a folder for this example <code> mkdir ~/apps/cascaded_networks_dynamic_osd</code>
+  * Copy the resources folder from the development machine to the folder you created 
+  * Copy the application binary `build/aarch64/cascaded_networks_dynamic_osd` to the folder you created
+  * Copy the postprocess binary `build/aarch64/libyolo_hailortpp.so` to the folder you created
+  * Run the binary <code> ~/apps/cascaded_networks_dynamic_osd/cascaded_networks_dynamic_osd </code>
+* On your development machine
+    * Receive and display the incoming stream <code> ./udp_stream_display.sh </code>
