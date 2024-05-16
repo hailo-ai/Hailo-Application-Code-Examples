@@ -30,8 +30,8 @@ For more information please check the EVB/SBC Quick Start Guide.
 * On your Hailo-15 platform
   * Create a folder for this example <code> mkdir ~/apps/cascaded_networks_dynamic_osd</code>
   * Copy the resources folder from the development machine to the folder you created 
-  * Copy the application binary `build/aarch64/cascaded_networks_dynamic_osd` to the folder you created
-  * Copy the postprocess binary `build/aarch64/libyolo_hailortpp.so` to the folder you created
+  * Copy the application binary (from the development machine) `build/aarch64/cascaded_networks_dynamic_osd` to the folder you created
+  * Copy the postprocess binary (from the development machine) `build/aarch64/libyolo_hailortpp.so` to the resources folder on the Hailo-15 platform
   * Run the binary <code> ~/apps/cascaded_networks_dynamic_osd/cascaded_networks_dynamic_osd </code>
 * On your development machine
     * Receive and display the incoming stream <code> ./udp_stream_display.sh </code>
