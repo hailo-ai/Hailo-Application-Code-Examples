@@ -22,7 +22,7 @@ In order to run this application you'll need a Hailo-15 platform connected with 
 For more information please check the EVB/SBC Quick Start Guide.
 <br/>
 
-## Running this example
+## Running this example (Tested on Release 1.3.0)
 * On your development machine
   * Get the resources <code> ./get_resources.sh </code>
   * The 3 .hef files should have been downloaded and placed under the `resources/` folder
