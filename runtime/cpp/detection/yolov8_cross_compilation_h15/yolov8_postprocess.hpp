@@ -10,7 +10,7 @@
 #include "common/hailo_common.hpp"
 
 __BEGIN_DECLS
-void filter(HailoROIPtr roi);
+void filter(HailoROIPtr roi, std::string output_name);
 __END_DECLS
 
 #endif /* _EXAMPLE_YOLOV8_POSTPROCESSING_H_ */

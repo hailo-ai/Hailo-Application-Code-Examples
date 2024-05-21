@@ -39,7 +39,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
                                 std::chrono::time_point<std::chrono::system_clock>& postprocess_time, 
                                 std::vector<cv::Mat>& frames, 
                                 double org_height, 
-                                double org_width) {
+                                double org_width, std::string output_name) {
     auto status = HAILO_SUCCESS;   
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
@@ -51,7 +51,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint8_t*>(feature->m_buffers.get_read_buffer().data()), feature->m_vstream_info));
         }
 
-        filter(roi);
+        filter(roi, output_name);
     
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
@@ -222,8 +222,9 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     // Create the read thread
     auto output_thread(std::async(read_all, std::ref(output_vstreams), std::ref(features), frame_count));
 
+    std::string output_name = output_vstreams[0].name();
     // Create the postprocessing thread
-    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, output_name));
 
     // Join the threads
     auto input_status = input_thread.get();
