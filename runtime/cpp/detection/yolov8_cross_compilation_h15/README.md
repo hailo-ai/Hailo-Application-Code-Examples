@@ -2,36 +2,43 @@ Yolov8 C++ Object Detection example for H15
 ================
 
 This example performs object detection with yolov8 using a hailo15 device.
-it receives an input image , hef , frame count and return the image with detected objects and bounding boxes.
+It receives an input image, hef, frame count and return the image with detected bounding boxes.
 
 Requirements
 ------------
 
 - hailo_platform==4.17.0
-- zenlog
-- Pillow
-- numpy
+- hailo15 cross development toolchain
+- hailo15 platform
+- OpenCV 4.5.5
+- CMake >= 3.11
 
 Usage
 -----
 0. Make sure you have the HailoRT correct version and you installed all dependencies. 
 
 1. Download example files:
-	run ./get_resources.sh
+	```shell script
+    ./download_files.sh
+    ```
 
-2. Compile the project:
-	on the development machine run ./build.sh
+2. Compile the project on the development machine  
+	```shell script
+    ./build.sh
+    ```
 	
-3. Create a dir in h15 with the project name ( yolov8_example )
+3. Create a directory in h15 with the project name ( yolov8_example )
 
-4. Move Files:
-	copy the following files : 
+4. copy the following files from the build directory in the development machine to hailo15:
 	a. yolov8_cross_compilation_h15.
 	b. bus.jpg.
 	c. yolov8s.hef.
 
 5. Run the example on h15 machine:
-	script : `./yolov8_cross_compilation_h15 -input=<image_path> -hef=<hef_path> -num=<number_of_FPS>`.
+
+	```shell script
+    ./yolov8_cross_compilation_h15 -input=<image_path> -model=<hef_path> --frame-count=<number_of_FPS>
+    ```
 	- this run will infer the bus.jpg frame 30 times , and generate an output.jpg file.
 	- the image will have the bounding boxes on it.
 
@@ -41,30 +48,34 @@ Usage
 Arguments
 ---------
 
-- ``-i, --input``: Path to the input image on which object detection will be performed.
-- ``-num``: The number of times the network run the image ( frames ) in infer.
-- ``-hef``: The hef that we want to run on the program.
+- ``-input``: Path to the input image on which object detection will be performed.
+- ``--frame-count``: The number of times the network run the image ( frames ) in infer.
+- ``-model``: The hef that we want to run on the program.
 
 Example 
 -------
 **Command**
 
+    ```shell script
 	./get_resources.sh
 	./build.sh
 	`scp build/aarch64/yolov8_cross_compilation_h15 root@10.0.0.1:~/yolov8_example/`
 	`scp resources/images/bus.jpg root@10.0.0.1:~/yolov8_example/`
 	`scp resources/hefs/h15/yolov8s_h15.hef root@10.0.0.1:~/yolov8_example/`
 	`./yolov8_cross_compilation_h15 -input=bus.jpg -hef=yolov8s_h15.hef -num=30`.
+	```	
+
+
 
 **Output**
 
 [output_example] ( output.jpg ) 
 
-Additional Notes
+Notes
 ----------------
 - The example was only tested with ``HailoRT v4.17.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
-- There should be no spaces between "=" given in the command line arguments and the file name itself.  
+- There should be no spaces between "=" given in the command line arguments and the file name itself.
 
 Disclaimer
 ----------
