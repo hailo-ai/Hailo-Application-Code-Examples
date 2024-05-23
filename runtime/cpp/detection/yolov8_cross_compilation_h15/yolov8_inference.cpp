@@ -304,9 +304,9 @@ int main(int argc, char** argv) {
     std::chrono::duration<double> total_time;
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
-    const std::string yolov_hef      = getCmdOption(argc, argv, "-hef=");
+    const std::string yolov_hef      = getCmdOption(argc, argv, "-model=");
     const std::string input_path      = getCmdOption(argc, argv, "-input=");
-    const std::string image_num      = getCmdOption(argc, argv, "-num=");
+    const std::string image_num      = getCmdOption(argc, argv, "--frame-count=");
 
     std::chrono::time_point<std::chrono::system_clock> write_time_vec;
     std::chrono::time_point<std::chrono::system_clock> postprocess_end_time;
