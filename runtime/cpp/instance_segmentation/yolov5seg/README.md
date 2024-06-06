@@ -29,13 +29,14 @@ Usage
 
 3. Download example files:
     ```shell script
-    ./download_files.sh
+    ./get_hef_and_video.sh
     ```
 
+4. Compile the example:
+    `./build.sh`
+
 5. Run the script:
-    ```shell script
-    python object_detection_tracking.py -m <model_path> -i <input_video_path> -o <output_video_path> -l <label_file_path>
-    ```
+    `./build/yolov5seg_example_cpp --model=yolov5m-seg.hef --input=full_mov_slow.mp4`
 
 Arguments
 ---------
@@ -43,20 +44,6 @@ Arguments
 - ``-m, --model``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image or video on which object detection will be performed.
 
-Example 
--------
-**Command**
-```shell script
-python supervision_example.py -i input_video.mp4 -o output_video.mp4 -l coco.txt-s 0.5
-```
-
-**Input**
-
-![Input example](./input.gif?raw=true)
-
-**Output**
-
-![Output example](./output.gif?raw=true)
 
 Additional Notes
 ----------------
