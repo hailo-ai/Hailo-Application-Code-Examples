@@ -15,27 +15,20 @@ Requirements
 Usage
 -----
 
-1. Install the requierments:
+1. Install the requirements:
     ```shell script
     sudo apt-get install -y libopencv-dev gcc-9 g++-9
     ```
 
-2. Install PyHailoRT
-    - Download the HailoRT whl from the Hailo website - make sure to select the correct Python version. 
-    - Install whl:
-        ```shell script
-        pip install
-        ```
-
-3. Download example files:
+2. Download example files:
     ```shell script
     ./get_hef_and_video.sh
     ```
 
-4. Compile the example:
+3. Compile the example:
     `./build.sh`
 
-5. Run the script:
+4. Run the script:
     `./build/yolov5seg_example_cpp --model=yolov5m-seg.hef --input=full_mov_slow.mp4`
 
 Arguments
@@ -44,6 +37,10 @@ Arguments
 - ``-m, --model``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image or video on which object detection will be performed.
 
+
+Output
+------
+![output example](./processed_video.gif)
 
 Additional Notes
 ----------------

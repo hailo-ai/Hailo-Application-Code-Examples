@@ -86,7 +86,7 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(Device
     return std::move(network_groups->at(0));
 }
 
-cv::Mat padding_frame(cv::Mat frame, int target_height, int target_width) {
+cv::Mat pad_frame(cv::Mat frame, int target_height, int target_width) {
     float32_t factor = std::max(frame.cols/target_height,frame.rows/target_width);
     cv::resize(frame, frame, cv::Size(frame.cols/factor, frame.rows/factor), cv::INTER_AREA);
     int height = frame.rows;
@@ -98,11 +98,11 @@ cv::Mat padding_frame(cv::Mat frame, int target_height, int target_width) {
     cv::Mat padded_frame;
     cv::copyMakeBorder(frame, padded_frame, 0, pad_height, 0, pad_width, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
     cv::Rect region_of_interest(0, 0, target_width, target_height);
-    cv::Mat cropped_frame = padded_frame(region_of_interest).clone();
-    return cropped_frame;
+    padded_frame = padded_frame(region_of_interest).clone();
+    return padded_frame;
 }
 
-cv::Mat post_process(cv::Mat padded_frame, int original_height, int original_width) {
+cv::Mat crop_frame(cv::Mat padded_frame, int original_height, int original_width) {
     cv::Rect region_of_interest(0, 0, original_width, original_height);
     cv::Mat cropped_frame = padded_frame(region_of_interest).clone();
     return cropped_frame;
@@ -127,7 +127,7 @@ template <typename T> hailo_status write_all(std::vector<InputVStream> &input, s
         }
 
         if (frame.rows != model_height || frame.cols != model_width){ 
-            frame = padding_frame(frame, model_height, model_width);
+            frame = pad_frame(frame, model_height, model_width);
         }
 
         frames[i] = frame.clone();
@@ -141,7 +141,7 @@ template <typename T> hailo_status write_all(std::vector<InputVStream> &input, s
     return HAILO_SUCCESS;
 }
 
-template <typename T> std::vector<hailo_detection_with_byte_mask_t> convert_nms_with_byte_mask_buffer_to_detections(std::vector<T> &src_buffer)
+template <typename T> std::vector<hailo_detection_with_byte_mask_t> get_detections(std::vector<T> &src_buffer)
 {
     std::vector<hailo_detection_with_byte_mask_t> detections;
     uint8_t *src_ptr = static_cast<uint8_t*>(src_buffer.data());
@@ -162,7 +162,7 @@ cv::Vec3b indexToColor(size_t index)
 }
 
 template <typename T> cv::Mat draw_detections_and_mask(std::vector<T>& logits, int width, int height, cv::Mat& frame) {
-    std::vector<hailo_detection_with_byte_mask_t> detections = convert_nms_with_byte_mask_buffer_to_detections(logits);
+    std::vector<hailo_detection_with_byte_mask_t> detections = get_detections(logits);
     cv::Mat overlay = cv::Mat::zeros(height, width, CV_8UC3);
 
     for(const auto& detection : detections) {
@@ -208,7 +208,7 @@ template <typename T> hailo_status read_all(OutputVStream &output, std::string &
             return status;
 
         auto processed_frame = draw_detections_and_mask<T>(data, model_width, model_height, frames[i]);
-        processed_frame = post_process(processed_frame, input_height/factor, input_width/factor);
+        processed_frame = crop_frame(processed_frame, input_height/factor, input_width/factor);
         cv::resize(processed_frame, processed_frame, cv::Size(input_width, input_height));
         video.write(processed_frame);
         processed_frame.release();
