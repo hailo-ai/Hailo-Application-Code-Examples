@@ -30,8 +30,15 @@ using hailort::InputVStream;
 using hailort::OutputVStream;
 using hailort::MemoryView;
 
-void print_fps(std::int64_t duration, std::string video_path) {
-    cv::VideoCapture capture(video_path);
+static const std::vector<cv::Vec3b> color_table = {
+cv::Vec3b(255, 0, 0), cv::Vec3b(0, 255, 0), cv::Vec3b(0, 0, 255), cv::Vec3b(255, 255, 0), cv::Vec3b(0, 255, 255),
+cv::Vec3b(255, 0, 255), cv::Vec3b(255, 170, 0), cv::Vec3b(255, 0, 170), cv::Vec3b(0, 255, 170), cv::Vec3b(170, 255, 0),
+cv::Vec3b(170, 0, 255), cv::Vec3b(0, 170, 255), cv::Vec3b(255, 85, 0), cv::Vec3b(85, 255, 0), cv::Vec3b(0, 255, 85),
+cv::Vec3b(0, 85, 255), cv::Vec3b(85, 0, 255), cv::Vec3b(255, 0, 85)};
+
+
+void print_fps(std::int64_t duration, std::string input_path) {
+    cv::VideoCapture capture(input_path);
     int count = capture.get(cv::CAP_PROP_FRAME_COUNT);
     double fps = (double)count / (double)duration;
     std::cout << "-I---------------------------------------------------------------------" << std::endl;
@@ -79,15 +86,37 @@ Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(Device
     return std::move(network_groups->at(0));
 }
 
-template <typename T> hailo_status write_all(std::vector<InputVStream> &input, std::string &video_path,  
-                                            int height, int width, int channels, std::vector<cv::Mat>& frames) {
-    std::cout << "-I- Started write thread " << video_path << std::endl;
-    cv::VideoCapture capture(video_path);
+cv::Mat pad_frame(cv::Mat frame, int target_height, int target_width) {
+    float32_t factor = std::max(frame.cols/target_height,frame.rows/target_width);
+    cv::resize(frame, frame, cv::Size(frame.cols/factor, frame.rows/factor), cv::INTER_AREA);
+    int height = frame.rows;
+    int width = frame.cols;
+
+    int pad_height = std::max(height - target_height, target_height - height);
+    int pad_width = std::max(width - target_width, target_width - width);
+
+    cv::Mat padded_frame;
+    cv::copyMakeBorder(frame, padded_frame, 0, pad_height, 0, pad_width, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+    cv::Rect region_of_interest(0, 0, target_width, target_height);
+    padded_frame = padded_frame(region_of_interest).clone();
+    return padded_frame;
+}
+
+cv::Mat crop_frame(cv::Mat padded_frame, int original_height, int original_width) {
+    cv::Rect region_of_interest(0, 0, original_width, original_height);
+    cv::Mat cropped_frame = padded_frame(region_of_interest).clone();
+    return cropped_frame;
+}
+
+template <typename T> hailo_status write_all(std::vector<InputVStream> &input, std::string &input_path,  
+                                            int model_height, int model_width, int model_channels, std::vector<cv::Mat>& frames) {
+    std::cout << "-I- Started write thread " << input_path << std::endl;
+    cv::VideoCapture capture(input_path);
     int i=0; 
     cv::Mat frame;
     if(!capture.isOpened())
         throw "Unable to read video file";
-    for( ; ; ) {
+    for(;;) {
         capture >> frame;
         if(frame.empty()) {
             break;
@@ -97,22 +126,22 @@ template <typename T> hailo_status write_all(std::vector<InputVStream> &input, s
             cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
         }
 
-        if (frame.rows != height || frame.cols != width){
-            cv::resize(frame, frame, cv::Size(width, height), cv::INTER_AREA);
+        if (frame.rows != model_height || frame.cols != model_width){ 
+            frame = pad_frame(frame, model_height, model_width);
         }
 
         frames[i] = frame.clone();
-        auto status = input[0].write(MemoryView(frame.data, height * width * channels)); // Writing height * width, 3 channels of uint8
+        auto status = input[0].write(MemoryView(frame.data, input[0].get_frame_size())); 
         if (HAILO_SUCCESS != status) 
             return status;   
 
         i++; 
     }
-    std::cout << "-I- Finished write thread " << video_path << std::endl;
+    std::cout << "-I- Finished write thread " << input_path << std::endl;
     return HAILO_SUCCESS;
 }
 
-template <typename T> std::vector<hailo_detection_with_byte_mask_t> convert_nms_with_byte_mask_buffer_to_detections(std::vector<T> &src_buffer)
+template <typename T> std::vector<hailo_detection_with_byte_mask_t> get_detections(std::vector<T> &src_buffer)
 {
     std::vector<hailo_detection_with_byte_mask_t> detections;
     uint8_t *src_ptr = static_cast<uint8_t*>(src_buffer.data());
@@ -127,39 +156,44 @@ template <typename T> std::vector<hailo_detection_with_byte_mask_t> convert_nms_
     return detections;
 }
 
-template <typename T> cv::Mat semseg_post_process(std::vector<T>& logits, int width, int height, cv::Mat& frame) {
-    std::vector<hailo_detection_with_byte_mask_t> detections = convert_nms_with_byte_mask_buffer_to_detections(logits);
+cv::Vec3b indexToColor(size_t index)
+{
+    return color_table[index % color_table.size()];
+}
+
+template <typename T> cv::Mat draw_detections_and_mask(std::vector<T>& logits, int width, int height, cv::Mat& frame) {
+    std::vector<hailo_detection_with_byte_mask_t> detections = get_detections(logits);
     cv::Mat overlay = cv::Mat::zeros(height, width, CV_8UC3);
 
     for(const auto& detection : detections) {
-        int box_width = (detection.box.x_max - detection.box.x_min) * width + 1;
-        int box_height = (detection.box.y_max - detection.box.y_min) * height + 1;
-
-        if (box_width <= width && box_height <= height ) {
-            for (size_t i = 0; i < static_cast<size_t>(box_height); ++i) {
-                for (size_t j = 0; j < static_cast<size_t>(box_width); ++j) {
-                    auto cropped_mask_idx = static_cast<size_t>(i) * box_width + j;
-                    if (detection.mask[cropped_mask_idx]) {
-                        int overlayX = static_cast<int>(j) + static_cast<int>(detection.box.x_min * width);
-                        int overlayY = static_cast<int>(i) + static_cast<int>(detection.box.y_min * height);
-                        if (overlayX >= 0 && overlayX < width && overlayY >= 0 && overlayY < height) {
-                            overlay.at<cv::Vec3b>(overlayY, overlayX) = cv::Vec3b(30, 255, 255);
-                        }
+        int box_width = ceil((detection.box.x_max - detection.box.x_min) * width);
+        int box_height = ceil((detection.box.y_max - detection.box.y_min) * height);
+        cv::Vec3b color = indexToColor(detection.class_id);
+ 
+        for (int i = 0; i < box_height; ++i) {
+            for (int j = 0; j < box_width; ++j) {
+                auto cropped_mask_idx = i * box_width + j;
+                if (detection.mask[cropped_mask_idx]) {
+                    int overlay_x = j + detection.box.x_min * width;
+                    int overlay_y = i + detection.box.y_min * height;
+                    if (overlay_x >= 0 && overlay_x < width && overlay_y >= 0 && overlay_y < height) {
+                        overlay.at<cv::Vec3b>(overlay_y, overlay_x) = color;
                     }
                 }
             }
-        cv::rectangle(frame, cv::Rect(detection.box.x_min * width, detection.box.y_min * height, box_width, box_height), cv::Scalar(30, 255, 255), 2);
         }
+        cv::rectangle(frame, cv::Rect(detection.box.x_min * width, detection.box.y_min * height, box_width, box_height), color, 1);
     }
-    cv::addWeighted(frame, 1, overlay, 0.3, 0.0, frame);
+    cv::addWeighted(frame, 1, overlay, 0.7, 0.0, frame);
     overlay.release();
     return frame;
 }
 
-template <typename T> hailo_status read_all(OutputVStream &output, std::string &video_path, int video_height, int video_width,  int height, int width, int frame_count, std::vector<cv::Mat>& frames) {
+template <typename T> hailo_status read_all(OutputVStream &output, std::string &input_path, int input_height, int input_width,  int model_height, int model_width, int frame_count, std::vector<cv::Mat>& frames) {
     std::vector<T> data(output.get_frame_size());
-    std::cout << "-I- Started read thread " << video_path << std::endl;
-    cv::VideoWriter video("./processed_video.mp4",cv::VideoWriter::fourcc('m','p','4','v'),30, cv::Size(video_width, video_height));
+    std::cout << "-I- Started read thread " << input_path << std::endl;
+    float32_t factor = std::max(input_height/model_height,input_width/model_width);
+    cv::VideoWriter video("./processed_video.mp4",cv::VideoWriter::fourcc('m','p','4','v'), 30, cv::Size(input_width, input_height));
 
     if (!video.isOpened()) {
         std::cerr << "Error: Unable to open video file for writing." << std::endl;
@@ -167,20 +201,21 @@ template <typename T> hailo_status read_all(OutputVStream &output, std::string &
 
     for (int i = 0 ; i < frame_count; i++) {
         if(frames[i].size().empty() && i != 0){
-            break;
+            break;  
         }
         auto status = output.read(MemoryView(data.data(), data.size()));
         if (HAILO_SUCCESS != status)
             return status;
 
-        auto seg_image = semseg_post_process<T>(data, width, height, frames[i]);
-        cv::resize(seg_image, seg_image, cv::Size(video_width, video_height));
-        video.write(seg_image);
-        seg_image.release();
+        auto processed_frame = draw_detections_and_mask<T>(data, model_width, model_height, frames[i]);
+        processed_frame = crop_frame(processed_frame, input_height/factor, input_width/factor);
+        cv::resize(processed_frame, processed_frame, cv::Size(input_width, input_height));
+        video.write(processed_frame);
+        processed_frame.release();
         frames[i].release();
     }
     video.release();
-    std::cout << "-I- Finished read thread " << video_path << std::endl;
+    std::cout << "-I- Finished read thread " << input_path << std::endl;
     return HAILO_SUCCESS;
 }
 
@@ -199,16 +234,16 @@ void print_net_banner(std::pair< std::vector<InputVStream>, std::vector<OutputVS
 }
 
 template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVStream> &inputs, std::vector<OutputVStream> &outputs, 
-                                                            std::string video_path) {
+                                                            std::string input_path) {
     hailo_status input_status = HAILO_UNINITIALIZED;
     hailo_status output_status = HAILO_UNINITIALIZED;
     std::vector<std::thread> output_threads;
     cv::Mat frame;
     
-    cv::VideoCapture capture(video_path);
+    cv::VideoCapture capture(input_path);
     capture >> frame;
-    int video_height = frame.rows;
-    int video_width = frame.cols;
+    int input_height = frame.rows;
+    int input_width = frame.cols;
     
     if (!capture.isOpened()){
         throw "Error when reading video";
@@ -217,19 +252,18 @@ template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVSt
     std::vector<cv::Mat> frames((int)frame_count);
     capture.release();
 
-    int input_height = inputs.front().get_info().shape.height;
-    int input_width = inputs.front().get_info().shape.width;    
+    int model_height = inputs.front().get_info().shape.height;
+    int model_width = inputs.front().get_info().shape.width;    
 
-    int input_channels = inputs.front().get_info().shape.features;
-    std::thread input_thread([&inputs, &video_path, &input_height, &input_width, &input_channels, &input_status, &frames]() { 
-                            input_status = write_all<IN_T>(inputs, video_path, input_height, input_width, input_channels, std::ref(frames)); 
+    int model_channels = inputs.front().get_info().shape.features;
+    std::thread input_thread([&inputs, &input_path, &model_height, &model_width, &model_channels, &input_status, &frames]() { 
+                            input_status = write_all<IN_T>(inputs, input_path, model_height, model_width, model_channels, std::ref(frames)); 
                             });
         
-    for (auto &output: outputs){
-        output_threads.push_back( std::thread([&output, &video_path, &video_height, &video_width, &input_height, &input_width, &output_status, &frame_count, &frames]() { 
-                            output_status = read_all<OUT_T>(output, video_path, video_height, video_width, input_height, input_width, frame_count, std::ref(frames)); 
-                            }) );
-    }
+    auto &output = outputs[0];
+    output_threads.push_back( std::thread([&output, &input_path, &input_height, &input_width, &model_height, &model_width, &output_status, &frame_count, &frames]() { 
+                        output_status = read_all<OUT_T>(output, input_path, input_height, input_width, model_height, model_width, frame_count, std::ref(frames)); 
+                        }) );
     
     input_thread.join();
     
@@ -246,11 +280,11 @@ template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVSt
 
 
 int main(int argc, char** argv) {
-    std::string hef_file   = getCmdOption(argc, argv, "-hef=");
-    std::string video_path = getCmdOption(argc, argv, "-path=");
+    std::string hef_file   = getCmdOption(argc, argv, "--model=");
+    std::string input_path = getCmdOption(argc, argv, "--input=");
     auto all_devices       = Device::scan_pcie();
-    std::cout << "-I- video path: " << video_path << std::endl;
-    std::cout << "-I- hef: " << hef_file << "\n" << std::endl;
+    std::cout << "-I- input path: " << input_path << std::endl;
+    std::cout << "-I- model: " << hef_file << "\n" << std::endl;
 
     auto device = Device::create_pcie(all_devices.value()[0]);
     if (!device) {
@@ -264,13 +298,13 @@ int main(int argc, char** argv) {
         return network_group.status();
     }
 
-    auto input_vstream_params = network_group.value()->make_input_vstream_params(true, HAILO_FORMAT_TYPE_UINT8, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    auto input_vstream_params = network_group.value()->make_input_vstream_params(true, HAILO_FORMAT_TYPE_AUTO, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
     if (!input_vstream_params){
         std::cerr << "-E- Failed make_input_vstream_params " << input_vstream_params.status() << std::endl;
         return input_vstream_params.status();
     }
 
-    auto output_vstream_params = network_group.value()->make_output_vstream_params(true, HAILO_FORMAT_TYPE_FLOAT32, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
+    auto output_vstream_params = network_group.value()->make_output_vstream_params(true, HAILO_FORMAT_TYPE_AUTO, HAILO_DEFAULT_VSTREAM_TIMEOUT_MS, HAILO_DEFAULT_VSTREAM_QUEUE_SIZE);
     if (!output_vstream_params){
         std::cerr << "-E- Failed make_output_vstream_params " << output_vstream_params.status() << std::endl;
         return output_vstream_params.status();
@@ -297,15 +331,15 @@ int main(int argc, char** argv) {
     }
     
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    auto status  = infer<uint8_t, uint8_t>(vstreams.first, vstreams.second, video_path);
+    auto status  = infer<uint8_t, uint8_t>(vstreams.first, vstreams.second, input_path);
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
     std::int64_t duration = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-    print_fps(duration, video_path);
+    print_fps(duration, input_path);
     if (HAILO_SUCCESS != status) {
         std::cerr << "-E- Inference failed "  << status << std::endl;
         return status;
     }
-
+    
     return HAILO_SUCCESS;
 }
