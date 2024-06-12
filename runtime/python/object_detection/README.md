@@ -53,26 +53,26 @@ Usage
 
 4. Run the script:
     ```shell script
-    ./eval.py -m <model_path> -i <input_image_path> -o <output_path> -l <label_file_path>
+    ./object_detection -n <model_path> -i <input_image_path> -o <output_path> -l <label_file_path>
     ```
 
 Arguments
 ---------
 
-- ``-m, --model``: Path to the pre-trained model file (HEF).
+- ``-n, --net``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image on which object detection will be performed.
 - ``-o, --output``: Path to save the output image with annotated objects.
 - ``-l, --labels``: Path to a text file containing class labels for the detected objects.
 
 For more information:
 ```shell script
-./eval.py -h
+./object_detection.py -h
 ```
 Example 
 -------
 **Command**
 ```shell script
-./eval.py -m ./yolov7.hef -i zidane.jpg
+./object_detection.py -n ./yolov7.hef -i zidane.jpg
 ```
 **Output**
 

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-
 import numpy as np
 from loguru import logger
 import argparse
 import cv2
 import time
 from ufld_utils import UFLDProcessing
-from hailo_inference import HailoInference
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import HailoInference
 
 def parser_init():
     """

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Example module for Hailo Detection + ByteTrack + Supervision."""
 
 import argparse
@@ -5,7 +6,11 @@ import supervision as sv
 import numpy as np
 from tqdm import tqdm
 import cv2
-from hailo_inference import HailoInference
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import HailoInference
 
 def initialize_arg_parser():
     """Initialize argument parser for the script."""
