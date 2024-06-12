@@ -1,0 +1,106 @@
+{
+    "output_video": {
+        "method": "INTERPOLATION_TYPE_BILINEAR",
+        "format": "IMAGE_FORMAT_NV12",
+        "grayscale": false,
+        "resolutions": [
+	    {
+		"width": 1920,
+		"height": 1080,
+		"framerate": 30,
+		"pool_max_buffers": 10
+	    },
+            {
+                "width": 1280,
+                "height": 720,
+                "framerate": 30,
+                "pool_max_buffers": 10
+            },
+	    {
+		"width": 640,
+		"height": 480,
+		"framerate": 30,
+		"pool_max_buffers": 10
+	    }
+        ]
+    },
+    "dewarp": {
+        "enabled": true,
+        "color_interpolation": "INTERPOLATION_TYPE_BILINEAR",
+        "sensor_calib_path": "/home/root/apps/resources/cam_intrinsics.txt",
+        "camera_type": "CAMERA_TYPE_PINHOLE",
+        "camera_fov": 100.0
+    },
+    "dis": {
+        "enabled": false,
+        "minimun_coefficient_filter": 0.1,
+        "decrement_coefficient_threshold": 0.001,
+        "increment_coefficient_threshold": 0.01,
+        "running_average_coefficient": 0.033,
+        "std_multiplier": 3.0,
+        "black_corners_correction_enabled": true,
+        "black_corners_threshold": 0.5,
+        "average_luminance_threshold": 0,
+        "angular_dis": {
+            "enabled": false,
+            "vsm": {
+                "hoffset": 1856,
+                "voffset": 1016,
+                "width": 1920,
+                "height": 1080,
+                "max_displacement": 64
+            }
+        },
+        "debug": {
+            "generate_resize_grid": false,
+            "fix_stabilization": false,
+            "fix_stabilization_longitude": 0.0,
+            "fix_stabilization_latitude": 0.0
+        }
+    },
+    "gmv": {
+        "source": "isp",
+        "frequency": 0.0
+    },
+    "optical_zoom": {
+        "enabled": true,
+        "magnification": 1.0
+    },
+    "digital_zoom": {
+        "enabled": false,
+        "mode": "DIGITAL_ZOOM_MODE_ROI",
+        "magnification": 1.0,
+        "roi": {
+            "x": 200,
+            "y": 200,
+            "width": 2800,
+            "height": 1800
+        }
+    },
+    "rotation": {
+        "enabled": false,
+        "angle": "ROTATION_ANGLE_270"
+    },
+    "flip": {
+        "enabled": false,
+        "direction": "FLIP_DIRECTION_HORIZONTAL"
+    },
+    "hailort": {
+        "device-id": "device0"
+    },
+    "denoise": {
+        "enabled": false,
+        "sensor": "imx678",
+        "method": "HIGH_QUALITY",
+        "loopback-count": 1,
+        "network": {
+            "network_path": "/usr/lib/medialib/denoise_config/vd_m_imx678.hef",
+            "y_channel": "model/input_layer1",
+            "uv_channel": "model/input_layer4",
+            "feedback_y_channel": "model/input_layer3",
+            "feedback_uv_channel": "model/input_layer2",
+            "output_y_channel": "model/conv17",
+            "output_uv_channel": "model/conv14"
+        }
+    }
+}

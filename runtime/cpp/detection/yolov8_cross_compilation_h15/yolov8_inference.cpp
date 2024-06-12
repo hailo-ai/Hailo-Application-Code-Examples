@@ -39,7 +39,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
                                 std::chrono::time_point<std::chrono::system_clock>& postprocess_time, 
                                 std::vector<cv::Mat>& frames, 
                                 double org_height, 
-                                double org_width) {
+                                double org_width, std::string output_name) {
     auto status = HAILO_SUCCESS;   
 
     std::sort(features.begin(), features.end(), &FeatureData::sort_tensors_by_size);
@@ -51,7 +51,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData>> &feat
             roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<uint8_t*>(feature->m_buffers.get_read_buffer().data()), feature->m_vstream_info));
         }
 
-        filter(roi);
+        filter(roi, output_name);
     
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
@@ -153,7 +153,7 @@ hailo_status write_all(InputVStream& input_vstream, const std::string input_path
             
             cv::resize(org_frame, org_frame, cv::Size(height, width), 1);
             frames.push_back(org_frame);
-            input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
+            input_vstream.write(MemoryView(frames[frames.size() - 1].data, input_vstream.get_frame_size()));
             if (HAILO_SUCCESS != status)
                 return status;
             
@@ -222,8 +222,9 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     // Create the read thread
     auto output_thread(std::async(read_all, std::ref(output_vstreams), std::ref(features), frame_count));
 
+    std::string output_name = output_vstreams[0].name();
     // Create the postprocessing thread
-    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
+    auto pp_thread(std::async(post_processing_all, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, output_name));
 
     // Join the threads
     auto input_status = input_thread.get();
@@ -303,9 +304,9 @@ int main(int argc, char** argv) {
     std::chrono::duration<double> total_time;
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
-    const std::string yolov_hef      = getCmdOption(argc, argv, "-hef=");
+    const std::string yolov_hef      = getCmdOption(argc, argv, "-model=");
     const std::string input_path      = getCmdOption(argc, argv, "-input=");
-    const std::string image_num      = getCmdOption(argc, argv, "-num=");
+    const std::string image_num      = getCmdOption(argc, argv, "--frame-count=");
 
     std::chrono::time_point<std::chrono::system_clock> write_time_vec;
     std::chrono::time_point<std::chrono::system_clock> postprocess_end_time;
