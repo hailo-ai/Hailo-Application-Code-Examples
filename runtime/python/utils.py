@@ -77,22 +77,32 @@ class HailoInference():
         """
         return self.hef.get_input_vstream_infos()[0].shape # Assumes that the model has one input
     
-    def run(self, image):
+    def run(self, input_data):
         """
         Run inference on Hailo-8 device.
 
         Args:
-            image (numpy.ndarray): Image to run inference on.
+            input data : Accepts multiple formats - dictionary, list, tuple or array.
 
         Returns:
             numpy.ndarray: Inference output.
         """
         with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:            
-            input_data = {self.input_vstream_info[0].name: np.expand_dims(image, axis=0)}   # Assumes that the model has one input
-            
+            input_dict = {}
+        
+            if isinstance(input_data, dict):
+            # Input data is already a dictionary
+                input_dict = {k: v.copy() for k, v in input_data.items()}
+            elif isinstance(input_data, (list, tuple)):
+            # Input data is a list or tuple
+                for i, layer_info in enumerate(self.input_vstream_info):
+                    input_dict[layer_info.name] = np.expand_dims(input_data[i].copy(), axis=0)
+            else:
+            # Input data is a single array
+                input_dict[self.input_vstream_info[0].name] = np.expand_dims(input_data.copy(), axis=0)
+                
             with self.network_group.activate(self.network_group_params):
-                output = infer_pipeline.infer(input_data)
-                output = output[self.output_vstream_info[0].name]   # Assumes that the model has one output
+                output = infer_pipeline.infer(input_dict)
 
         return output
 

@@ -4,6 +4,8 @@ Object Detection
 This example performs object detection using a Hailo8 device.
 It receives an input image and annotates it with detected objects and bounding boxes.
 
+![output example](./output_image0.jpg)
+
 Requirements
 ------------
 
@@ -48,7 +50,7 @@ Usage
 
 3. Download example files:
     ```shell script
-    ./download_files.sh
+    ./download_resources.sh
     ```
 
 4. Run the script:
@@ -74,9 +76,6 @@ Example
 ```shell script
 ./object_detection.py -n ./yolov7.hef -i zidane.jpg
 ```
-**Output**
-
-![output example](./output_image0.jpg)
 
 Additional Notes
 ----------------

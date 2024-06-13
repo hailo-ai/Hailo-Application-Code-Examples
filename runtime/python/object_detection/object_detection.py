@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from hailo_platform import (HEF, Device, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
-                InputVStreamParams, OutputVStreamParams, FormatType)
-from zenlog import log
 from PIL import Image, ImageDraw, ImageFont
 import os
 import argparse
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import HailoInference
+
 def parse_args():
     """Initialize argument parser for the script."""
-    parser = argparse.ArgumentParser(description="Detection Example - Tracker with ByteTrack and Supervision")
-    parser.add_argument("-n", "--net", help="Path for the HEF model.", default="yolov5m_wo_spp_60p.hef")
-    parser.add_argument("-i", "--input", default="input_example.mp4", help="Path to the input video.")
-    parser.add_argument("-o", "--output", default="output_video.mp4", help="Path to the output video.")
+    parser = argparse.ArgumentParser(description="Detection Example")
+    parser.add_argument("-n", "--net", help="Path for the HEF model.", default="yolov7.hef")
+    parser.add_argument("-i", "--input", default="zidane.jpg", help="Path to the input - either an image or a folder of images.")
     parser.add_argument("-b", "--batch", default=1, type=int, required=False, help="Number of images in one batch")
     parser.add_argument("-l", "--labels", default="coco.txt", help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used.")
     parsed_args = parser.parse_args()
@@ -118,52 +119,33 @@ if __name__ == "__main__":
     images = []
 
     load_input_images(images_path, images)
-
-    devices = Device.scan()
-    hef = HEF(args.net)
-
-    inputs = hef.get_input_vstream_infos()
-    outputs = hef.get_output_vstream_infos()
+    hailo_inference = HailoInference(args.net)
+    outputs = hailo_inference.output_vstream_info
+    
     batch_size = args.batch
     if len(images) % batch_size != 0:
         raise ValueError('The number of input images should be divisiable by the batch size without any remainder. Please either change the batch size to divide the number of images with no remainder or change the number of images')
 
-    with VDevice(device_ids=devices) as target:
-        configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
-        network_name = hef.get_network_group_names()[0]
-        configure_params[network_name].batch_size = batch_size
-        network_group = target.configure(hef, configure_params)[0]
-        network_group_params = network_group.create_params()
 
-        [log.info('Input  layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in inputs]
-        [log.info('Output layer: {} {}'.format(layer_info.name, layer_info.shape)) for layer_info in outputs]
+    height, width, _ =  hailo_inference.get_input_shape()
 
-        height, width, _ = hef.get_input_vstream_infos()[0].shape
+    batched_images = list(divide_list_to_batches(images, batch_size))
+    for batch_idx, batch_images in enumerate(batched_images):
+        processed_input_images = []
+        
+        for i, image in enumerate(batch_images):
+            processed_image = preprocess(image, width, height)
+            processed_input_images.append(np.array(processed_image))
 
-        input_vstream_info = hef.get_input_vstream_infos()[0]
+        raw_detections = hailo_inference.run(np.array(processed_input_images))
 
-        input_vstreams_params = InputVStreamParams.make_from_network_group(network_group, quantized=False, format_type=FormatType.FLOAT32)
-        output_vstreams_params = OutputVStreamParams.make_from_network_group(network_group, quantized=False, format_type=FormatType.FLOAT32)
+        results = post_nms_infer(raw_detections, outputs[0].name)
 
-        with InferVStreams(network_group, input_vstreams_params, output_vstreams_params) as infer_pipeline:
-            batched_images = list(divide_list_to_batches(images, batch_size))
-            for batch_idx, batch_images in enumerate(batched_images):
-                processed_input_images = []
-                
-                for i, image in enumerate(batch_images):
-                    processed_image = preprocess(image, width, height)
-                    processed_input_images.append(np.array(processed_image))
+        output_path = os.path.join(os.path.realpath('.'), 'output_images')
+        if not os.path.isdir(output_path):
+            os.mkdir(output_path)
 
-                with network_group.activate(network_group_params):
-                    raw_detections = infer_pipeline.infer(np.array(processed_input_images).astype(np.float32))
-
-                    results = post_nms_infer(raw_detections, outputs[0].name)
-
-                    output_path = os.path.join(os.path.realpath('.'), 'output_images')
-                    if not os.path.isdir(output_path):
-                        os.mkdir(output_path)
-
-                    for j in range(len(batch_images)):
-                        img = preprocess(batch_images[j], width, height)
-                        post_process(results, img, (batch_idx*len(batch_images))+j, output_path, width, height)
+        for j in range(len(batch_images)):
+            img = preprocess(batch_images[j], width, height)
+            post_process(results, img, (batch_idx*len(batch_images))+j, output_path, width, height)
 
