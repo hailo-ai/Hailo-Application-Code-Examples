@@ -21,8 +21,8 @@ def parser_init():
     parser = argparse.ArgumentParser(description="UFLD_v2 inference")
 
     parser.add_argument(
-        "-m",
-        "--model",
+        "-n",
+        "--net",
         help="Path of ufld_v2.hef",
         default="ufld_v2.hef"
     )
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     args = parser_init().parse_args()
     
     # Initialize HailoInference with the specified model
-    hailo_inference = HailoInference(args.model)
+    hailo_inference = HailoInference(args.net)
     
      # Get input shape information 
     input_height, input_width, _ = hailo_inference.get_input_shape()
