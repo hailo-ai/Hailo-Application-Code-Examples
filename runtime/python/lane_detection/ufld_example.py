@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-
 import numpy as np
 from loguru import logger
 import argparse
 import cv2
 import time
 from ufld_utils import UFLDProcessing
-from hailo_inference import HailoInference
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import HailoInference
 
 def parser_init():
     """
@@ -18,8 +21,8 @@ def parser_init():
     parser = argparse.ArgumentParser(description="UFLD_v2 inference")
 
     parser.add_argument(
-        "-m",
-        "--model",
+        "-n",
+        "--net",
         help="Path of ufld_v2.hef",
         default="ufld_v2.hef"
     )
@@ -47,7 +50,7 @@ if __name__ == "__main__":
     args = parser_init().parse_args()
     
     # Initialize HailoInference with the specified model
-    hailo_inference = HailoInference(args.model)
+    hailo_inference = HailoInference(args.net)
     
      # Get input shape information 
     input_height, input_width, _ = hailo_inference.get_input_shape()
