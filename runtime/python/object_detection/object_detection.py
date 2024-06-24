@@ -73,14 +73,14 @@ def extract_detections(input, boxes, scores, classes, num_detections, threshold=
              'detection_scores': [scores],
              'num_detections': [num_detections]}
 
-def post_nms_infer(raw_detections, input_name):
+def post_nms_infer(raw_detections):
     boxes = []
     scores = []
     classes = []
     num_detections = 0
-    
-    detections = extract_detections(raw_detections[input_name][0], boxes, scores, classes, num_detections)
-    
+    for raw_detection in raw_detections:
+        detections = extract_detections(raw_detection, boxes, scores, classes, num_detections)
+
     return detections
 
 def preprocess(image, model_w, model_h):
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
         raw_detections = hailo_inference.run(np.array(processed_input_images))
 
-        results = post_nms_infer(raw_detections, outputs[0].name)
+        results = post_nms_infer(raw_detections)
 
         output_path = os.path.join(os.path.realpath('.'), 'output_images')
         if not os.path.isdir(output_path):
