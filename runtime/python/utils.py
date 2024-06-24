@@ -89,20 +89,21 @@ class HailoInference():
         """
         with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:            
             input_dict = {}
-        
             if isinstance(input_data, dict):
             # Input data is already a dictionary
-                input_dict = {k: v.copy() for k, v in input_data.items()}
+                input_dict = input_data
             elif isinstance(input_data, (list, tuple)):
             # Input data is a list or tuple
-                for i, layer_info in enumerate(self.input_vstream_info):
-                    input_dict[layer_info.name] = np.expand_dims(input_data[i].copy(), axis=0)
+                for layer_info in self.input_vstream_info:
+                    input_dict[layer_info.name] = input_data
             else:
-            # Input data is a single array
-                input_dict[self.input_vstream_info[0].name] = np.expand_dims(input_data.copy(), axis=0)
+            # Input data is an array
+                if len(input_data.shape) == 3:
+                    input_data = np.expand_dims(input_data, axis=0)
+                input_dict[self.input_vstream_info[0].name] = input_data
                 
             with self.network_group.activate(self.network_group_params):
-                output = infer_pipeline.infer(input_dict)
+                output = infer_pipeline.infer(input_dict)[self.output_vstream_info[0].name]
 
         return output
 
