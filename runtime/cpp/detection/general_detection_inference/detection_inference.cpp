@@ -3,12 +3,12 @@
 
 #include "common/hailo_objects.hpp"
 #include "common/yolo_hailortpp.hpp"
-#include "yolov8_postprocess.hpp"
 
 #include <iostream>
 #include <chrono>
 #include <mutex>
 #include <future>
+#include <thread>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -49,18 +49,11 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
     return result;
 }
 
-void postprocess_nms_on_hailo(HailoROIPtr& roi, bool nms_on_hailo, std::string model_type) {
-    if (nms_on_hailo)
-        filter_nms(roi, model_type);
-    else {
-        filter(roi);
-    }
-}
 
 template <typename T>
 hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &features, size_t frame_count, 
                                 std::chrono::time_point<std::chrono::system_clock>& postprocess_time, std::vector<cv::Mat>& frames, 
-                                double org_height, double org_width, bool nms_on_hailo, std::string model_type) {
+                                double org_height, double org_width) {
 
     auto status = HAILO_SUCCESS;
 
@@ -79,7 +72,7 @@ hailo_status post_processing_all(std::vector<std::shared_ptr<FeatureData<T>>> &f
             roi->add_tensor(std::make_shared<HailoTensor>(reinterpret_cast<T*>(features[j]->m_buffers.get_read_buffer().data()), features[j]->m_vstream_info));
         }
 
-        postprocess_nms_on_hailo(std::ref(roi), nms_on_hailo, model_type);
+        filter(roi);
     
         for (auto &feature : features) {
             feature->m_buffers.release_read_buffer();
@@ -249,16 +242,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
 
     hailo_status status = HAILO_UNINITIALIZED;
 
-    std::string model_type = "";
-    
     auto output_vstreams_size = output_vstreams.size();
-
-    bool nms_on_hailo = false;
-    std::string output_name = (std::string)output_vstreams[0].get_info().name;
-    if (output_vstreams_size == 1 && (output_name.find("nms") != std::string::npos)) {
-        nms_on_hailo = true;
-        model_type = output_name.substr(0, output_name.find('/'));
-    }
 
     std::vector<std::shared_ptr<FeatureData<T>>> features;
     features.reserve(output_vstreams_size);
@@ -286,7 +270,7 @@ hailo_status run_inference(std::vector<InputVStream>& input_vstream, std::vector
     }
 
     // Create the postprocessing thread
-    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width, nms_on_hailo, model_type));
+    auto pp_thread(std::async(post_processing_all<T>, std::ref(features), frame_count, std::ref(postprocess_time), std::ref(frames), org_height, org_width));
 
     for (size_t i = 0; i < output_threads.size(); i++) {
         status = output_threads[i].get();
@@ -330,9 +314,9 @@ void print_net_banner(std::pair<std::vector<hailort::InputVStream>, std::vector<
     std::cout << BOLDMAGENTA << "-I-----------------------------------------------\n" << std::endl << RESET;
 }
 
-Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolov_hef)
+Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(VDevice &vdevice, std::string yolo_hef)
 {
-    auto hef_exp = Hef::create(yolov_hef);
+    auto hef_exp = Hef::create(yolo_hef);
     if (!hef_exp) {
         return make_unexpected(hef_exp.status());
     }
@@ -379,7 +363,7 @@ int main(int argc, char** argv) {
     std::chrono::duration<double> total_time;
     std::chrono::time_point<std::chrono::system_clock> t_start = std::chrono::high_resolution_clock::now();
 
-    std::string yolov_hef      = getCmdOption(argc, argv, "-hef=");
+    std::string yolo_hef      = getCmdOption(argc, argv, "-hef=");
     std::string input_path      = getCmdOption(argc, argv, "-input=");
     std::string image_num      = getCmdOption(argc, argv, "-num=");
 
@@ -394,9 +378,9 @@ int main(int argc, char** argv) {
     }
     auto vdevice = vdevice_exp.release();
 
-    auto network_group_exp = configure_network_group(*vdevice, yolov_hef);
+    auto network_group_exp = configure_network_group(*vdevice, yolo_hef);
     if (!network_group_exp) {
-        std::cerr << "Failed to configure network group " << yolov_hef << std::endl;
+        std::cerr << "Failed to configure network group " << yolo_hef << std::endl;
         return network_group_exp.status();
     }
     auto network_group = network_group_exp.release();
@@ -447,7 +431,7 @@ int main(int argc, char** argv) {
     }
 
 
-    print_inference_statistics(inference_time, yolov_hef, frame_count);
+    print_inference_statistics(inference_time, yolo_hef, (double)frame_count);
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
 

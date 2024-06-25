@@ -6,8 +6,6 @@
 #include "hailo_objects.hpp"
 #include "hailo_common.hpp"
 
-
 __BEGIN_DECLS
-void filter_nms(HailoROIPtr roi, std::string output_name);
-void yolov5_nms(HailoROIPtr roi);
+void filter(HailoROIPtr roi, void *params_void_ptr = nullptr);
 __END_DECLS
