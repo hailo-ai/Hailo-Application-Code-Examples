@@ -8,11 +8,18 @@ video_sink = "xvimagesink"
 RES_X = {1280}
 RES_Y = {720}
 
-    
-def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_workspace, tapppas_version):
+# HEF files for H8
+YOLO5_HEF_NAME = "yolov5s_personface.hef"
+CLIP_HEF_NAME = "clip_resnet_50x4.hef"
+# HEF files for H8L
+# YOLO5_HEF_NAME = "yolov5s_personface_h8l_pi.hef"
+# CLIP_HEF_NAME = "clip_resnet_50x4_h8l.hef"
+
+
+def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postprocess_dir):
     # Initialize directories and paths
     RESOURCES_DIR = os.path.join(current_path, "resources")
-    POSTPROCESS_DIR = os.path.join(tappas_workspace, "apps/h8/gstreamer/libs/post_processes")
+    POSTPROCESS_DIR = tappas_postprocess_dir
     
     hailopython_path = os.path.join(current_path, "clip_app/clip_hailopython.py")
     
@@ -28,13 +35,13 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_worksp
         # personface
         YOLO5_POSTPROCESS_SO = os.path.join(POSTPROCESS_DIR, "libyolo_post.so")
         YOLO5_NETWORK_NAME = "yolov5_personface_letterbox"
-        YOLO5_HEF_PATH = os.path.join(RESOURCES_DIR, "yolov5s_personface.hef")
+        YOLO5_HEF_PATH = os.path.join(RESOURCES_DIR, YOLO5_HEF_NAME)
         YOLO5_CONFIG_PATH = os.path.join(RESOURCES_DIR, "configs/yolov5_personface.json")
         DETECTION_POST_PIPE = f'hailofilter so-path={YOLO5_POSTPROCESS_SO} qos=false function_name={YOLO5_NETWORK_NAME} config-path={YOLO5_CONFIG_PATH} '
         hef_path = YOLO5_HEF_PATH
 
     # CLIP 
-    clip_hef_path = os.path.join(RESOURCES_DIR, "clip_resnet_50x4.hef")
+    clip_hef_path = os.path.join(RESOURCES_DIR, CLIP_HEF_NAME)
     clip_postprocess_so = os.path.join(RESOURCES_DIR, "libclip_post.so")
     DEFAULT_CROP_SO = os.path.join(RESOURCES_DIR, "libclip_croppers.so")
     clip_matcher_so = os.path.join(RESOURCES_DIR, "libclip_matcher.so")
@@ -71,7 +78,7 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_worksp
         {QUEUE()} name=pre_detecion_net ! \
         video/x-raw, pixel-aspect-ratio=1/1 ! \
         hailonet hef-path={hef_path} batch-size={batch_size} vdevice-key={DEFAULT_VDEVICE_KEY} \
-        multi-process-service=true scheduler-timeout-ms=100 scheduler-priority=31 ! \
+        multi-process-service=false scheduler-timeout-ms=100 scheduler-priority=31 ! \
         {QUEUE()} name=pre_detecion_post ! \
         {DETECTION_POST_PIPE} ! \
         {QUEUE()}'
@@ -79,7 +86,7 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_worksp
     
     CLIP_PIPELINE = f'{QUEUE()} name=pre_clip_net ! \
         hailonet hef-path={clip_hef_path} batch-size={batch_size} vdevice-key={DEFAULT_VDEVICE_KEY} \
-        multi-process-service=true scheduler-timeout-ms=1000 ! \
+        multi-process-service=false scheduler-timeout-ms=1000 ! \
         {QUEUE()} ! \
         hailofilter so-path={clip_postprocess_so} qos=false ! \
         {QUEUE()}'

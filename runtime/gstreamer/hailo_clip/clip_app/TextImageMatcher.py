@@ -7,8 +7,6 @@ import logging
 from clip_app.logger_setup import setup_logger, set_log_level
 
 # This class is used to store the text embeddings and match them to image embeddings
-# The class can be initialized with an ONNX model or a CLIP model
-
 # This class should be used as a singleton!
 # An instance of this class is created in the end of this file.
 # import text_image_matcher from this file to make sure that only one instance of the TextImageMatcher class is created.
@@ -21,7 +19,6 @@ set_log_level(logger, logging.INFO)
 
 # Set up global variables. Only required imports are done in the init functions
 clip = None
-ort = None
 torch = None
 
 
@@ -62,7 +59,7 @@ class Match:
 
 class TextImageMatcher:
     def __init__(self, model_name="RN50x4", threshold=0.8, max_entries=6):
-        self.model = None # model is initialized in init_onnx or init_clip
+        self.model = None # model is initialized in init_clip
         self.model_runtime = None
         self.model_name = model_name
         self.threshold = threshold
@@ -83,14 +80,6 @@ class TextImageMatcher:
         if cls._instance is None:
             cls._instance = super(TextImageMatcher, cls).__new__(cls)
         return cls._instance
-
-    def init_onnx(self, onnx_model_path):
-        global clip, ort
-        import clip
-        import onnxruntime as ort
-        print(f"Loading ONNX model this might take a while...")
-        self.model = ort.InferenceSession(onnx_model_path)
-        self.model_runtime = "onnx"
 
     def init_clip(self):
         global clip, torch
@@ -127,27 +116,18 @@ class TextImageMatcher:
     def add_text(self, text, index=None, negative=False, ensemble=False):
         global clip, torch
         if self.model_runtime is None:
-            print("Error: No model is loaded. Please call init_onnx or init_clip before calling add_text.")
+            print("Error: No model is loaded. Please call init_clip before calling add_text.")
             return
         if ensemble:
             text_entries = [template.format(text) for template in self.ensemble_template]
         else:
             text_entries = [self.text_prefix + text]
         logger.debug(f"Adding text entries: {text_entries}")
-        if self.model_runtime == "onnx":
-            text_tokens = clip.tokenize(text_entries)
-            # Convert to numpy int64 array, as expected by the model
-            text_tokens = text_tokens.numpy().astype(np.int64)
-            text_features = self.model.run(None, {'input': text_tokens})[0]
-            norm = np.linalg.norm(text_features, axis=-1, keepdims=True)
-            text_features /= norm
-            ensemble_embedding = np.mean(text_features, axis=0).flatten()
-        else:
-            text_tokens = clip.tokenize(text_entries).to(self.device)
-            with torch.no_grad():
-                text_features = self.model.encode_text(text_tokens)
-                text_features /= text_features.norm(dim=-1, keepdim=True)
-                ensemble_embedding = torch.mean(text_features, dim=0).cpu().numpy().flatten()
+        text_tokens = clip.tokenize(text_entries).to(self.device)
+        with torch.no_grad():
+            text_features = self.model.encode_text(text_tokens)
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+            ensemble_embedding = torch.mean(text_features, dim=0).cpu().numpy().flatten()
         new_entry = TextEmbeddingEntry(text, ensemble_embedding, negative, ensemble)
         self.update_text_entries(new_entry, index)
 
@@ -203,9 +183,6 @@ class TextImageMatcher:
     def get_image_embedding(self, image):
         if self.model_runtime is None:
             print("Error: No model is loaded. Please call init_clip before calling get_image_embedding.")
-            return
-        if self.model_runtime == "onnx":
-            print("Error: get_image_embedding is not supported for ONNX models.")
             return
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -278,12 +255,6 @@ def main():
     # get cli args
     import argparse
     parser = argparse.ArgumentParser()
-    # add onnx_path arg
-    # Underdevelopment #
-    # parser.add_argument("--onnx", action="store_true", help="use onnx model, requires onnx-path")
-    # parser.add_argument("--onnx-path", type=str, default="textual.onnx", help="path to onnx model")
-    # Underdevelopment #
-
     parser.add_argument("--output", type=str, default="text_embeddings.json", help="output file name default=text_embeddings.json")
     parser.add_argument("--interactive", action="store_true", help="input text from interactive shell")
     parser.add_argument("--image-path", type=str, default=None, help="Optional, path to image file to match. Note image embeddings are not running on Hailo here.")

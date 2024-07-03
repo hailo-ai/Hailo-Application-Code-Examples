@@ -48,7 +48,7 @@ shared_library('clip_croppers',
 # to find blas.pc
 # find /usr -name '*blas*.pc'
 
-cblas_dep = dependency('blas', dirs : '/usr/lib/x86_64-linux-gnu/pkgconfig')
+cblas_dep = dependency('blas')
 
 clip_matcher_sources = [
     'clip_matcher.cpp','TextImageMatcher.cpp',

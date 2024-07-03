@@ -6,7 +6,7 @@ The text embeddings are running on the host. Text embeddings are sparse and shou
 As default the app starts w/o enabling online test embeddings. This is done to speed up load time and save memory. It also allows to run on low memory hosts like the RPi.
 
 ## Prerequisites
-This example was tested on Hailo's TAPPAS rpi_v3.28.0
+This example was tested on Hailo's TAPPAS v3.28.0 and v3.28.2 (RPi version)
 You'll need it installed on your system.
 
 #### These packages are required for the CLIP
@@ -24,15 +24,10 @@ If you get response which looks like this you're good to go.
 
 ```bash
 Setting up the environment...
-TAPPAS_WORKSPACE set to /home/giladn/TAPPAS/tappas/
-Activating virtual environment...
-```
-If output is not as expected make sure:
-- You have read rights to /opt/hailo/tappas/pkgconfig/hailo_tappas.pc
-- PKG_CONFIG_PATH includes this path.
-To add it to PKG_CONFIG_PATH run:
-```bash
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/hailo/tappas/pkgconfig/
+TAPPAS_VERSION is 3.28.2. Proceeding...
+You are not in the venv_hailo_clip virtual environment.
+Virtual environment does not exist. Creating and activating...
+TAAPAS_POST_PROC_DIR set to /usr/lib/aarch64-linux-gnu/hailo/tappas//post-process/
 ```
 
 ## CPP code compilation
