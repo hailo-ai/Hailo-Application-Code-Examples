@@ -12,7 +12,7 @@ import os
 def get_pkg_info(package_name="hailo_tappas"):
     info = {}
     try:
-        # Get the tappas_workspace environmet variable
+        # Get the tappas_workspace environment variable
         TAPPAS_WORKSPACE = os.environ.get("TAPPAS_WORKSPACE", "")
         if TAPPAS_WORKSPACE == "":
             # Get the tappas_workspace variable

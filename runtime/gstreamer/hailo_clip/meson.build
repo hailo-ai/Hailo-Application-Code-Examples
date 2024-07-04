@@ -5,6 +5,9 @@ project('clip_app', 'c', 'cpp',
                             'c_std=c11', 'cpp_std=c++17']
        )
 
-postprocess_dep = dependency('hailo_tappas')
+postprocess_dep = dependency('hailo-tappas-core', version : '>=3.28.0', required : false)
 
+if not postprocess_dep.found()
+    postprocess_dep = dependency('hailo_tappas', version : '>=3.28.0', required : true)
+endif
 subdir('cpp')
