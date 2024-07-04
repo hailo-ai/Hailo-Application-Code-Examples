@@ -22,8 +22,8 @@ Usage
 2. In the docker, create a new folder under the path /local/workspace/apps/h8/gstreamer/general
 3. Copy the demo.sh & get_resources.sh to the new folder in the docker
 4. Get the resource by running ./get_resources.sh
-5. Create a resources folder for the HEFs and videos: `mkdir resources && cd resources && mkdir hefs videos` and move the corresponding files under the relevant folder.
-6. Install VA-API for the target machine in the Docker:`./install_accelerator.sh` (can be found under /local/workspace/apps/h8/gstreamer/x86_hw_accelerated/ folder. Might need to run `sudo chmod 777 install_accelerator.sh` before running it).
+5. Create a resources folder for the HEFs and videos: `mkdir -p multistream_app/resources && cd multistream_app/resources && mkdir hefs videos` and move the corresponding files under the relevant folder.
+6. Install VA-API for the target machine in the Docker:`./install_accelerator.sh` (can be found under ``/local/workspace/apps/h8/gstreamer/x86_hw_accelerated/`` folder. Might need to run `sudo chmod 777 install_accelerator.sh` before running it).
 7. Set the relevant VA-API environment variables - 
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu/`
 `export LIBVA_DRIVER_NAME=iHD`
