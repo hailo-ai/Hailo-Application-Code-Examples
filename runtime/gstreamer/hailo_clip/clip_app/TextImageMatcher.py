@@ -29,6 +29,7 @@ class TextEmbeddingEntry:
         self.negative = negative
         self.ensemble = ensemble
         self.probability = 0.0
+        self.tracked_probability = 0.0
     
     def to_dict(self):
         return {
@@ -74,6 +75,8 @@ class TextImageMatcher:
             'a photo of a big {}.',
             'a photo of a small {}.',
         ]
+        self.track_id_focus = None # This is used to focus on specific track id when showing confidence
+
     # Define class as a singleton
     _instance = None
     def __new__(cls):
@@ -190,7 +193,7 @@ class TextImageMatcher:
             image_embedding /= image_embedding.norm(dim=-1, keepdim=True)
         return image_embedding.cpu().numpy().flatten()     
 
-    def match(self, image_embedding_np, report_all=False):
+    def match(self, image_embedding_np, report_all=False, update_tracked_probability=None):
         # This function is used to match an image embedding to a text embedding
         # Returns a list of tuples: (row_idx, text, similarity, entry_index)
         # row_idx is the index of the row in the image embedding
@@ -206,7 +209,6 @@ class TextImageMatcher:
             image_embedding_np = image_embedding_np.reshape(1, -1)
         results = []
         all_dot_products = None
-        # set_breakpoint_every_n_frames()
         valid_entries = self.get_embeddings()
         if len(valid_entries) == 0:
             return []
@@ -234,6 +236,9 @@ class TextImageMatcher:
             best_similarity = similarities[best_idx]
             for i, value in enumerate(similarities):
                 self.entries[valid_entries[i]].probability = similarities[i]
+                if update_tracked_probability is None or update_tracked_probability == row_idx:
+                    logger.debug(f"Updating tracked probability for entry {valid_entries[i]} to {similarities[i]}")
+                    self.entries[valid_entries[i]].tracked_probability = similarities[i]
             new_match = Match(row_idx, 
                             self.entries[valid_entries[best_idx]].text, 
                             best_similarity, valid_entries[best_idx], 

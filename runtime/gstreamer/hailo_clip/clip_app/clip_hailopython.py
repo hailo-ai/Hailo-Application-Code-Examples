@@ -19,21 +19,29 @@ def run(video_frame: VideoFrame):
     
     embeddings_np = None
     used_detection = []
+    track_id_focus = text_image_matcher.track_id_focus # Used to focus on a specific track_id
+    update_tracked_probability = None
     for detection in detections:
         results = detection.get_objects_typed(hailo.HAILO_MATRIX)
         if len(results) == 0:
             # print("No matrix found in detection")
             continue
         # Convert the matrix to a NumPy array
-        detection_embedings = np.array(results[0].get_data())
+        detection_embeddings = np.array(results[0].get_data())
         used_detection.append(detection)
         if embeddings_np is None:
-            embeddings_np = detection_embedings[np.newaxis, :]
+            embeddings_np = detection_embeddings[np.newaxis, :]
         else:
-            embeddings_np = np.vstack((embeddings_np, detection_embedings))
-
+            embeddings_np = np.vstack((embeddings_np, detection_embeddings))
+        if track_id_focus is not None:
+            track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
+            if len(track) == 1:
+                track_id = track[0].get_id()
+                # If we have a track_id_focus, update only the tracked_probability of the focused track
+                if track_id == track_id_focus:
+                    update_tracked_probability = len(used_detection) - 1
     if embeddings_np is not None:
-        matches = text_image_matcher.match(embeddings_np, report_all=True)
+        matches = text_image_matcher.match(embeddings_np, report_all=True, update_tracked_probability=update_tracked_probability)
         for match in matches:
             # (row_idx, label, confidence, entry_index) = match
             detection = used_detection[match.row_idx]

@@ -70,15 +70,14 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postpr
     # Check if the input seems like a v4l2 device path (e.g., /dev/video0)
     if re.match(r'/dev/video\d+', input_uri):
         SOURCE_PIPELINE = f'v4l2src device={input_uri} ! image/jpeg, framerate=30/1 ! decodebin ! {QUEUE()} ! \
-            videoconvert ! {QUEUE()} ! videoscale ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB ! {QUEUE()} ! videoflip video-direction=horiz ! '
+        videoconvert ! {QUEUE()} ! videoscale ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB ! {QUEUE()} ! videoflip video-direction=horiz ! '
+    elif re.match(r'0x\w+', input_uri): # Window ID - get from xwininfo
+        SOURCE_PIPELINE = f"ximagesrc xid={input_uri} ! {QUEUE()} ! videoscale ! "
     else:
-        if re.match(r'0x\w+', input_uri): # Window ID - get from xwininfo
-            SOURCE_PIPELINE = f"ximagesrc xid={input_uri} ! {QUEUE()} ! videoscale ! "
-        else:
-            # convert the file to a uri
-            input_uri = os.path.abspath(input_uri)
-            input_uri = f'file://{input_uri}'
-            SOURCE_PIPELINE = f"uridecodebin uri={input_uri} ! {QUEUE()} ! videoscale ! "
+        # convert the file to a uri
+        input_uri = os.path.abspath(input_uri)
+        input_uri = f'file://{input_uri}'
+        SOURCE_PIPELINE = f"uridecodebin uri={input_uri} ! {QUEUE()} ! videoscale ! "
     SOURCE_PIPELINE += f'{QUEUE()} name=src_convert_queue ! videoconvert n-threads=2 ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB '
     
     DETECTION_PIPELINE = f'{QUEUE()} name=pre_detection_scale ! videoscale n-threads=4 qos=false ! \

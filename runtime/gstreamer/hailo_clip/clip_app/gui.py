@@ -25,6 +25,14 @@ def build_ui(self, args):
     self.save_button = Gtk.Button(label="Save")
     self.save_button.connect("clicked", self.on_save_button_clicked)
     hbox.pack_start(self.save_button, False, False, 0)
+    # Add label and track_id input box
+    self.track_id_label = Gtk.Label(label="Track ID")
+    self.track_id_entry = Gtk.Entry()
+    hbox.pack_end(self.track_id_entry, False, False, 0)
+    hbox.pack_end(self.track_id_label, False, False, 0)
+    self.track_id_entry.connect("activate", lambda widget: self.on_track_id_update(widget))
+    self.track_id_entry.connect("focus-out-event", lambda widget, event: self.on_track_id_update(widget))
+
     ui_vbox.pack_start(hbox, False, False, 0)
 
     # Quit Button
@@ -126,12 +134,22 @@ def on_text_box_updated(self, widget, event, idx):
     print(f"Text box {idx} updated: {text}")
     self.text_image_matcher.add_text(widget.get_text(), idx)
 
+def on_track_id_update(self, widget):
+    """Callback function for track id updates."""
+    track_id_focus = widget.get_text()
+    # check if track id is a number
+    if not track_id_focus.isdigit():
+        print(f"Track ID must be a number, got: {track_id_focus}")
+        widget.set_text("")
+        self.text_image_matcher.track_id_focus = None
+        return
+    print(f"Track ID updated: {track_id_focus}")
+    self.text_image_matcher.track_id_focus = int(track_id_focus)
 
 def on_slider_value_changed(self, widget):
     value = float(widget.get_value())
     print(f"Setting detection threshold to: {value}")
     self.text_image_matcher.set_threshold(value)
-
 
 def on_negative_check_button_toggled(self, widget, idx):
     negative = widget.get_active()
@@ -165,7 +183,7 @@ def update_progress_bars(self):
     """Updates the progress bars based on the current probability values."""
     for i, entry in enumerate(self.text_image_matcher.entries):
         if entry.text != "":
-            self.probability_progress_bars[i].set_fraction(entry.probability)
+            self.probability_progress_bars[i].set_fraction(entry.tracked_probability)
         else:
             self.probability_progress_bars[i].set_fraction(0.0)
     return True

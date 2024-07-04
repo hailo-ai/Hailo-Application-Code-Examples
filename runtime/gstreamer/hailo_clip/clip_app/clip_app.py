@@ -73,7 +73,7 @@ class AppWindow(Gtk.Window):
     on_load_button_clicked = gui.on_load_button_clicked
     on_save_button_clicked = gui.on_save_button_clicked
     update_progress_bars = gui.update_progress_bars
-    
+    on_track_id_update = gui.on_track_id_update
 
     def __init__(self, args):
         Gtk.Window.__init__(self, title="Clip App")
