@@ -6,7 +6,7 @@ function init_variables() {
     script_dir=$(dirname $(realpath "$0"))
     source $script_dir/../../../../../scripts/misc/checks_before_run.sh --check-vaapi
 
-    readonly RESOURCES_DIR="$TAPPAS_WORKSPACE/apps/h8/gstreamer/general/NAME_OF_APP_FOLDER/resources"
+    readonly RESOURCES_DIR="$TAPPAS_WORKSPACE/apps/h8/gstreamer/general/multistream_app/resources"
     readonly POSTPROCESS_DIR="$TAPPAS_WORKSPACE/apps/h8/gstreamer/libs/post_processes"
     readonly DETECTION_POSTPROCESS_SO="$POSTPROCESS_DIR/libyolo_hailortpp_post.so"
     readonly SEMSEG_POSTPROCESS_SO="$POSTPROCESS_DIR/libsemantic_segmentation.so"
