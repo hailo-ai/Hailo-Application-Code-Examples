@@ -101,7 +101,7 @@ if is_sourced; then
     # Export the Device Architecture to an environment variable
     export DEVICE_ARCHITECTURE="$device_arch"
     # Print the environment variable to verify
-    echo "Device Architecture is set to: $DEVICE_ARCHITECTURE"
+    echo "DEVICE_ARCHITECTURE is set to: $DEVICE_ARCHITECTURE"
 else
     echo "This script needs to be sourced to correctly set up the environment. Please run '. $(basename "$0")' instead of executing it."
 fi

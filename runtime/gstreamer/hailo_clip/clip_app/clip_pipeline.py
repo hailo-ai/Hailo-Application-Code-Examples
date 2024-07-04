@@ -8,12 +8,19 @@ video_sink = "xvimagesink"
 RES_X = {1280}
 RES_Y = {720}
 
-# HEF files for H8
-YOLO5_HEF_NAME = "yolov5s_personface.hef"
-CLIP_HEF_NAME = "clip_resnet_50x4.hef"
-# HEF files for H8L
-# YOLO5_HEF_NAME = "yolov5s_personface_h8l_pi.hef"
-# CLIP_HEF_NAME = "clip_resnet_50x4_h8l.hef"
+# Check Hailo Device Type from the environment variable DEVICE_ARCHITECTURE
+# If the environment variable is not set, default to HAILO8L
+device_architecture = os.getenv("DEVICE_ARCHITECTURE")
+if device_architecture is None or device_architecture == "HAILO8L":
+    device_architecture = "HAILO8L"
+    # HEF files for H8L
+    YOLO5_HEF_NAME = "yolov5s_personface_h8l_pi.hef"
+    CLIP_HEF_NAME = "clip_resnet_50x4_h8l.hef"
+else:
+    device_architecture = "HAILO8"
+    # HEF files for H8
+    YOLO5_HEF_NAME = "yolov5s_personface.hef"
+    CLIP_HEF_NAME = "clip_resnet_50x4.hef"
 
 
 def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postprocess_dir):
