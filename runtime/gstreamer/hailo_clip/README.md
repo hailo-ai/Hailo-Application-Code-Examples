@@ -84,7 +84,7 @@ options:
 
 ### Modes
 - The default mode (--detector none) will run only the clip inference on the entire frame. This is the mode CLIP is trained for, and will give the best results. In this mode CLIP is acting as a classifier describing the entire frame. CLIP will be ran on every frame.
-- Person mode (--detector person) will run the clip inference only on the detected persons. In this mode we first run a person detector and then run clip on the detected persons. This mode does not exaclty fit the data base CLIP was trained on but gives a good use case for using CLIP as a detector. In this mode CLIP is acting as a person classifier. In this mode CLIP will be ran only on detected persons. To reduce the number of clip inferences we run clip only every second per tracked person. This can be changed in the code.
+- Person mode (--detector person) will run the clip inference only on the detected persons. In this mode we first run a person detector and then run clip on the detected persons. This mode does not exactly fit the data base CLIP was trained on but gives a good use case for using CLIP as a detector. In this mode CLIP is acting as a person classifier. In this mode CLIP will be ran only on detected persons. To reduce the number of clip inferences we run clip only every second per tracked person. This can be changed in the code.
   
 ### Online text embeddings
 - To run with online text embeddings run with the --clip-runtime flag. 
@@ -115,8 +115,8 @@ options:
 
 ## Tips for good prompt usage
 - Keep in mind that the network was trained on image + caption pairs. You text description should be somewhat similar. For example a text description of " A photo of a cat" will give better score than "cat".
-- The app got a "pefix" pre defined to "A photo of a " you can change it in the "TextImageMatcher" class.
-- The pipeline output will select on of the classes as "the best one". There is no 'background' class. You should define a "negative" prompt (or prompts) to be used as "backgroud". When set as negative the class will be used in the "best match" algorithm but will not be showed in the output.
+- The app got a "prefix" pre defined to "A photo of a " you can change it in the "TextImageMatcher" class.
+- The pipeline output will select on of the classes as "the best one". There is no 'background' class. You should define a "negative" prompt (or prompts) to be used as "background". When set as negative the class will be used in the "best match" algorithm but will not be showed in the output.
 - You can also use "threshold" to fine tune detection sensitivity. However, using "negative" prompts are better for detecting specific classes.
 - Negative prompts should be used to "peal off" similar classifications to your target. For example "a man with red shirt" will have a high score also for just a man, or a shirt with a different color. Add negative prompts like "a man with blue shirt" to make sure you do not get lots of false classification.
 - Play around with prompts to see what works best for you application.

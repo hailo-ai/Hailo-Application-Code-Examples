@@ -75,11 +75,11 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postpr
     SOURCE_PIPELINE += f'{QUEUE()} name=src_convert_queue ! videoconvert n-threads=2 ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB '
     
     DETECTION_PIPELINE = f'{QUEUE()} name=pre_detection_scale ! videoscale n-threads=4 qos=false ! \
-        {QUEUE()} name=pre_detecion_net ! \
+        {QUEUE()} name=pre_detection_net ! \
         video/x-raw, pixel-aspect-ratio=1/1 ! \
         hailonet hef-path={hef_path} batch-size={batch_size} vdevice-key={DEFAULT_VDEVICE_KEY} \
         multi-process-service=false scheduler-timeout-ms=100 scheduler-priority=31 ! \
-        {QUEUE()} name=pre_detecion_post ! \
+        {QUEUE()} name=pre_detection_post ! \
         {DETECTION_POST_PIPE} ! \
         {QUEUE()}'
 

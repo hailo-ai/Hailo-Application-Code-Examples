@@ -242,10 +242,10 @@ std::vector<HailoDetection> yolov8_postprocess(std::vector<HailoTensorPtr> &tens
 
 /**
  * @brief yolov8 postprocess
- *        Provides network specific paramters
+ *        Provides network specific parameters
  * 
  * @param roi  -  HailoROIPtr
- *        The roi that contains the ouput tensors
+ *        The roi that contains the output tensors
  */
 void yolov8(HailoROIPtr roi)
 {

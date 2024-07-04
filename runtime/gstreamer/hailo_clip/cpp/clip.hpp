@@ -10,7 +10,7 @@ __BEGIN_DECLS
 class ClipParams
 {
 public:
-    std::string tracker_name; // Should hae the same name as the relevant hailo_tracker
+    std::string tracker_name; // Should have the same name as the relevant hailo_tracker
     ClipParams(std::string tracker_name) : tracker_name(tracker_name) {}
 };
 ClipParams *init(std::string config_path, std::string func_name);

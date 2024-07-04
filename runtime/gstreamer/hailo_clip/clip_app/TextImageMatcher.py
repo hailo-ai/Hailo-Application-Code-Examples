@@ -192,7 +192,7 @@ class TextImageMatcher:
 
     def match(self, image_embedding_np, report_all=False):
         # This function is used to match an image embedding to a text embedding
-        # Returns a list of tuples: (row_idx, text, similarity, enrty_index)
+        # Returns a list of tuples: (row_idx, text, similarity, entry_index)
         # row_idx is the index of the row in the image embedding
         # text is the best matching text
         # similarity is the similarity between the image and text embeddings
