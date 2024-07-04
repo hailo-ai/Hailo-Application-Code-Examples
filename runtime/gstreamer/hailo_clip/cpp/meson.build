@@ -61,16 +61,3 @@ shared_library('clip_matcher',
     install_dir: join_paths(meson.project_source_root(), 'resources'),
 )    
 
-################################################
-# aspect_ratio_fix SOURCES
-################################################
-aspect_ratio_fix_sources = [
-    'aspect_ratio_fix.cpp',
-]
-shared_library('aspect_ratio_fix',
-    aspect_ratio_fix_sources,
-    dependencies : postprocess_dep,
-    gnu_symbol_visibility : 'default',
-    install: true,
-    install_dir: join_paths(meson.project_source_root(), 'resources'),
-)  
