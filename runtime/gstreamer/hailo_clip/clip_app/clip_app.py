@@ -1,19 +1,16 @@
 import os
 import argparse
 import logging
-
+import sys
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, Gst, GLib
-
 from clip_app.logger_setup import setup_logger, set_log_level
 from clip_app.clip_pipeline import get_pipeline
 # import text_image_matcher instance to make sure that only one instance of the TextImageMatcher class is created.
 from clip_app.TextImageMatcher import text_image_matcher
 import clip_app.gui as gui
-# Disabling the Accessibility Bus (sends warnings due to docker user issues)
-os.environ['NO_AT_BRIDGE'] = '1'
 
 # add logging
 logger = setup_logger()
@@ -40,24 +37,10 @@ def on_destroy(window):
 def main():
     args = parse_arguments()
     win = AppWindow(args)
-    
+
     win.connect("destroy", on_destroy)
     win.show_all()
     Gtk.main()
-
-
-# TEMP
-import hailo
-
-
-def buffer_probe(pad, info):
-    buffer = info.get_buffer()
-    if buffer:
-        roi = hailo.get_roi_from_buffer(buffer)
-        # import ipdb; ipdb.set_trace()
-        print(f'buffer_probe {roi.get_stream_id()}')
-    return Gst.PadProbeReturn.OK
-
 
 class AppWindow(Gtk.Window):
     # Add GUI functions to the AppWindow class
@@ -79,17 +62,17 @@ class AppWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="Clip App")
         self.set_border_width(10)
         self.set_default_size(400, 200)
-        
+
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         # move self.current_path one directory up to get the path to the workspace
         self.current_path = os.path.dirname(self.current_path)
         os.environ["GST_DEBUG_DUMP_DOT_DIR"] = self.current_path
-        
+
         self.tappas_postprocess_dir = os.environ.get('TAPPAS_POST_PROC_DIR', '')
         if self.tappas_postprocess_dir == '':
             print("TAPPAS_POST_PROC_DIR environment variable is not set. Please set it by sourcing setup_env.sh")
-            exit(1)
-        
+            sys.exit(1)
+
         self.input_uri = args.input
         self.dump_dot = args.dump_dot
         self.sync = 'true' if args.sync else 'false'
@@ -109,24 +92,14 @@ class AppWindow(Gtk.Window):
         hailo_display = self.pipeline.get_by_name("hailo_display")
         xvimagesink = hailo_display.get_by_name("xvimagesink0")
         xvimagesink.set_property("qos", False)
-        
+
         # get text_image_matcher instance
         self.text_image_matcher = text_image_matcher
         self.text_image_matcher.set_threshold(args.detection_threshold)
 
-        # TEMP
-        # # connect probe to element to parse buffer
-        # queue = self.pipeline.get_by_name("queue27")
-        # # Attach the buffer probe to the queue's src pad
-        # queue_src_pad = queue.get_static_pad("src")
-        # if not queue_src_pad:
-        #     print("Unable to get the queue's src pad.")
-        #     return
-        # queue_src_pad.add_probe(Gst.PadProbeType.BUFFER, buffer_probe)
-
         # build UI
         self.build_ui(args)
-        
+
         # set runtime
         if args.clip_runtime:
             self.text_image_matcher.init_clip()
@@ -135,7 +108,7 @@ class AppWindow(Gtk.Window):
             for text_box in self.text_boxes:
                 text_box.set_editable(False)
             self.on_load_button_clicked(None)
-        
+
         if self.text_image_matcher.model_runtime is not None:
             print(f"Using {self.text_image_matcher.model_runtime} for text embedding")
             if not self.use_default_text:
@@ -143,20 +116,20 @@ class AppWindow(Gtk.Window):
             else:
                 print("Adding some default text entries. To disable this use --json-path to load from JSON file.")
                 self.add_default_texts()
-        
+
         # start the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
-         
+ 
         if self.dump_dot:
             GLib.timeout_add_seconds(5, self.dump_dot_file)
-        
+
         self.update_text_boxes()
 
         # Define a timeout duration in nanoseconds (e.g., 5 seconds)
         timeout_ns = 5 * Gst.SECOND
 
         # Wait until state change is done or until the timeout occurs
-        state_change_return, state, pending = self.pipeline.get_state(timeout_ns)
+        state_change_return, _state, _pending = self.pipeline.get_state(timeout_ns)
 
         if state_change_return == Gst.StateChangeReturn.SUCCESS:
             print("Pipeline state changed to PLAYING successfully.")
@@ -166,9 +139,6 @@ class AppWindow(Gtk.Window):
             print("State change failed.")
         else:
             print("Unknown state change return value.")
-
-    
-
 
 
     def add_default_texts(self):

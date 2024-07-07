@@ -1,9 +1,11 @@
 import time
 import json
-import numpy as np
 import os
-from PIL import Image
 import logging
+import sys
+import argparse
+import numpy as np
+from PIL import Image
 from clip_app.logger_setup import setup_logger, set_log_level
 
 # This class is used to store the text embeddings and match them to image embeddings
@@ -30,7 +32,7 @@ class TextEmbeddingEntry:
         self.ensemble = ensemble
         self.probability = 0.0
         self.tracked_probability = 0.0
-    
+
     def to_dict(self):
         return {
             "text": self.text,
@@ -61,10 +63,14 @@ class Match:
 class TextImageMatcher:
     def __init__(self, model_name="RN50x4", threshold=0.8, max_entries=6):
         self.model = None # model is initialized in init_clip
+        self.preprocess = None # preprocess is initialized in init_clip
         self.model_runtime = None
         self.model_name = model_name
         self.threshold = threshold
         self.run_softmax = True
+        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu"
+
         self.entries = [TextEmbeddingEntry() for _ in range(max_entries)]
         self.user_data = None # user data can be used to store additional information (used by multistream to save current stream id)
         self.text_prefix = "A photo of a "
@@ -88,19 +94,16 @@ class TextImageMatcher:
         global clip, torch
         import clip
         import torch
-        # device = "cuda" if torch.cuda.is_available() else "cpu"
-        device = "cpu"
-        print(f"Loading model {self.model_name} on device {device} this might take a while...")
-        self.model, self.preprocess = clip.load(self.model_name, device=device)
-        self.device = device
+        print(f"Loading model {self.model_name} on device {self.device} this might take a while...")
+        self.model, self.preprocess = clip.load(self.model_name, device=self.device)
         self.model_runtime = "clip"
 
     def set_threshold(self, new_threshold):
         self.threshold = new_threshold
-    
+
     def set_text_prefix(self, new_text_prefix):
         self.text_prefix = new_text_prefix
-    
+
     def set_ensemble_template(self, new_ensemble_template):
         self.ensemble_template = new_ensemble_template
 
@@ -125,7 +128,7 @@ class TextImageMatcher:
             text_entries = [template.format(text) for template in self.ensemble_template]
         else:
             text_entries = [self.text_prefix + text]
-        logger.debug(f"Adding text entries: {text_entries}")
+        logger.debug("Adding text entries: %s", text_entries)
         text_tokens = clip.tokenize(text_entries).to(self.device)
         with torch.no_grad():
             text_features = self.model.encode_text(text_tokens)
@@ -143,7 +146,7 @@ class TextImageMatcher:
     def get_texts(self):
         # returns all entries text (not only valid ones)
         return [entry.text for entry in self.entries]
-    
+
     def save_embeddings(self, filename):
         # Prepare a dictionary that includes all the required data
         data_to_save = {
@@ -154,31 +157,31 @@ class TextImageMatcher:
         }
 
         # Save the dictionary as JSON
-        with open(filename, 'w') as f:
+        with open(filename, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f)
 
     def load_embeddings(self, filename):
         # if file does not exist create it
         if not os.path.isfile(filename):
             # File does not exist, create it
-            with open(filename, 'w') as file:
-                file.write('')  # Create an empty file or initialize with some data
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write('')  # Create an empty file or initialize with some data
             print(f"File {filename} does not exist, creating it.")
         else:
             try:
                 # File exists, load the data
-                with open(filename, 'r') as f:
+                with open(filename, 'r', encoding='utf-8') as f:
                     data = json.load(f)
 
                     self.threshold = data['threshold']
                     self.text_prefix = data['text_prefix']
                     self.ensemble_template = data['ensemble_template']
-                    
+
                     # Assuming TextEmbeddingEntry is a class that can be initialized like this
-                    self.entries = [TextEmbeddingEntry(text=entry['text'], 
-                                                    embedding=np.array(entry['embedding']), 
+                    self.entries = [TextEmbeddingEntry(text=entry['text'],
+                                                    embedding=np.array(entry['embedding']),
                                                     negative=entry['negative'],
-                                                    ensemble=entry['ensemble']) 
+                                                    ensemble=entry['ensemble'])
                                     for entry in data['entries']]
             except Exception as e:
                 print(f"Error while loading file {filename}: {e}. Maybe you forgot to save your embeddings?")
@@ -186,12 +189,12 @@ class TextImageMatcher:
     def get_image_embedding(self, image):
         if self.model_runtime is None:
             print("Error: No model is loaded. Please call init_clip before calling get_image_embedding.")
-            return
+            return None
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
             image_embedding = self.model.encode_image(image_input)
             image_embedding /= image_embedding.norm(dim=-1, keepdim=True)
-        return image_embedding.cpu().numpy().flatten()     
+        return image_embedding.cpu().numpy().flatten()
 
     def match(self, image_embedding_np, report_all=False, update_tracked_probability=None):
         # This function is used to match an image embedding to a text embedding
@@ -220,7 +223,7 @@ class TextImageMatcher:
                 all_dot_products = dot_products[np.newaxis, :]
             else:
                 all_dot_products = np.vstack((all_dot_products, dot_products))
-            
+
             if self.run_softmax:
                 # Compute softmax for each row (i.e. each image embedding)
                 similarities = np.exp(100 * dot_products)
@@ -231,34 +234,33 @@ class TextImageMatcher:
                 similarities = (dot_products - 0.27) / (0.41 - 0.27)
                 # clip to [0,1]
                 similarities = np.clip(similarities, 0, 1)
-        
+
             best_idx = np.argmax(similarities)
             best_similarity = similarities[best_idx]
-            for i, value in enumerate(similarities):
+            for i, _ in enumerate(similarities):
                 self.entries[valid_entries[i]].probability = similarities[i]
                 if update_tracked_probability is None or update_tracked_probability == row_idx:
                     logger.debug(f"Updating tracked probability for entry {valid_entries[i]} to {similarities[i]}")
                     self.entries[valid_entries[i]].tracked_probability = similarities[i]
-            new_match = Match(row_idx, 
-                            self.entries[valid_entries[best_idx]].text, 
-                            best_similarity, valid_entries[best_idx], 
-                            self.entries[valid_entries[best_idx]].negative, 
+            new_match = Match(row_idx,
+                            self.entries[valid_entries[best_idx]].text,
+                            best_similarity, valid_entries[best_idx],
+                            self.entries[valid_entries[best_idx]].negative,
                             best_similarity > self.threshold)
             if not report_all and new_match.negative:
                 # Background is the best match
                 continue
             if report_all or new_match.passed_threshold:
                 results.append(new_match)
-        
+
         logger.debug(f"Best match output: {results}")
         return results
-    
+
 # Instantiate the TextImageMatcher class to make sure that only one instance of the TextImageMatcher class is created.
 text_image_matcher = TextImageMatcher()
 
 def main():
     # get cli args
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=str, default="text_embeddings.json", help="output file name default=text_embeddings.json")
     parser.add_argument("--interactive", action="store_true", help="input text from interactive shell")
@@ -278,7 +280,7 @@ def main():
             if text == "":
                 break
             texts.append(text)
-    else: 
+    else:
         if args.texts_list is not None:
             texts = args.texts_list
         else:
@@ -288,7 +290,7 @@ def main():
                 "landscape",
             ]
 
-    print(f"Adding text embeddings: ")
+    print("Adding text embeddings: ")
     first = True
     for text in texts:
         if first:
@@ -312,7 +314,7 @@ def main():
 
     if args.image_path is None:
         print("No image path provided, skipping image embedding generation")
-        exit()
+        sys.exit()
     # Read an image from file
     image = Image.open(args.image_path)
 

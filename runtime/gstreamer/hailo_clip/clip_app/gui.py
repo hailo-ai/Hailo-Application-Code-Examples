@@ -187,4 +187,3 @@ def update_progress_bars(self):
         else:
             self.probability_progress_bars[i].set_fraction(0.0)
     return True
-

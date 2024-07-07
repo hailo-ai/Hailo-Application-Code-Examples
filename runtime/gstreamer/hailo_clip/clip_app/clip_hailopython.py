@@ -1,13 +1,8 @@
-import json
-from pathlib import Path
-
 import hailo
 import numpy as np
-
 # Importing VideoFrame before importing GST is must
 from gsthailo import VideoFrame
 from gi.repository import Gst
-
 from clip_app.TextImageMatcher import text_image_matcher
 
 def run(video_frame: VideoFrame):
@@ -16,7 +11,7 @@ def run(video_frame: VideoFrame):
         detections = video_frame.roi.get_objects_typed(hailo.HAILO_DETECTION)
     else:
         detections = [video_frame.roi] # Use the ROI as the detection
-    
+
     embeddings_np = None
     used_detection = []
     track_id_focus = text_image_matcher.track_id_focus # Used to focus on a specific track_id
@@ -49,7 +44,7 @@ def run(video_frame: VideoFrame):
             for old in old_classification:
                 detection.remove_object(old)
             if (match.negative or not match.passed_threshold):
-                continue # Don't add classification just remove the old one  
+                continue # Don't add classification just remove the old one
             # Add label as classification metadata
             classification = hailo.HailoClassification('clip', match.text, match.similarity)
             detection.add_object(classification)
