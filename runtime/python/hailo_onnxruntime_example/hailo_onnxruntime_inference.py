@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser(description='Running a Hailo + ONNXRUntime infe
 parser.add_argument('hef', help="HEF file path")
 parser.add_argument('onnx', help="ONNX file of path, when the output of the HEF is the input of the ONNX")
 parser.add_argument('--input-images', help="Images path to perform inference on. Could be either a single image or a folder containing the images. In case the input path is not defined, the input will be a 300 randomly generated tensors.")
+parser.add_argument('--accelerate', action='store_true', help="Use OpenVINO inference acceleration.")
 args = parser.parse_args()
 
 
@@ -66,7 +67,9 @@ def recv(configured_network, write_q, num_images):
             curr_vstream_data_dict = {i.name : v for i, v in zip(inp, values)}
             write_q.put(curr_vstream_data_dict)
             
-def ort_inference(read_q, images, num_images):
+def ort_inference(read_q, images, num_images, nms_onnx_path):
+    providers = ['OpenVINOExecutionProvider'] if args.accelerate else ['CPUExecutionProvider']
+    nms = onnxruntime.InferenceSession(nms_onnx_path, providers=providers)
     i = 0
     while (i < num_images):
         if(read_q.empty() == False):
@@ -95,7 +98,8 @@ height, width, channels = hef.get_input_vstream_infos()[0].shape
 
 images_path = args.input_images
 nms_onnx_path = args.onnx
-nms = onnxruntime.InferenceSession(nms_onnx_path)
+# nms = onnxruntime.InferenceSession(nms_onnx_path, providers=['CPUExecutionProvider'])
+nms = onnxruntime.InferenceSession(nms_onnx_path, providers=['OpenVINOExecutionProvider'])
 
 images = []
 if not images_path:
@@ -136,7 +140,7 @@ with VDevice(device_ids=devices) as target:
 
     send_process = Process(target=send, args=(network_group, resized_images, num_images))
     recv_process = Process(target=recv, args=(network_group, queue, num_images))
-    nms_process = Process(target=ort_inference, args=(queue, images, num_images)) 
+    nms_process = Process(target=ort_inference, args=(queue, images, num_images, nms_onnx_path)) 
     start_time = time.time()
     recv_process.start()
     send_process.start()
