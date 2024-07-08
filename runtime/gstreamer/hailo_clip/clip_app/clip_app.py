@@ -19,11 +19,11 @@ set_log_level(logger, logging.INFO)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Hailo online clip app")
-    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="URI of the input stream.")
+    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="URI of the input stream. Use '--input demo' to use the demo video.")
     parser.add_argument("--clip-runtime", action="store_true", help="When set app will use clip pytorch runtime for text embedding.")
     parser.add_argument("--detector", "-d", type=str, choices=["person", "face", "none"], default="none", help="Which detection pipeline to use.")
     parser.add_argument("--json-path", type=str, default=None, help="Path to json file to load and save embeddings. If not set embeddings.json will be used.")
-    parser.add_argument("--sync", action="store_true", help="Enable display sink sync.")
+    parser.add_argument("--disable-sync", action="store_true",help="Disables display sink sync, will run as fast as possible. Relevant when using file source.")
     parser.add_argument("--dump-dot", action="store_true", help="Dump the pipeline graph to a dot file.")
     parser.add_argument("--detection-threshold", type=float, default=0.5, help="Detection threshold")
     return parser.parse_args()
@@ -37,7 +37,6 @@ def on_destroy(window):
 def main():
     args = parse_arguments()
     win = AppWindow(args)
-
     win.connect("destroy", on_destroy)
     win.show_all()
     Gtk.main()
@@ -73,10 +72,14 @@ class AppWindow(Gtk.Window):
             print("TAPPAS_POST_PROC_DIR environment variable is not set. Please set it by sourcing setup_env.sh")
             sys.exit(1)
 
-        self.input_uri = args.input
         self.dump_dot = args.dump_dot
-        self.sync = 'true' if args.sync else 'false'
+        self.sync_req = 'false' if args.disable_sync else 'true'
         self.json_file = os.path.join(self.current_path, "embeddings.json") if args.json_path is None else args.json_path
+        if args.input == "demo":
+            self.input_uri = os.path.join(self.current_path, "resources", "clip_example.mp4")
+            self.json_file = os.path.join(self.current_path, "example_embeddings.json") if args.json_path is None else args.json_path
+        else:
+            self.input_uri = args.input
         self.use_default_text = args.json_path is None
         self.detector = args.detector
 
@@ -194,7 +197,7 @@ class AppWindow(Gtk.Window):
 
 
     def create_pipeline(self):
-        pipeline_str = get_pipeline(self.current_path, self.detector, self.sync, self.input_uri, self.tappas_postprocess_dir)
+        pipeline_str = get_pipeline(self.current_path, self.detector, self.sync_req, self.input_uri, self.tappas_postprocess_dir)
         print(f'PIPELINE:\ngst-launch-1.0 {pipeline_str}')
         try:
             pipeline = Gst.parse_launch(pipeline_str)

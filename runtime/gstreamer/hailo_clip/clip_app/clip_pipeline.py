@@ -22,7 +22,7 @@ else:
     YOLO5_HEF_NAME = "yolov5s_personface.hef"
     CLIP_HEF_NAME = "clip_resnet_50x4.hef"
 
-def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postprocess_dir):
+def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_postprocess_dir):
     # Initialize directories and paths
     RESOURCES_DIR = os.path.join(current_path, "resources")
     POSTPROCESS_DIR = tappas_postprocess_dir
@@ -64,12 +64,14 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postpr
 
     RATE_PIPELINE = f' {QUEUE()} name=rate_queue ! video/x-raw, framerate=30/1 '
     # Check if the input seems like a v4l2 device path (e.g., /dev/video0)
+    sync = False # sync_req is relevant only when working with video files
     if re.match(r'/dev/video\d+', input_uri):
         SOURCE_PIPELINE = f'v4l2src device={input_uri} ! image/jpeg, framerate=30/1 ! decodebin ! {QUEUE()} ! \
         videoconvert ! {QUEUE()} ! videoscale ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB ! {QUEUE()} ! videoflip video-direction=horiz ! '
     elif re.match(r'0x\w+', input_uri): # Window ID - get from xwininfo
         SOURCE_PIPELINE = f"ximagesrc xid={input_uri} ! {QUEUE()} ! videoscale ! "
     else:
+        sync = sync_req
         # convert the file to a uri
         input_uri = os.path.abspath(input_uri)
         input_uri = f'file://{input_uri}'
@@ -105,11 +107,6 @@ def get_pipeline(current_path, detector_pipeline, sync, input_uri, tappas_postpr
     TRACKER = f'hailotracker name=hailo_tracker class-id={class_id} kalman-dist-thr=0.8 iou-thr=0.9 init-iou-thr=0.7 \
                 keep-new-frames=2 keep-tracked-frames=15 keep-lost-frames=2 keep-past-metadata=true qos=false ! \
                 {QUEUE()} '
-
-    # DETECTION_PIPELINE_MUXER = f'{QUEUE(buffer_size=12, name="pre_detection_tee")} max-size-buffers=12 ! tee name=detection_t hailomuxer name=hmux \
-    #     detection_t. ! {QUEUE(buffer_size=20, name="detection_bypass_q")} ! hmux.sink_0 \
-    #     detection_t. ! {DETECTION_PIPELINE} ! hmux.sink_1 \
-    #     hmux. ! {QUEUE()} '
 
     WHOLE_BUFFER_CROP_SO = os.path.join(POSTPROCESS_DIR, "cropping_algorithms/libwhole_buffer.so")
 
