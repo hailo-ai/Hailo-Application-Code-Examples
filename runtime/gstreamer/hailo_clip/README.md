@@ -120,3 +120,6 @@ options:
 - You can also use `threshold` to fine-tune detection sensitivity. However, using `negative` prompts is better for detecting specific classes.
 - Negative prompts should be used to "peel off" similar classifications to your target. For example, "a man with a red shirt" will have a high score for just a man or a shirt of a different color. Add negative prompts like "a man with a blue shirt" to ensure you do not get lots of false classifications.
 - Play around with prompts to see what works best for your application.
+
+## Integrating Your Code
+You can integrate your code in the `user_callback.py` file. This file includes a  user defined `app_callback` function it is called after the CLIP inference and before the display. You can use it to add your logic to the app. The `app_callback_class` will be passed to the callback function and can be used to access the app's data. 

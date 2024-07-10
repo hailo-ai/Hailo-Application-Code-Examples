@@ -2,6 +2,7 @@ import os
 import argparse
 import logging
 import sys
+import signal
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -11,6 +12,7 @@ from clip_app.clip_pipeline import get_pipeline
 # import text_image_matcher instance to make sure that only one instance of the Text_image_matcher class is created.
 from clip_app.text_image_matcher import text_image_matcher
 import clip_app.gui as gui
+from clip_app.user_callback import app_callback, app_callback_class
 
 # add logging
 logger = setup_logger()
@@ -35,10 +37,12 @@ def on_destroy(window):
 
 
 def main():
+    user_data = app_callback_class()
     args = parse_arguments()
-    win = AppWindow(args)
+    win = AppWindow(args, user_data)
     win.connect("destroy", on_destroy)
     win.show_all()
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     Gtk.main()
 
 class AppWindow(Gtk.Window):
@@ -57,11 +61,13 @@ class AppWindow(Gtk.Window):
     update_progress_bars = gui.update_progress_bars
     on_track_id_update = gui.on_track_id_update
 
-    def __init__(self, args):
+    # Add the app_callback function to the AppWindow class
+    app_callback = app_callback
+
+    def __init__(self, args, user_data):
         Gtk.Window.__init__(self, title="Clip App")
-        self.set_border_width(10)
-        self.set_default_size(800, 600)
-        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_border_width(1)
+        self.set_default_size(1, 1)
         self.fullscreen_mode = False
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
@@ -82,8 +88,8 @@ class AppWindow(Gtk.Window):
             self.json_file = os.path.join(self.current_path, "example_embeddings.json") if args.json_path is None else args.json_path
         else:
             self.input_uri = args.input
-        self.use_default_text = args.json_path is None
         self.detector = args.detector
+        self.user_data = user_data
 
         # get current path
         Gst.init(None)
@@ -116,11 +122,15 @@ class AppWindow(Gtk.Window):
 
         if self.text_image_matcher.model_runtime is not None:
             print(f"Using {self.text_image_matcher.model_runtime} for text embedding")
-            if not self.use_default_text:
-                self.on_load_button_clicked(None)
-            else:
-                print("Adding some default text entries. To disable this use --json-path to load from JSON file.")
-                self.add_default_texts()
+            self.on_load_button_clicked(None)
+
+        # Connect pad probe to the identity element
+        identity = self.pipeline.get_by_name("identity_callback")
+        if identity is None:
+            print("Warning: identity_callback element not found, add <identity name=identity_callback> in your pipeline where you want the callback to be called.")
+        else:
+            identity_pad = identity.get_static_pad("src")
+            identity_pad.add_probe(Gst.PadProbeType.BUFFER, self.app_callback, self.user_data)
 
         # start the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
@@ -146,31 +156,6 @@ class AppWindow(Gtk.Window):
             print("Unknown state change return value.")
 
 
-    def add_default_texts(self):
-        if self.detector == "person":
-            self.text_image_matcher.add_text("person", 0, True)
-            self.text_image_matcher.add_text("person with a water bottle", 1)
-            self.text_image_matcher.add_text("person with a hat", 2)
-            self.text_image_matcher.add_text("man with a bag", 3)
-            self.text_image_matcher.add_text("woman with glasses", 4)
-        elif self.detector == "face":
-            self.text_image_matcher.add_text("face", 0, True)
-            self.text_image_matcher.add_text("smiling face", 1)
-            self.text_image_matcher.add_text("person raising eyebrows", 2)
-            self.text_image_matcher.add_text("person winking their eye", 3)
-        elif self.detector == "fast_sam":
-            self.text_image_matcher.add_text("object", 0, True)
-            self.text_image_matcher.add_text("cell phone", 1)
-            self.text_image_matcher.add_text("person", 2)
-            self.text_image_matcher.add_text("car", 3)
-            self.text_image_matcher.add_text("table", 4)
-            self.text_image_matcher.add_text("computer", 5)
-        elif self.detector == "none":
-            self.text_image_matcher.add_text("empty room", 0, True)
-            self.text_image_matcher.add_text("person", 1)
-            self.text_image_matcher.add_text("cellphone", 2)
-
-
     def dump_dot_file(self):
         print("Dumping dot file...")
         Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL, "pipeline")
@@ -180,7 +165,7 @@ class AppWindow(Gtk.Window):
     def on_message(self, bus, message):
         t = message.type
         if t == Gst.MessageType.EOS:
-            self.shutdown()
+            self.on_eos()
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print("Error: %s" % err, debug)
@@ -193,10 +178,20 @@ class AppWindow(Gtk.Window):
         return True
 
 
-    def shutdown(self):
-        self.pipeline.set_state(Gst.State.NULL)
-        Gtk.main_quit()
+    def on_eos(self):
+        print("EOS received, shutting down the pipeline.")
+        self.pipeline.set_state(Gst.State.PAUSED)
+        GLib.usleep(100000)  # 0.1 second delay
 
+        self.pipeline.set_state(Gst.State.READY)
+        GLib.usleep(100000)  # 0.1 second delay
+
+        self.pipeline.set_state(Gst.State.NULL)
+        GLib.idle_add(Gtk.main_quit)
+
+    def shutdown(self):
+        print("Sending EOS event to the pipeline...")
+        self.pipeline.send_event(Gst.Event.new_eos())
 
     def create_pipeline(self):
         pipeline_str = get_pipeline(self.current_path, self.detector, self.sync_req, self.input_uri, self.tappas_postprocess_dir)

@@ -146,6 +146,8 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
 
     CLIP_POSTPROCESS_PIPELINE = f' {CLIP_PYTHON_MATCHER} ! \
         {QUEUE()} ! \
+        identity name=identity_callback ! \
+        {QUEUE()} ! \
         hailooverlay local-gallery=false show-confidence=true font-thickness=2 qos=false '
 
     # PIPELINE
