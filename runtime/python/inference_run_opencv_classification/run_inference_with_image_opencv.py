@@ -33,9 +33,8 @@ def send(configured_network, images_list, num_images):
     configured_network.wait_for_activation(100)
     log.info('\nPerforming inference on input images...\n')
     with InputVStreams(configured_network, vstreams_params) as vstreams:
-        vstream_to_buffer = {vstream: np.ndarray([1] + list(vstream.shape), dtype=vstream.dtype) for vstream in vstreams}
         for i in range(num_images):
-            for vstream, _ in vstream_to_buffer.items():
+            for vstream in vstreams:
                 data = np.expand_dims(images_list[i], axis=0).astype(np.float32)
                 vstream.send(data)
 
