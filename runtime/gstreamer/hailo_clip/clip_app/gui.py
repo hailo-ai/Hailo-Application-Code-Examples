@@ -2,6 +2,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 
+from clip_app.logger_setup import setup_logger, set_log_level
+logger = setup_logger()
+
 def build_ui(self, args):
     ui_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     self.add(ui_vbox)
@@ -124,14 +127,14 @@ def update_text_prefix(self, new_text_prefix):
 
 
 def quit_button_clicked(self, widget):
-    print("Quit button clicked")
+    logger.info("Quit button clicked")
     self.shutdown()
 
 
 def on_text_box_updated(self, widget, event, idx):
     """Callback function for text box updates."""
     text = widget.get_text()
-    print(f"Text box {idx} updated: {text}")
+    logger.info(f"Text box {idx} updated: {text}")
     self.text_image_matcher.add_text(widget.get_text(), idx)
 
 def on_track_id_update(self, widget):
@@ -139,34 +142,34 @@ def on_track_id_update(self, widget):
     track_id_focus = widget.get_text()
     # check if track id is a number
     if not track_id_focus.isdigit():
-        print(f"Track ID must be a number, got: {track_id_focus}")
+        logger.warning(f"Track ID must be a number, got: {track_id_focus}")
         widget.set_text("")
         self.text_image_matcher.track_id_focus = None
         return
-    print(f"Track ID updated: {track_id_focus}")
+    logger.info(f"Track ID updated: {track_id_focus}")
     self.text_image_matcher.track_id_focus = int(track_id_focus)
 
 def on_slider_value_changed(self, widget):
     value = float(widget.get_value())
-    print(f"Setting detection threshold to: {value}")
+    logger.info(f"Setting detection threshold to: {value}")
     self.text_image_matcher.set_threshold(value)
 
 def on_negative_check_button_toggled(self, widget, idx):
     negative = widget.get_active()
-    print(f"Text box {idx} is set to negative: {negative}")
+    logger.info(f"Text box {idx} is set to negative: {negative}")
     self.text_image_matcher.entries[idx].negative = negative
 
 
 def on_ensemble_check_button_toggled(self, widget, idx):
     ensemble = widget.get_active()
-    print(f"Text box {idx} is set to ensemble: {ensemble}")
+    logger.info(f"Text box {idx} is set to ensemble: {ensemble}")
     # Encode text with new ensemble option
     self.text_image_matcher.add_text(self.text_boxes[idx].get_text(), idx, ensemble=ensemble)
 
 
 def on_load_button_clicked(self, widget):
     """Callback function for the load button."""
-    print(f"Loading embeddings from {self.json_file}\n")
+    logger.info(f"Loading embeddings from {self.json_file}\n")
     self.text_image_matcher.load_embeddings(self.json_file)
     self.update_text_boxes()
     self.slider.set_value(self.text_image_matcher.threshold)
@@ -175,7 +178,7 @@ def on_load_button_clicked(self, widget):
 
 def on_save_button_clicked(self, widget):
     """Callback function for the save button."""
-    print(f"Saving embeddings to {self.json_file}\n")
+    logger.info(f"Saving embeddings to {self.json_file}\n")
     self.text_image_matcher.save_embeddings(self.json_file)
 
 

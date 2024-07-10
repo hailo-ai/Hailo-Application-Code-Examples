@@ -9,9 +9,8 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, Gst, GLib
 from clip_app.logger_setup import setup_logger, set_log_level
 from clip_app.clip_pipeline import get_pipeline
-# import text_image_matcher instance to make sure that only one instance of the Text_image_matcher class is created.
 from clip_app.text_image_matcher import text_image_matcher
-import clip_app.gui as gui
+from clip_app import gui
 from clip_app.user_callback import app_callback, app_callback_class
 
 # add logging
@@ -32,7 +31,7 @@ def parse_arguments():
 
 
 def on_destroy(window):
-    print("Destroying window...")
+    logger.info("Destroying window...")
     window.quit_button_clicked(None)
 
 
@@ -77,7 +76,7 @@ class AppWindow(Gtk.Window):
 
         self.tappas_postprocess_dir = os.environ.get('TAPPAS_POST_PROC_DIR', '')
         if self.tappas_postprocess_dir == '':
-            print("TAPPAS_POST_PROC_DIR environment variable is not set. Please set it by sourcing setup_env.sh")
+            logger.error("TAPPAS_POST_PROC_DIR environment variable is not set. Please set it by sourcing setup_env.sh")
             sys.exit(1)
 
         self.dump_dot = args.dump_dot
@@ -115,19 +114,19 @@ class AppWindow(Gtk.Window):
         if args.clip_runtime:
             self.text_image_matcher.init_clip()
         else:
-            print(f"No text embedding runtime selected, adding new text is disabled. Loading {self.json_file}")
+            logger.info(f"No text embedding runtime selected, adding new text is disabled. Loading {self.json_file}")
             for text_box in self.text_boxes:
                 text_box.set_editable(False)
             self.on_load_button_clicked(None)
 
         if self.text_image_matcher.model_runtime is not None:
-            print(f"Using {self.text_image_matcher.model_runtime} for text embedding")
+            logger.info(f"Using {self.text_image_matcher.model_runtime} for text embedding")
             self.on_load_button_clicked(None)
 
         # Connect pad probe to the identity element
         identity = self.pipeline.get_by_name("identity_callback")
         if identity is None:
-            print("Warning: identity_callback element not found, add <identity name=identity_callback> in your pipeline where you want the callback to be called.")
+            logger.warning("identity_callback element not found, add <identity name=identity_callback> in your pipeline where you want the callback to be called.")
         else:
             identity_pad = identity.get_static_pad("src")
             identity_pad.add_probe(Gst.PadProbeType.BUFFER, self.app_callback, self.user_data)
@@ -147,17 +146,17 @@ class AppWindow(Gtk.Window):
         state_change_return, _state, _pending = self.pipeline.get_state(timeout_ns)
 
         if state_change_return == Gst.StateChangeReturn.SUCCESS:
-            print("Pipeline state changed to PLAYING successfully.")
+            logger.info("Pipeline state changed to PLAYING successfully.")
         elif state_change_return == Gst.StateChangeReturn.ASYNC:
-            print("State change is ongoing asynchronously.")
+            logger.info("State change is ongoing asynchronously.")
         elif state_change_return == Gst.StateChangeReturn.FAILURE:
-            print("State change failed.")
+            logger.info("State change failed.")
         else:
-            print("Unknown state change return value.")
+            logger.warning("Unknown state change return value.")
 
 
     def dump_dot_file(self):
-        print("Dumping dot file...")
+        logger.info("Dumping dot file...")
         Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL, "pipeline")
         return False
 
@@ -168,18 +167,18 @@ class AppWindow(Gtk.Window):
             self.on_eos()
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            print("Error: %s" % err, debug)
+            logger.error("Error: %s" % err, debug)
             self.shutdown()
         # print QOS messages
         elif t == Gst.MessageType.QOS:
             # print which element is reporting QOS
             src = message.src.get_name()
-            print(f"QOS from {src}")
+            logger.info(f"QOS from {src}")
         return True
 
 
     def on_eos(self):
-        print("EOS received, shutting down the pipeline.")
+        logger.info("EOS received, shutting down the pipeline.")
         self.pipeline.set_state(Gst.State.PAUSED)
         GLib.usleep(100000)  # 0.1 second delay
 
@@ -190,12 +189,12 @@ class AppWindow(Gtk.Window):
         GLib.idle_add(Gtk.main_quit)
 
     def shutdown(self):
-        print("Sending EOS event to the pipeline...")
+        logger.info("Sending EOS event to the pipeline...")
         self.pipeline.send_event(Gst.Event.new_eos())
 
     def create_pipeline(self):
         pipeline_str = get_pipeline(self.current_path, self.detector, self.sync_req, self.input_uri, self.tappas_postprocess_dir)
-        print(f'PIPELINE:\ngst-launch-1.0 {pipeline_str}')
+        logger.info(f'PIPELINE:\ngst-launch-1.0 {pipeline_str}')
         try:
             pipeline = Gst.parse_launch(pipeline_str)
         except GLib.Error as e:
