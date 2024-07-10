@@ -3,7 +3,7 @@ import numpy as np
 # Importing VideoFrame before importing GST is must
 from gsthailo import VideoFrame
 from gi.repository import Gst
-from clip_app.TextImageMatcher import text_image_matcher
+from clip_app.text_image_matcher import text_image_matcher
 
 def run(video_frame: VideoFrame):
     top_level_matrix = video_frame.roi.get_objects_typed(hailo.HAILO_MATRIX)

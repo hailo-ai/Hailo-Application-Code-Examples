@@ -6,13 +6,16 @@ import sys
 import argparse
 import numpy as np
 from PIL import Image
+
 from clip_app.logger_setup import setup_logger, set_log_level
 
-# This class is used to store the text embeddings and match them to image embeddings
-# This class should be used as a singleton!
-# An instance of this class is created in the end of this file.
-# import text_image_matcher from this file to make sure that only one instance of the TextImageMatcher class is created.
-# Example: from TextImageMatcher import text_image_matcher
+"""
+This class is used to store the text embeddings and match them to image embeddings
+This class should be used as a singleton!
+An instance of this class is created in the end of this file.
+import text_image_matcher from this file to make sure that only one instance of the TextImageMatcher class is created.
+Example: from TextImageMatcher import text_image_matcher
+"""
 
 # Set up the logger
 logger = setup_logger()
@@ -41,14 +44,15 @@ class TextEmbeddingEntry:
             "ensemble": self.ensemble
         }
 
+
 class Match:
     def __init__(self, row_idx, text, similarity, entry_index, negative, passed_threshold):
-        self.row_idx = row_idx # row index in the image embedding
-        self.text = text # best matching text
-        self.similarity = similarity # similarity between the image and best text embeddings
-        self.entry_index = entry_index # index of the entry in TextImageMatcher.entries
-        self.negative = negative # True if the best match is a negative entry
-        self.passed_threshold = passed_threshold # True if the similarity is above the threshold
+        self.row_idx = row_idx  # row index in the image embedding
+        self.text = text  # best matching text
+        self.similarity = similarity  # similarity between the image and best text embeddings
+        self.entry_index = entry_index  # index of the entry in TextImageMatcher.entries
+        self.negative = negative  # True if the best match is a negative entry
+        self.passed_threshold = passed_threshold  # True if the similarity is above the threshold
 
     def to_dict(self):
         return {
@@ -60,19 +64,26 @@ class Match:
             "passed_threshold": self.passed_threshold
         }
 
+
 class TextImageMatcher:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TextImageMatcher, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, model_name="RN50x4", threshold=0.8, max_entries=6):
-        self.model = None # model is initialized in init_clip
-        self.preprocess = None # preprocess is initialized in init_clip
+        self.model = None  # model is initialized in init_clip
+        self.preprocess = None  # preprocess is initialized in init_clip
         self.model_runtime = None
         self.model_name = model_name
         self.threshold = threshold
         self.run_softmax = True
-        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = "cpu"
 
         self.entries = [TextEmbeddingEntry() for _ in range(max_entries)]
-        self.user_data = None # user data can be used to store additional information (used by multistream to save current stream id)
+        self.user_data = None  # user data can be used to store additional information
         self.text_prefix = "A photo of a "
         self.ensemble_template = [
             'a photo of a {}.',
@@ -81,20 +92,14 @@ class TextImageMatcher:
             'a photo of a big {}.',
             'a photo of a small {}.',
         ]
-        self.track_id_focus = None # This is used to focus on specific track id when showing confidence
-
-    # Define class as a singleton
-    _instance = None
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(TextImageMatcher, cls).__new__(cls)
-        return cls._instance
+        self.track_id_focus = None  # Used to focus on specific track id when showing confidence
 
     def init_clip(self):
+        """Initialize the CLIP model."""
         global clip, torch
         import clip
         import torch
-        print(f"Loading model {self.model_name} on device {self.device} this might take a while...")
+        logger.info(f"Loading model {self.model_name} on device {self.device}, this might take a while...")
         self.model, self.preprocess = clip.load(self.model_name, device=self.device)
         self.model_runtime = "clip"
 
@@ -113,22 +118,20 @@ class TextImageMatcher:
                 if entry.text == "":
                     self.entries[i] = new_entry
                     return
-            print("Error: Entry list is full.")
+            logger.error("Entry list is full.")
         elif 0 <= index < len(self.entries):
             self.entries[index] = new_entry
         else:
-            print(f"Error: Index out of bounds: {index}")
+            logger.error(f"Index out of bounds: {index}")
 
     def add_text(self, text, index=None, negative=False, ensemble=False):
-        global clip, torch
         if self.model_runtime is None:
-            print("Error: No model is loaded. Please call init_clip before calling add_text.")
+            logger.error("No model is loaded. Please call init_clip before calling add_text.")
             return
-        if ensemble:
-            text_entries = [template.format(text) for template in self.ensemble_template]
-        else:
-            text_entries = [self.text_prefix + text]
+        text_entries = [template.format(text) for template in self.ensemble_template] if ensemble else [self.text_prefix + text]
         logger.debug("Adding text entries: %s", text_entries)
+        
+        global clip, torch
         text_tokens = clip.tokenize(text_entries).to(self.device)
         with torch.no_grad():
             text_features = self.model.encode_text(text_tokens)
@@ -138,57 +141,46 @@ class TextImageMatcher:
         self.update_text_entries(new_entry, index)
 
     def get_embeddings(self):
-        # return a list of indexes to self.entries if entry.text != ""
-        valid_entries = [i for i, entry in enumerate(self.entries) if entry.text != ""]
-
-        return valid_entries
+        """Return a list of indexes to self.entries if entry.text != ""."""
+        return [i for i, entry in enumerate(self.entries) if entry.text != ""]
 
     def get_texts(self):
-        # returns all entries text (not only valid ones)
+        """Return all entries' text (not only valid ones)."""
         return [entry.text for entry in self.entries]
 
     def save_embeddings(self, filename):
-        # Prepare a dictionary that includes all the required data
         data_to_save = {
             "threshold": self.threshold,
             "text_prefix": self.text_prefix,
             "ensemble_template": self.ensemble_template,
             "entries": [entry.to_dict() for entry in self.entries]
         }
-
-        # Save the dictionary as JSON
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f)
 
     def load_embeddings(self, filename):
-        # if file does not exist create it
         if not os.path.isfile(filename):
-            # File does not exist, create it
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write('')  # Create an empty file or initialize with some data
-            print(f"File {filename} does not exist, creating it.")
+            logger.info(f"File {filename} does not exist, creating it.")
         else:
             try:
-                # File exists, load the data
                 with open(filename, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-
                     self.threshold = data['threshold']
                     self.text_prefix = data['text_prefix']
                     self.ensemble_template = data['ensemble_template']
-
-                    # Assuming TextEmbeddingEntry is a class that can be initialized like this
                     self.entries = [TextEmbeddingEntry(text=entry['text'],
-                                                    embedding=np.array(entry['embedding']),
-                                                    negative=entry['negative'],
-                                                    ensemble=entry['ensemble'])
+                                                       embedding=np.array(entry['embedding']),
+                                                       negative=entry['negative'],
+                                                       ensemble=entry['ensemble'])
                                     for entry in data['entries']]
             except Exception as e:
-                print(f"Error while loading file {filename}: {e}. Maybe you forgot to save your embeddings?")
+                logger.error(f"Error while loading file {filename}: {e}. Maybe you forgot to save your embeddings?")
 
     def get_image_embedding(self, image):
         if self.model_runtime is None:
-            print("Error: No model is loaded. Please call init_clip before calling get_image_embedding.")
+            logger.error("No model is loaded. Please call init_clip before calling get_image_embedding.")
             return None
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -197,17 +189,18 @@ class TextImageMatcher:
         return image_embedding.cpu().numpy().flatten()
 
     def match(self, image_embedding_np, report_all=False, update_tracked_probability=None):
-        # This function is used to match an image embedding to a text embedding
-        # Returns a list of tuples: (row_idx, text, similarity, entry_index)
-        # row_idx is the index of the row in the image embedding
-        # text is the best matching text
-        # similarity is the similarity between the image and text embeddings
-        # entry_index is the index of the entry in self.entries
-        # If the best match is a negative entry, or if the similarity is below the threshold, the tuple is not returned
-        # If no match is found, an empty list is returned
-        # If report_all is True, the function returns a list of all matches,
-        # including negative entries and entries below the threshold.
-
+        """
+        This function is used to match an image embedding to a text embedding
+        Returns a list of tuples: (row_idx, text, similarity, entry_index)
+        row_idx is the index of the row in the image embedding
+        text is the best matching text
+        similarity is the similarity between the image and text embeddings
+        entry_index is the index of the entry in self.entries
+        If the best match is a negative entry, or if the similarity is below the threshold, the tuple is not returned
+        If no match is found, an empty list is returned
+        If report_all is True, the function returns a list of all matches,
+        including negative entries and entries below the threshold.
+        """
         if len(image_embedding_np.shape) == 1:
             image_embedding_np = image_embedding_np.reshape(1, -1)
         results = []
@@ -218,21 +211,16 @@ class TextImageMatcher:
         text_embeddings_np = np.array([self.entries[i].embedding for i in valid_entries])
         for row_idx, image_embedding_1d in enumerate(image_embedding_np):
             dot_products = np.dot(text_embeddings_np, image_embedding_1d)
-            # add dot_products to all_dot_products as new line
-            if all_dot_products is None:
-                all_dot_products = dot_products[np.newaxis, :]
-            else:
-                all_dot_products = np.vstack((all_dot_products, dot_products))
+            all_dot_products = dot_products[np.newaxis, :] if all_dot_products is None else np.vstack((all_dot_products, dot_products))
 
             if self.run_softmax:
-                # Compute softmax for each row (i.e. each image embedding)
                 similarities = np.exp(100 * dot_products)
                 similarities /= np.sum(similarities)
             else:
-                # stats min: 0.27013595659637846, max: 0.4043235050452188, avg: 0.33676838831786493
+                # These magic numbers were collected by running actual inferences and measureing statistics.
+		# stats min: 0.27013595659637846, max: 0.4043235050452188, avg: 0.33676838831786493
                 # map to [0,1]
                 similarities = (dot_products - 0.27) / (0.41 - 0.27)
-                # clip to [0,1]
                 similarities = np.clip(similarities, 0, 1)
 
             best_idx = np.argmax(similarities)
@@ -243,12 +231,11 @@ class TextImageMatcher:
                     logger.debug(f"Updating tracked probability for entry {valid_entries[i]} to {similarities[i]}")
                     self.entries[valid_entries[i]].tracked_probability = similarities[i]
             new_match = Match(row_idx,
-                            self.entries[valid_entries[best_idx]].text,
-                            best_similarity, valid_entries[best_idx],
-                            self.entries[valid_entries[best_idx]].negative,
-                            best_similarity > self.threshold)
+                              self.entries[valid_entries[best_idx]].text,
+                              best_similarity, valid_entries[best_idx],
+                              self.entries[valid_entries[best_idx]].negative,
+                              best_similarity > self.threshold)
             if not report_all and new_match.negative:
-                # Background is the best match
                 continue
             if report_all or new_match.passed_threshold:
                 results.append(new_match)
@@ -256,21 +243,18 @@ class TextImageMatcher:
         logger.debug(f"Best match output: {results}")
         return results
 
-# Instantiate the TextImageMatcher class to make sure that only one instance of the TextImageMatcher class is created.
+
 text_image_matcher = TextImageMatcher()
 
+
 def main():
-    # get cli args
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=str, default="text_embeddings.json", help="output file name default=text_embeddings.json")
     parser.add_argument("--interactive", action="store_true", help="input text from interactive shell")
     parser.add_argument("--image-path", type=str, default=None, help="Optional, path to image file to match. Note image embeddings are not running on Hailo here.")
-    # add text-input-list arg which take a list of texts to add
     parser.add_argument('--texts-list', nargs='+', help='A list of texts to add to the matcher, the first one will be the searched text, the others will be considered negative prompts.\n Example: --texts-list "cat" "dog" "yellow car"')
-    # get args
     args = parser.parse_args()
 
-    # Initialize the matcher and add text embeddings
     matcher = TextImageMatcher()
     matcher.init_clip()
     texts = []
@@ -281,56 +265,44 @@ def main():
                 break
             texts.append(text)
     else:
-        if args.texts_list is not None:
-            texts = args.texts_list
-        else:
-            texts = [
-                "birthday cake",
-                "person",
-                "landscape",
-            ]
+        texts = args.texts_list if args.texts_list is not None else ["birthday cake", "person", "landscape"]
 
-    print("Adding text embeddings: ")
+    logger.info("Adding text embeddings: ")
     first = True
     for text in texts:
-        if first:
-            print(f'{matcher.text_prefix}{text} (positive)')
-            first = False
-        else:
-            print(f'{matcher.text_prefix}{text} (negative)')
-    # Measure the time taken for the add_text function
+        status = "positive" if first else "negative"
+        logger.info(f'{matcher.text_prefix}{text} ({status})')
+        first = False
+
     start_time = time.time()
     first = True
     for text in texts:
-        if first:
-            matcher.add_text(text)
-            first = False
-        else:
-            matcher.add_text(text, negative=True)
+        matcher.add_text(text, negative=not first)
+        first = False
     end_time = time.time()
-    print(f"Time taken to add {len(texts)} text embeddings using add_text(): {end_time - start_time:.4f} seconds")
+    logger.info(f"Time taken to add {len(texts)} text embeddings using add_text(): {end_time - start_time:.4f} seconds")
 
     matcher.save_embeddings(args.output)
 
     if args.image_path is None:
-        print("No image path provided, skipping image embedding generation")
+        logger.info("No image path provided, skipping image embedding generation")
         sys.exit()
-    # Read an image from file
-    image = Image.open(args.image_path)
 
-    # Generate image embedding using the new method
+    image = Image.open(args.image_path)
     image_embedding = matcher.get_image_embedding(image)
 
-    # Measure the time taken for the match function
     start_time = time.time()
     result = matcher.match(image_embedding, report_all=True)
     end_time = time.time()
-    # Output the results
-    print(f"Best match: {result[0].text}")
+
+    if result:
+        logger.info(f"Best match: {result[0].text}")
+    
     valid_entries = matcher.get_embeddings()
     for i in valid_entries:
-        print(f"Entry {i}: {matcher.entries[i].text} similarity: {matcher.entries[i].probability:.4f}")
-    print(f"Time taken to run match(): {end_time - start_time:.4f} seconds")
+        logger.info(f"Entry {i}: {matcher.entries[i].text} similarity: {matcher.entries[i].probability:.4f}")
+    logger.info(f"Time taken to run match(): {end_time - start_time:.4f} seconds")
+
 
 if __name__ == "__main__":
     main()

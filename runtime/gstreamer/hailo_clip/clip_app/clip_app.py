@@ -8,8 +8,8 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, Gst, GLib
 from clip_app.logger_setup import setup_logger, set_log_level
 from clip_app.clip_pipeline import get_pipeline
-# import text_image_matcher instance to make sure that only one instance of the TextImageMatcher class is created.
-from clip_app.TextImageMatcher import text_image_matcher
+# import text_image_matcher instance to make sure that only one instance of the Text_image_matcher class is created.
+from clip_app.text_image_matcher import text_image_matcher
 import clip_app.gui as gui
 
 # add logging
