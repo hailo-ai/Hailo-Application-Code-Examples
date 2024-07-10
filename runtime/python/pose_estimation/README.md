@@ -19,7 +19,7 @@ For example:
 
 ### Dependencies:
 zenlog  
-Pillow
+pillow  
 opencv-python
 
 (numpy as part of hailo_platform dependencies)
