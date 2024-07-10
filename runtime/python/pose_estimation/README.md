@@ -12,19 +12,20 @@ The example works with .jpg, .jpeg, .png and .bmp image files.
 
 ## Prerequesities:
 
-### Dependencies:
-numpy  
-zenlog  
-Pillow
-opencv-python
-
-To install the requirements:
-`pip install -r requirements.txt`
-
 ### HailoRT python package:
 hailo_platform >= 4.17.0 (installed from the HailoRT .whl)  
 For example:
 `pip install hailort-4.17.0-cp310-cp310-linux_x86_64.whl`
+
+### Dependencies:
+zenlog  
+Pillow
+opencv-python
+
+(numpy as part of hailo_platform dependencies)
+To install the requirements:
+`pip install -r requirements.txt`
+
 
 
 ## Running the example:  
