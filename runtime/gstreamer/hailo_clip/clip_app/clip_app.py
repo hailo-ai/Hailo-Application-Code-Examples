@@ -60,7 +60,9 @@ class AppWindow(Gtk.Window):
     def __init__(self, args):
         Gtk.Window.__init__(self, title="Clip App")
         self.set_border_width(10)
-        self.set_default_size(400, 200)
+        self.set_default_size(800, 600)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.fullscreen_mode = False
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         # move self.current_path one directory up to get the path to the workspace
