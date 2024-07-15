@@ -65,7 +65,7 @@ class AppWindow(Gtk.Window):
 
     def __init__(self, args, user_data):
         Gtk.Window.__init__(self, title="Clip App")
-        self.set_border_width(1)
+        self.set_border_width(10)
         self.set_default_size(1, 1)
         self.fullscreen_mode = False
 

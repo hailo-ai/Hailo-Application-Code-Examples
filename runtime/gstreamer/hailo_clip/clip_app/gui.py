@@ -70,15 +70,17 @@ def add_text_boxes(self, N=6):
         # Create and add a negative check button with a callback
         negative_check_button = Gtk.CheckButton()
         negative_check_button.connect("toggled", self.on_negative_check_button_toggled, i)
+        negative_check_button.set_halign(Gtk.Align.CENTER)
+        negative_check_button.set_valign(Gtk.Align.CENTER)
         vbox1.pack_start(negative_check_button, True, True, 0)
         self.negative_check_buttons.append(negative_check_button)
-
         # Create and add an ensemble check button
         ensemble_check_button = Gtk.CheckButton()
         ensemble_check_button.connect("toggled", self.on_ensemble_check_button_toggled, i)
+        ensemble_check_button.set_halign(Gtk.Align.CENTER)
+        ensemble_check_button.set_valign(Gtk.Align.CENTER)
         vbox2.pack_start(ensemble_check_button, True, True, 0)
         self.ensemble_check_buttons.append(ensemble_check_button)
-
         # Create and add a label
         label = Gtk.Label(label=f"{self.text_image_matcher.text_prefix}")
         vbox3.pack_start(label, True, True, 0)
