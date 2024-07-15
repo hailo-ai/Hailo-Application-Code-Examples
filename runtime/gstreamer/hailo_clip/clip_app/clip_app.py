@@ -19,8 +19,8 @@ set_log_level(logger, logging.INFO)
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Hailo online clip app")
-    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="URI of the input stream. Use '--input demo' to use the demo video.")
+    parser = argparse.ArgumentParser(description="Hailo online CLIP app")
+    parser.add_argument("--input", "-i", type=str, default="/dev/video0", help="URI of the input stream. Default is /dev/video0. Use '--input demo' to use the demo video.")
     parser.add_argument("--clip-runtime", action="store_true", help="When set app will use clip pytorch runtime for text embedding.")
     parser.add_argument("--detector", "-d", type=str, choices=["person", "face", "none"], default="none", help="Which detection pipeline to use.")
     parser.add_argument("--json-path", type=str, default=None, help="Path to json file to load and save embeddings. If not set embeddings.json will be used.")
