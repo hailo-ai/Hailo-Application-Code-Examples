@@ -1,0 +1,3 @@
+zenlog
+pillow
+opencv-python

@@ -1,4 +1,4 @@
-**Last HailoRT version checked - 4.16.0**
+**Last HailoRT version checked - 4.17.0**
 
 **Disclaimer:** <br />
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.<br />
@@ -10,22 +10,34 @@ This is a Yolo8-pose Hailo inference example.
 The example takes one image or a folder containing images, performs inference using the input HEF file and draws the detection boxes, class type, confidence, keypoints and joints connection on the resized image.  
 The example works with .jpg, .jpeg, .png and .bmp image files.  
 
-The example was tested with the following Hailo Models Zoo networks:  
-yolov8s-pose
-
 ## Prerequesities:
-numpy  
-zenlog  
-Pillow  
-hailo_platform >= 4.14.0 (installed from the HailoRT .whl)  
-Hailo Model Zoo prerequesities (tested on versions >=2.8.0)
 
-Install the hailo model-zoo, and hailort whl, and then the requirements:
-`pip install -r requiremets.txt`
+### HailoRT python package:
+hailo_platform >= 4.17.0 (installed from the HailoRT .whl)  
+For example:
+`pip install hailort-4.17.0-cp310-cp310-linux_x86_64.whl`
+
+### Dependencies:
+zenlog  
+pillow  
+opencv-python
+
+(numpy as part of hailo_platform dependencies)
+To install the requirements:
+`pip install -r requirements.txt`
+
 
 
 ## Running the example:  
-```./yoloseg_inference.py HEF.hef PATH_TO_IMAGES_FOLDER_OR_IMAGE YOLOSEG_ARCH [--class-num NUM_OF_CLASSES]```
+The template for running the example is:
+```./yolov8_pose_inference.py <HEF> <PATH_TO_IMAGES_FOLDER_OR_IMAGE>```
+
+The annotated files will be saved in the `output_images` folder.
+
+To run with H8 run for example:
+`./yolov8_pose_inference.py yolov8s_pose_mz.hef person.jpg`
+To run with H8L run for example:
+`./yolov8_pose_inference.py yolov8s_pose_h8l_pi.hef zidane.jpg`
 
 You can download sample images and a HEF with the `get_sources.sh` script, and then execute the inference.
 For example:  

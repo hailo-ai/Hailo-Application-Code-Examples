@@ -34,13 +34,13 @@ HailoUniqueIDPtr get_tracking_id(HailoDetectionPtr detection)
 std::map<int, int> track_counter;
 
 /**
-* @brief Returns a boolean indicating if traker update is required for a given detection.
+* @brief Returns a boolean indicating if tracker update is required for a given detection.
 *       It is determined by the number of frames since the last update.
 *       How many frames to wait for an update are defined in TRACK_UPDATE.
 * 
 * @param detection HailoDetectionPtr
 * @param use_track_update boolean can override the default behaviour, false will always require an update
-* @return boolean indicating if traker update is required.
+* @return boolean indicating if tracker update is required.
 */
 bool track_update(HailoDetectionPtr detection, bool use_track_update, int TRACK_UPDATE=15)
 {
@@ -63,7 +63,7 @@ bool track_update(HailoDetectionPtr detection, bool use_track_update, int TRACK_
         }
         else if (counter->second < TRACK_UPDATE)
         {
-            // Counter is still below TRACK_UPDATE_LIMIT - increasing the exising value. track update should be skipped. 
+            // Counter is still below TRACK_UPDATE_LIMIT - increasing the existing value. track update should be skipped. 
             track_counter[tracking_id] += 1;
         }
 

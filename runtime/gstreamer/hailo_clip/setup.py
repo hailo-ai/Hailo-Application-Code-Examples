@@ -1,57 +1,63 @@
 from setuptools import setup, find_packages
-import subprocess
 import os
+import sys
+import subprocess
+import logging
 
-try:
-    import hailo
-except ImportError:
-    print("Hailo python package found. Please make sure you're in the Hailo virtual environment. run 'source setup_env.sh' and try again.")
-    exit(1)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Read requirements.txt
-with open("requirements.txt", "r") as f:
-    requirements = f.read().splitlines()
+def check_hailo_package():
+    try:
+        import hailo
+    except ImportError:
+        logger.error("Hailo python package not found. Please make sure you're in the Hailo virtual environment. Run 'source setup_env.sh' and try again.")
+        sys.exit(1)
 
-# Compile C++ code using Meson
-# Ensure these scripts are executable and appropriately handle their execution environments.
-try:
-    subprocess.run(["./compile_postprocess.sh"])
-except Exception as e:
-    print(f"Failed to compile C++ code: {e}")
+def read_requirements():
+    with open("requirements.txt", "r") as f:
+        return f.read().splitlines()
 
-# Check if hef files exist on the resources folder and download if not
-# Ensure this script is executable and appropriately handles its execution environment.
-if not os.path.isfile("resources/yolov5s_personface.hef"):
-    print("Downloading hef files...")
-    subprocess.run(["./download_hef.sh"])
+def run_shell_command(command, error_message):
+    logger.info(f"Running command: {command}")
+    result = subprocess.run(command, shell=True)
+    if result.returncode != 0:
+        logger.error(f"{error_message}. Exit code: {result.returncode}")
+        sys.exit(result.returncode)
 
-# Setup function
-setup(
-    name='clip-app',
-    version='0.2',
-    author='Gilad Nahor',
-    author_email='giladn@hailo.ai',
-    description='Real time clip classication and detection',
-    long_description=open('README.md').read(),
-    long_description_content_type='text/markdown',
-    #url='https://github.com/yourusername/your-repo',  # Optional: project home page, if any
-    packages=find_packages(),
-    install_requires=requirements,
-    entry_points={
-        'console_scripts': [
-            'clip_app=clip_app.clip_app:main',
-            'text_image_matcher = clip_app.TextImageMatcher:main',
-        ],
-    },
-    scripts=[
-        'compile_postprocess.sh',
-        'download_hef.sh'
-    ],
-    package_data={
-        # Include any additional files specified here
-        'clip_app': ['*.json', '*.sh', '*.cpp', '*.hpp', '*.pc'],
-    },
-    # Ensure that non-python data files are included in your package
-    include_package_data=True,
-)
+def main():
+    check_hailo_package()
 
+    requirements = read_requirements()
+
+    logger.info("Compiling C++ code...")
+    run_shell_command("./compile_postprocess.sh", "Failed to compile C++ code")
+
+    logger.info("Downloading Resources...")
+    run_shell_command("./download_resources.sh", "Failed to download resources")
+
+    setup(
+        name='clip-app',
+        version='0.4',
+        author='Gilad Nahor',
+        author_email='giladn@hailo.ai',
+        description='Real time CLIP zero shot classification and detection',
+        long_description=open('README.md').read(),
+        long_description_content_type='text/markdown',
+        packages=find_packages(),
+        install_requires=requirements,
+        entry_points={
+            'console_scripts': [
+                'clip_app=clip_app.clip_app:main',
+                'text_image_matcher=clip_app.text_image_matcher:main',
+            ],
+        },
+        package_data={
+            'clip_app': ['*.json', '*.sh', '*.cpp', '*.hpp', '*.pc'],
+        },
+        include_package_data=True,
+    )
+
+if __name__ == '__main__':
+    main()
