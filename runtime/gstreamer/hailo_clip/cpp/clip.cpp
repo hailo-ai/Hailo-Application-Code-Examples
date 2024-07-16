@@ -41,6 +41,7 @@ void clip(HailoROIPtr roi, std::string layer_name, std::string tracker_name)
     //     std::cout << tracker << std::endl;
     // }
     // auto unique_ids = hailo_common::get_hailo_track_id(roi);
+    // std::cout << "unique_id " << unique_ids[0]->get_id() << " detection addr " << &roi << std::endl;
     // Remove previous matrices
     roi->remove_objects_typed(HAILO_MATRIX);
     
