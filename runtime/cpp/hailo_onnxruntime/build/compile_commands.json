@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build",
+  "command": "/usr/bin/c++ -DHAILORT_MAJOR_VERSION=4 -DHAILORT_MINOR_VERSION=18 -DHAILORT_REVISION_VERSION=0 -I/opt/onnxruntime-linux-x64-1.18.0/include -isystem /usr/local/include/opencv4  -pthread -g -Wall -Werror -g -O3 -o CMakeFiles/hailo_ort_example.dir/hailo_ort_example.cpp.o -c /local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/hailo_ort_example.cpp",
+  "file": "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/hailo_ort_example.cpp",
+  "output": "CMakeFiles/hailo_ort_example.dir/hailo_ort_example.cpp.o"
+},
+{
+  "directory": "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build",
+  "command": "/usr/bin/c++ -DHAILORT_MAJOR_VERSION=4 -DHAILORT_MINOR_VERSION=18 -DHAILORT_REVISION_VERSION=0 -I/opt/onnxruntime-linux-x64-1.18.0/include -isystem /usr/local/include/opencv4  -pthread -g -Wall -Werror -g -O3 -o CMakeFiles/hailo_ort_example.dir/utils.cpp.o -c /local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/utils.cpp",
+  "file": "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/utils.cpp",
+  "output": "CMakeFiles/hailo_ort_example.dir/utils.cpp.o"
+}
+]

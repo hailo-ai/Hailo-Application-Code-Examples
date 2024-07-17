@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5.0)
 project(hailo_ort_example)
 
-find_library(ONNXRUNTIME onnxruntime /opt/onnxruntime-linux-x64-1.13.1/lib)
+find_library(ONNXRUNTIME onnxruntime /opt/onnxruntime-linux-x64-1.18.0/lib)
 message(STATUS "ONNXRUNTIME: ${ONNXRUNTIME}")
-set(ONNXRUNTIME_INCLUDE_DIR /opt/onnxruntime-linux-x64-1.13.1/include)
+set(ONNXRUNTIME_INCLUDE_DIR /opt/onnxruntime-linux-x64-1.18.0/include)
 
 set(COMPILE_OPTIONS -Wall -Werror -g -O3)
 

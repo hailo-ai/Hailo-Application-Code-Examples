@@ -11,7 +11,6 @@ do
     cmake -H. -Bbuild/${ARCH}
     cmake --build build/${ARCH}
 done
-
 if [[ -f "hailort.log" ]]; then
     rm hailort.log
 fi

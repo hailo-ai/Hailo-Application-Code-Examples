@@ -14,7 +14,10 @@ The example works with .jpg, .jpeg, .png and .bmp image files.
 numpy  
 zenlog  
 Pillow
-onnxruntime  
+onnxruntime
+onnx
+onnxruntime-openvino
+ 
 hailo_platform >= 4.14.0 (installed from the HailoRT .whl from the Hailo website or already installed in the Suite docker release of 10.2023)  
 
 Install the hailort whl. (if you are not using the Suite docker), and then the requirements:
@@ -22,10 +25,13 @@ Install the hailort whl. (if you are not using the Suite docker), and then the r
 
 
 ## Running the example:  
-```./hailo_onnxruntime_inference.py HEF.hef ONNX.onnx [--input-images PATH_TO_IMAGES_FOLDER_OR_IMAGE```
+```./hailo_onnxruntime_inference.py HEF.hef ONNX.onnx [--input-images PATH_TO_IMAGES_FOLDER_OR_IMAGE] [--accelerate]```
 
 You can download a sample image and a HEF with the `get_hef_and_onnx.sh` script, and then execute the inference.
 for example:  
 ```CUDA_VISIBLE_DEVICES=9 ./hailo_onnxruntime_inference.py yolov5m_wo_spp.hef yolov5m_wo_spp_postprocess.onnx```
+
+Notice: By adding the flag ``--accelerate``, you can use OpenVINO inference acceleration. Note that the OpenVINO acceleration will be useful only for longer ONNX inference durations, but would be less efficient for short inference durations. 
+
 
 For more information, run ```./hailo_onnxruntime_inference.py --help```   
