@@ -90,6 +90,8 @@ options:
   --dump-dot            Dump the pipeline graph to a dot file.
   --detection-threshold DETECTION_THRESHOLD
                         Detection threshold
+  --show-fps, -f        Print FPS on sink
+  --enable-callback     Enables the use of the callback function
 ```
 - 
 
@@ -137,6 +139,7 @@ options:
 ## Integrating Your Code
 
 You can integrate your code in the `user_callback.py` file. This file includes a user-defined `app_callback` function that is called after the CLIP inference and before the display. You can use it to add your logic to the app. The `app_callback_class` will be passed to the callback function and can be used to access the app's data.
+To enable executing the callback function, use the `--enable-callback` flag.
 
 ## UI Controls
 

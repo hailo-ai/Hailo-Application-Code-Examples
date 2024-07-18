@@ -27,6 +27,9 @@ def parse_arguments():
     parser.add_argument("--disable-sync", action="store_true",help="Disables display sink sync, will run as fast as possible. Relevant when using file source.")
     parser.add_argument("--dump-dot", action="store_true", help="Dump the pipeline graph to a dot file.")
     parser.add_argument("--detection-threshold", type=float, default=0.5, help="Detection threshold")
+    parser.add_argument("--show-fps", "-f", action="store_true", help="Print FPS on sink")
+    parser.add_argument("--enable-callback", action="store_true", help="Enables the use of the callback function")
+
     return parser.parse_args()
 
 
@@ -59,7 +62,10 @@ class AppWindow(Gtk.Window):
     on_save_button_clicked = gui.on_save_button_clicked
     update_progress_bars = gui.update_progress_bars
     on_track_id_update = gui.on_track_id_update
+    disable_text_boxes = gui.disable_text_boxes
 
+    # Add the get_pipeline function to the AppWindow class
+    get_pipeline = get_pipeline
     # Add the app_callback function to the AppWindow class
     app_callback = app_callback
 
@@ -81,6 +87,8 @@ class AppWindow(Gtk.Window):
 
         self.dump_dot = args.dump_dot
         self.sync_req = 'false' if args.disable_sync else 'true'
+        self.show_fps = args.show_fps
+        self.enable_callback = args.enable_callback
         self.json_file = os.path.join(self.current_path, "embeddings.json") if args.json_path is None else args.json_path
         if args.input == "demo":
             self.input_uri = os.path.join(self.current_path, "resources", "clip_example.mp4")
@@ -114,26 +122,26 @@ class AppWindow(Gtk.Window):
         if args.clip_runtime:
             self.text_image_matcher.init_clip()
         else:
-            logger.info(f"No text embedding runtime selected, adding new text is disabled. Loading {self.json_file}")
-            for text_box in self.text_boxes:
-                text_box.set_editable(False)
+            logger.info("No text embedding runtime selected, adding new text is disabled. Loading %s", self.json_file)
+            self.disable_text_boxes()
             self.on_load_button_clicked(None)
 
         if self.text_image_matcher.model_runtime is not None:
-            logger.info(f"Using {self.text_image_matcher.model_runtime} for text embedding")
+            logger.info("Using %s for text embedding", self.text_image_matcher.model_runtime)
             self.on_load_button_clicked(None)
 
         # Connect pad probe to the identity element
-        identity = self.pipeline.get_by_name("identity_callback")
-        if identity is None:
-            logger.warning("identity_callback element not found, add <identity name=identity_callback> in your pipeline where you want the callback to be called.")
-        else:
-            identity_pad = identity.get_static_pad("src")
-            identity_pad.add_probe(Gst.PadProbeType.BUFFER, self.app_callback, self.user_data)
+        if self.enable_callback:
+            identity = self.pipeline.get_by_name("identity_callback")
+            if identity is None:
+                logger.warning("identity_callback element not found, add <identity name=identity_callback> in your pipeline where you want the callback to be called.")
+            else:
+                identity_pad = identity.get_static_pad("src")
+                identity_pad.add_probe(Gst.PadProbeType.BUFFER, self.app_callback, self.user_data)
 
         # start the pipeline
         self.pipeline.set_state(Gst.State.PLAYING)
- 
+
         if self.dump_dot:
             GLib.timeout_add_seconds(5, self.dump_dot_file)
 
@@ -167,13 +175,13 @@ class AppWindow(Gtk.Window):
             self.on_eos()
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            logger.error("Error: %s" % err, debug)
+            logger.error("Error: %s", err)
             self.shutdown()
         # print QOS messages
         elif t == Gst.MessageType.QOS:
             # print which element is reporting QOS
             src = message.src.get_name()
-            logger.info(f"QOS from {src}")
+            logger.info("QOS from %s", src)
         return True
 
 
@@ -193,14 +201,13 @@ class AppWindow(Gtk.Window):
         self.pipeline.send_event(Gst.Event.new_eos())
 
     def create_pipeline(self):
-        pipeline_str = get_pipeline(self.current_path, self.detector, self.sync_req, self.input_uri, self.tappas_postprocess_dir)
-        logger.info(f'PIPELINE:\ngst-launch-1.0 {pipeline_str}')
+        pipeline_str = get_pipeline(self)
+        logger.info('PIPELINE:\ngst-launch-1.0 %s', pipeline_str)
         try:
             pipeline = Gst.parse_launch(pipeline_str)
         except GLib.Error as e:
-            logger.error(f"An error occurred while parsing the pipeline: {e}")
+            logger.error("An error occurred while parsing the pipeline: %s", e)
         return pipeline
-
 
 if __name__ == "__main__":
     main()

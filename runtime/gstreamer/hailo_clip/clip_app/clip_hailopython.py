@@ -37,7 +37,6 @@ def run(video_frame: VideoFrame):
                     update_tracked_probability = len(used_detection) - 1
     if embeddings_np is not None:
         matches = text_image_matcher.match(embeddings_np, report_all=True, update_tracked_probability=update_tracked_probability)
-        print("Matches: ", len(matches))
         for match in matches:
             # (row_idx, label, confidence, entry_index) = match
             detection = used_detection[match.row_idx]
