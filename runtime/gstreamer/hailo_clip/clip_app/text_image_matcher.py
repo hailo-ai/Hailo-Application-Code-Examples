@@ -99,7 +99,7 @@ class TextImageMatcher:
         global clip, torch
         import clip
         import torch
-        logger.info(f"Loading model {self.model_name} on device {self.device}, this might take a while...")
+        logger.info("Loading model %s on device %s, this might take a while...", self.model_name, self.device)
         self.model, self.preprocess = clip.load(self.model_name, device=self.device)
         self.model_runtime = "clip"
 
@@ -122,7 +122,7 @@ class TextImageMatcher:
         elif 0 <= index < len(self.entries):
             self.entries[index] = new_entry
         else:
-            logger.error(f"Index out of bounds: {index}")
+            logger.error("Index out of bounds: %s", index)
 
     def add_text(self, text, index=None, negative=False, ensemble=False):
         if self.model_runtime is None:
@@ -130,7 +130,7 @@ class TextImageMatcher:
             return
         text_entries = [template.format(text) for template in self.ensemble_template] if ensemble else [self.text_prefix + text]
         logger.debug("Adding text entries: %s", text_entries)
-        
+
         global clip, torch
         text_tokens = clip.tokenize(text_entries).to(self.device)
         with torch.no_grad():
@@ -162,7 +162,7 @@ class TextImageMatcher:
         if not os.path.isfile(filename):
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write('')  # Create an empty file or initialize with some data
-            logger.info(f"File {filename} does not exist, creating it.")
+            logger.info("File %s does not exist, creating it.", filename)
         else:
             try:
                 with open(filename, 'r', encoding='utf-8') as f:
@@ -176,7 +176,7 @@ class TextImageMatcher:
                                                        ensemble=entry['ensemble'])
                                     for entry in data['entries']]
             except Exception as e:
-                logger.error(f"Error while loading file {filename}: {e}. Maybe you forgot to save your embeddings?")
+                logger.error("Error while loading file %s: %s. Maybe you forgot to save your embeddings?", filename, e)
 
     def get_image_embedding(self, image):
         if self.model_runtime is None:
@@ -228,7 +228,7 @@ class TextImageMatcher:
             for i, _ in enumerate(similarities):
                 self.entries[valid_entries[i]].probability = similarities[i]
                 if update_tracked_probability is None or update_tracked_probability == row_idx:
-                    logger.debug(f"Updating tracked probability for entry {valid_entries[i]} to {similarities[i]}")
+                    logger.debug("Updating tracked probability for entry %s to %s", valid_entries[i], similarities[i])
                     self.entries[valid_entries[i]].tracked_probability = similarities[i]
             new_match = Match(row_idx,
                               self.entries[valid_entries[best_idx]].text,
@@ -240,7 +240,7 @@ class TextImageMatcher:
             if report_all or new_match.passed_threshold:
                 results.append(new_match)
 
-        logger.debug(f"Best match output: {results}")
+        logger.debug("Best match output: %s", results)
         return results
 
 
@@ -271,7 +271,7 @@ def main():
     first = True
     for text in texts:
         status = "positive" if first else "negative"
-        logger.info(f'{matcher.text_prefix}{text} ({status})')
+        logger.info('%s%s (%s)', matcher.text_prefix, text, status)
         first = False
 
     start_time = time.time()
@@ -280,7 +280,7 @@ def main():
         matcher.add_text(text, negative=not first)
         first = False
     end_time = time.time()
-    logger.info(f"Time taken to add {len(texts)} text embeddings using add_text(): {end_time - start_time:.4f} seconds")
+    logger.info("Time taken to add %s text embeddings using add_text(): %.4f seconds", len(texts), end_time - start_time)
 
     matcher.save_embeddings(args.output)
 
@@ -296,13 +296,12 @@ def main():
     end_time = time.time()
 
     if result:
-        logger.info(f"Best match: {result[0].text}")
-    
+        logger.info("Best match: %s", result[0].text)
+
     valid_entries = matcher.get_embeddings()
     for i in valid_entries:
-        logger.info(f"Entry {i}: {matcher.entries[i].text} similarity: {matcher.entries[i].probability:.4f}")
-    logger.info(f"Time taken to run match(): {end_time - start_time:.4f} seconds")
-
+        logger.info("Entry %s: %s similarity: %.4f", i, matcher.entries[i].text, matcher.entries[i].probability)
+    logger.info("Time taken to run match(): %.4f seconds", end_time - start_time)
 
 if __name__ == "__main__":
     main()

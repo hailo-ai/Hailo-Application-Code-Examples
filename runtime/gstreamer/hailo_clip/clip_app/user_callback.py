@@ -7,24 +7,13 @@ class app_callback_class:
     def __init__(self):
         self.frame_count = 0
         self.use_frame = False
-        # self.frame_queue = multiprocessing.Queue(maxsize=3)
         self.running = True
 
     def increment(self):
         self.frame_count += 1
 
     def get_count(self):
-        return self.frame_count 
-
-    # def set_frame(self, frame):
-    #     if not self.frame_queue.full():
-    #         self.frame_queue.put(frame)
-        
-    # def get_frame(self):
-    #     if not self.frame_queue.empty():
-    #         return self.frame_queue.get()
-    #     else:
-    #         return None
+        return self.frame_count
 
 
 def app_callback(self, pad, info, user_data):
@@ -47,17 +36,27 @@ def app_callback(self, pad, info, user_data):
         detections = [roi] # Use the ROI as the detection
     # Parse the detections
     for detection in detections:
+        track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
+        track_id = None
+        label = None
+        confidence = 0.0
+        for track_id_obj in track:
+            track_id = track_id_obj.get_id()
+        if track_id is not None:
+            string_to_print += f'Track ID: {track_id} '
         classifications = detection.get_objects_typed(hailo.HAILO_CLASSIFICATION)
-        for classification in classifications:
-            label = classification.get_label()
-            confidence = classification.get_confidence()
-            string_to_print += f"CLIP Classification: {label} {confidence:.2f}\n"
+        if len(classifications) > 0:
+            string_to_print += ' CLIP Classifications:'
+            for classification in classifications:
+                label = classification.get_label()
+                confidence = classification.get_confidence()
+                string_to_print += f'Label: {label} Confidence: {confidence:.2f} '
+            string_to_print += '\n'
         if isinstance(detection, hailo.HailoDetection):
             label = detection.get_label()
             bbox = detection.get_bbox()
             confidence = detection.get_confidence()
             string_to_print += f"Detection: {label} {confidence:.2f}\n"
-            
-    print(string_to_print)
+    if string_to_print:
+        print(string_to_print)
     return Gst.PadProbeReturn.OK
-    

@@ -41,11 +41,11 @@ def run(video_frame: VideoFrame):
             # (row_idx, label, confidence, entry_index) = match
             detection = used_detection[match.row_idx]
             old_classification = detection.get_objects_typed(hailo.HAILO_CLASSIFICATION)
-            for old in old_classification:
-                detection.remove_object(old)
             if (match.negative or not match.passed_threshold):
                 continue # Don't add classification just remove the old one
             # Add label as classification metadata
             classification = hailo.HailoClassification('clip', match.text, match.similarity)
             detection.add_object(classification)
+            for old in old_classification:
+                detection.remove_object(old)
     return Gst.FlowReturn.OK

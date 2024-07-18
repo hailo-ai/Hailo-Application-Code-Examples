@@ -45,7 +45,12 @@ std::map<int, int> track_counter;
 bool track_update(HailoDetectionPtr detection, bool use_track_update, int TRACK_UPDATE=15)
 {
     auto tracking_obj = get_tracking_id(detection);
-    if (tracking_obj && use_track_update)
+    if (!tracking_obj)
+    {
+        // No tracking object found - track update required.
+        return false;
+    }
+    if (use_track_update)
     {
         int tracking_id = tracking_obj->get_id();
         auto counter = track_counter.find(tracking_id);
@@ -69,7 +74,7 @@ bool track_update(HailoDetectionPtr detection, bool use_track_update, int TRACK_
 
         return false;
     }
-
+    // Use track update is false - track update required.
     return true;
 }
 
@@ -128,15 +133,15 @@ int crop_every_x_frames=30, int max_crops_per_frame=5)
 
 std::vector<HailoROIPtr> face_cropper(std::shared_ptr<HailoMat> image, HailoROIPtr roi)
 {
-    return object_crop(image, roi, FACE_LABEL, 15, 5);
+    return object_crop(image, roi, FACE_LABEL, 15, 8);
 }
 
 std::vector<HailoROIPtr> person_cropper(std::shared_ptr<HailoMat> image, HailoROIPtr roi)
 {
-    return object_crop(image, roi, PERSON_LABEL, 15, 5);
+    return object_crop(image, roi, PERSON_LABEL, 15, 8);
 }
 
 std::vector<HailoROIPtr> object_cropper(std::shared_ptr<HailoMat> image, HailoROIPtr roi)
 {
-    return object_crop(image, roi, OBJECT_LABEL, 30, 10);
+    return object_crop(image, roi, OBJECT_LABEL, 15, 8);
 }

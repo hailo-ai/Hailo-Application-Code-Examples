@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TAPPAS CORE Definitions
-CORE_VENV_NAME="venv_hailo_clip"
+CORE_VENV_NAME="hailo_tappas_core_venv"
 CORE_REQUIRED_VERSION=("3.28.2" "3.29.0")
 
 # TAPPAS Definitions
@@ -10,15 +10,22 @@ TAPPAS_REQUIRED_VERSION=("3.28.0" "3.28.1" "3.28.2" "3.29.0")
 
 # Function to check if the script is being sourced
 is_sourced() {
-    [[ "${BASH_SOURCE[0]}" != "$0" ]]
+    if [ -n "$ZSH_VERSION" ]; then
+        [[ "${(%):-%N}" != "$0" ]]
+    elif [ -n "$BASH_VERSION" ]; then
+        [[ "${BASH_SOURCE[0]}" != "$0" ]]
+    else
+        echo "Unsupported shell. Please use bash or zsh."
+        return 1
+    fi
 }
 
 # Only proceed if the script is being sourced
 if is_sourced; then
     echo "Setting up the environment..."
 
-    # check if we are working with hailo_tappas or hailo-tappas-core
-    if pkg-config --exists hailo_tappas ; then
+    # Check if we are working with hailo_tappas or hailo-tappas-core
+    if pkg-config --exists hailo_tappas; then
         TAPPAS_CORE=0
         VENV_NAME=$TAPPAS_VENV_NAME
         REQUIRED_VERSION=("${TAPPAS_REQUIRED_VERSION[@]}")
@@ -34,10 +41,11 @@ if is_sourced; then
         echo "Setting up the environment for hailo-tappas-core..."
         TAPPAS_VERSION=$(pkg-config --modversion hailo-tappas-core)
     fi
+
     # Check if TAPPAS_VERSION is in REQUIRED_VERSION
     version_match=0
     for version in "${REQUIRED_VERSION[@]}"; do
-        if [ "$TAPPAS_VERSION" == "$version" ]; then
+        if [ "$TAPPAS_VERSION" = "$version" ]; then
             version_match=1
             break
         fi
@@ -48,10 +56,11 @@ if is_sourced; then
     else
         echo "TAPPAS_VERSION is ${TAPPAS_VERSION} not in the list of required versions ${REQUIRED_VERSION[*]}."
         return 1
-    fi    
+    fi
+
     if [ $TAPPAS_CORE -eq 1 ]; then
         # Get the directory of the current script
-        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" &> /dev/null && pwd)"
         # Check if we are in the defined virtual environment
         if [[ "$VIRTUAL_ENV" == *"$VENV_NAME"* ]]; then
             echo "You are in the $VENV_NAME virtual environment."

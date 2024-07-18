@@ -22,12 +22,12 @@ else:
     YOLO5_HEF_NAME = "yolov5s_personface.hef"
     CLIP_HEF_NAME = "clip_resnet_50x4.hef"
 
-def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_postprocess_dir):
+def get_pipeline(self):
     # Initialize directories and paths
-    RESOURCES_DIR = os.path.join(current_path, "resources")
-    POSTPROCESS_DIR = tappas_postprocess_dir
-    hailopython_path = os.path.join(current_path, "clip_app/clip_hailopython.py")
-    if detector_pipeline == "fast_sam":
+    RESOURCES_DIR = os.path.join(self.current_path, "resources")
+    POSTPROCESS_DIR = self.tappas_postprocess_dir
+    hailopython_path = os.path.join(self.current_path, "clip_app/clip_hailopython.py")
+    if self.detector == "fast_sam":
         # FASTSAM
         # DETECTION_HEF_PATH = os.path.join(RESOURCES_DIR, "fast_sam_s.hef")
         DETECTION_HEF_PATH = os.path.join(RESOURCES_DIR, "yolov8s_fastsam_single_context.hef")
@@ -48,7 +48,7 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
     clip_postprocess_so = os.path.join(RESOURCES_DIR, "libclip_post.so")
     DEFAULT_CROP_SO = os.path.join(RESOURCES_DIR, "libclip_croppers.so")
     clip_matcher_so = os.path.join(RESOURCES_DIR, "libclip_matcher.so")
-    clip_matcher_config = os.path.join(current_path, "embeddings.json")
+    clip_matcher_config = os.path.join(self.current_path, "embeddings.json")
     DEFAULT_VDEVICE_KEY = "1"
 
     def QUEUE(name=None, buffer_size=3, name_suffix=""):
@@ -65,17 +65,17 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
     RATE_PIPELINE = f' {QUEUE()} name=rate_queue ! video/x-raw, framerate=30/1 '
     # Check if the input seems like a v4l2 device path (e.g., /dev/video0)
     sync = False # sync_req is relevant only when working with video files
-    if re.match(r'/dev/video\d+', input_uri):
-        SOURCE_PIPELINE = f'v4l2src device={input_uri} ! image/jpeg, framerate=30/1 ! decodebin ! {QUEUE()} ! \
+    if re.match(r'/dev/video\d+', self.input_uri):
+        SOURCE_PIPELINE = f'v4l2src device={self.input_uri} ! image/jpeg, framerate=30/1 ! decodebin ! {QUEUE()} ! \
         videoconvert ! {QUEUE()} ! videoscale ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB ! {QUEUE()} ! videoflip video-direction=horiz ! '
-    elif re.match(r'0x\w+', input_uri): # Window ID - get from xwininfo
-        SOURCE_PIPELINE = f"ximagesrc xid={input_uri} ! {QUEUE()} ! videoscale ! "
+    elif re.match(r'0x\w+', self.input_uri): # Window ID - get from xwininfo
+        SOURCE_PIPELINE = f"ximagesrc xid={self.input_uri} ! {QUEUE()} ! videoscale ! "
     else:
-        sync = sync_req
+        sync = self.sync_req
         # convert the file to a uri
-        input_uri = os.path.abspath(input_uri)
-        input_uri = f'file://{input_uri}'
-        SOURCE_PIPELINE = f"uridecodebin uri={input_uri} ! {QUEUE()} ! videoscale ! "
+        uri = os.path.abspath(self.input_uri)
+        uri = f'file://{uri}'
+        SOURCE_PIPELINE = f"uridecodebin uri={uri} ! {QUEUE()} ! videoscale ! "
     SOURCE_PIPELINE += f'{QUEUE()} name=src_convert_queue ! videoconvert n-threads=2 ! video/x-raw, width={RES_X}, height={RES_Y}, format=RGB '
 
     DETECTION_PIPELINE = f'{QUEUE()} name=pre_detection_scale ! videoscale n-threads=4 qos=false ! \
@@ -95,10 +95,10 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
         hailofilter so-path={clip_postprocess_so} qos=false ! \
         {QUEUE()}'
 
-    if detector_pipeline == "person":
+    if self.detector == "person":
         class_id = 1
         crop_function_name = "person_cropper"
-    elif detector_pipeline == "face":
+    elif self.detector == "face":
         class_id = 2
         crop_function_name = "face_cropper"
     else: # fast_sam
@@ -117,7 +117,7 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
         detection_crop. ! {DETECTION_PIPELINE} ! agg1.sink_1 \
         agg1. ! {QUEUE()} '
 
-    if detector_pipeline == "none":
+    if self.detector == "none":
         DETECTION_PIPELINE_WRAPPER = ""
     else:
         DETECTION_PIPELINE_WRAPPER = DETECTION_PIPELINE_MUXER
@@ -138,7 +138,7 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
 
     # Display pipelines
     CLIP_DISPLAY_PIPELINE = f'{QUEUE()} ! videoconvert n-threads=2 ! \
-                            fpsdisplaysink name=hailo_display video-sink={video_sink} sync={sync} text-overlay=true '
+                            fpsdisplaysink name=hailo_display video-sink={video_sink} sync={sync} text-overlay={self.show_fps} '
 
     # Text to image matcher
     CLIP_PYTHON_MATCHER = f'hailopython name=pyproc module={hailopython_path} qos=false '
@@ -151,7 +151,7 @@ def get_pipeline(current_path, detector_pipeline, sync_req, input_uri, tappas_po
         hailooverlay local-gallery=false show-confidence=true font-thickness=2 qos=false '
 
     # PIPELINE
-    if detector_pipeline == "none":
+    if self.detector == "none":
         PIPELINE = f'{SOURCE_PIPELINE} ! \
         {CLIP_MUXER_PIPELINE} ! \
         {CLIP_POSTPROCESS_PIPELINE} ! \
