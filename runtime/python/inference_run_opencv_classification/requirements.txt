@@ -1,4 +1,0 @@
-numpy
-zenlog
-# Pillow>=8.1.2
-opencv-python

@@ -1,0 +1,6 @@
+numpy
+zenlog
+Pillow>=8.1.2
+onnxruntime
+onnx
+onnxruntime-openvino
