@@ -175,7 +175,7 @@ class AppWindow(Gtk.Window):
             self.on_eos()
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            logger.error("Error: %s", err)
+            logger.error("Error: %s %s", err, debug)
             self.shutdown()
         # print QOS messages
         elif t == Gst.MessageType.QOS:
