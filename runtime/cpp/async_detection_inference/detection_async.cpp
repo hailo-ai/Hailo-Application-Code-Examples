@@ -143,12 +143,6 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
 
     for (size_t i = 0; i < frame_count; i++){
 
-        // auto bindings = configured_infer_model->create_bindings();
-        // if (!bindings) {
-        //     std::cerr << "Failed to create infer bindings, status = " << bindings.status() << std::endl;
-        //     return bindings.status();
-        // }
-
         auto preprocessed_image = std::make_shared<cv::Mat>(frames_futures[i].get());
 
         for (const auto &input_name : infer_model->get_input_names()) {
