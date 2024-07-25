@@ -24,7 +24,8 @@ Usage
     bus.jpg
     yolox_tiny.hef
     yolov8s.hef
-    yolov7.hef```
+    yolov7.hef
+    ```
 
 3. Compile the project on the development machine  
 	```shell script
