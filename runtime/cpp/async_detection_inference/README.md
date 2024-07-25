@@ -17,7 +17,7 @@ Usage
 
 1. Download example files:
 	```shell script
-    ./build.sh
+    ./get_resources.sh
     ```
     Which copy the following files to the example's directory:
     fsd
