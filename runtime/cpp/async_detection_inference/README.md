@@ -20,7 +20,8 @@ Usage
     ./get_resources.sh
     ```
     Which copies the following files to the example's directory:
-    ```full_mov_slow.mp4
+    ```
+    full_mov_slow.mp4
     bus.jpg
     yolox_tiny.hef
     yolov8s.hef
