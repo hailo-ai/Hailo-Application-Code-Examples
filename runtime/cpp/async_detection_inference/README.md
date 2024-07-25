@@ -19,10 +19,14 @@ Usage
 	```shell script
     ./get_resources.sh
     ```
-    Which copy the following files to the example's directory:
-    fsd
+    Which copies the following files to the example's directory:
+    ```full_mov_slow.mp4
+    bus.jpg
+    yolox_tiny.hef
+    yolov8s.hef
+    yolov7.hef```
 
-2. Compile the project on the development machine  
+3. Compile the project on the development machine  
 	```shell script
     ./build.sh
     ```
