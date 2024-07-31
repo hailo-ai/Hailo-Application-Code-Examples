@@ -8,14 +8,14 @@ import argparse
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import HailoInference
+from utils import HailoAsyncInference
 
 def parse_args():
     """Initialize argument parser for the script."""
     parser = argparse.ArgumentParser(description="Detection Example")
     parser.add_argument("-n", "--net", help="Path for the HEF model.", default="yolov7.hef")
     parser.add_argument("-i", "--input", default="zidane.jpg", help="Path to the input - either an image or a folder of images.")
-    parser.add_argument("-b", "--batch", default=1, type=int, required=False, help="Number of images in one batch")
+    parser.add_argument("-b", "--batch_size", default=1, type=int, required=False, help="Number of images in one batch")
     parser.add_argument("-l", "--labels", default="coco.txt", help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used.")
     parsed_args = parser.parse_args()
     return parsed_args
@@ -119,33 +119,35 @@ if __name__ == "__main__":
     images = []
 
     load_input_images(images_path, images)
-    hailo_inference = HailoInference(args.net)
+    
+    batch_size = args.batch_size
+    hailo_inference = HailoAsyncInference(args.net, batch_size)
     outputs = hailo_inference.output_vstream_info
     
-    batch_size = args.batch
     if len(images) % batch_size != 0:
         raise ValueError('The number of input images should be divisiable by the batch size without any remainder. Please either change the batch size to divide the number of images with no remainder or change the number of images')
 
-
+    output_path = os.path.join(os.path.realpath('.'), 'output_images')
+    if not os.path.isdir(output_path):
+        os.mkdir(output_path)
+        
     height, width, _ =  hailo_inference.get_input_shape()
 
     batched_images = list(divide_list_to_batches(images, batch_size))
     for batch_idx, batch_images in enumerate(batched_images):
-        processed_input_images = []
+        processed_images = []
+        infer_images = []
         
         for i, image in enumerate(batch_images):
             processed_image = preprocess(image, width, height)
-            processed_input_images.append(np.array(processed_image))
+            processed_images.append(processed_image)
+            infer_images.append(np.array(processed_image))
 
-        raw_detections = hailo_inference.run(np.array(processed_input_images))
+        raw_detections = hailo_inference.run(np.array(infer_images))
 
-        results = post_nms_infer(raw_detections)
-
-        output_path = os.path.join(os.path.realpath('.'), 'output_images')
-        if not os.path.isdir(output_path):
-            os.mkdir(output_path)
-
-        for j in range(len(batch_images)):
-            img = preprocess(batch_images[j], width, height)
-            post_process(results, img, (batch_idx*len(batch_images))+j, output_path, width, height)
+        for i, image in enumerate(batch_images):
+            results = post_nms_infer(raw_detections[i])
+            post_process(results, processed_images[i], (batch_idx*len(batch_images))+i, output_path, width, height)
+        
+    hailo_inference.release_device()
 
