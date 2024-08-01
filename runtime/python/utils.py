@@ -164,7 +164,7 @@ class HailoAsyncInference:
         if completion_info.exception:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
-            self.output_results.append(bindings.output().get_buffer())
+            self.output_results.append(bindings.output().get_buffer()[0])
 
     def _get_vstream_info(self):
         """
@@ -173,15 +173,7 @@ class HailoAsyncInference:
         Returns:
             tuple: List of input stream layer information, List of output stream layer information.
         """
-        input_vstream_info = self.hef.get_input_vstream_infos()
-        output_vstream_info = self.hef.get_output_vstream_infos()
-
-        for layer_info in input_vstream_info:
-            logger.info(f'Input layer: {layer_info.name} {layer_info.shape} {layer_info.format.type}')
-        for layer_info in output_vstream_info:
-            logger.info(f'Output layer: {layer_info.name} {layer_info.shape} {layer_info.format.type}')
-
-        return input_vstream_info, output_vstream_info
+        return self.hef.get_input_vstream_infos(), self.hef.get_output_vstream_infos()
 
     def get_input_shape(self):
         """
@@ -211,6 +203,8 @@ class HailoAsyncInference:
         Returns:
             list: List of inference outputs.
         """
+        if input_data.ndim == 1 or input_data.size == 0 or input_data is None:
+            logger.error('Input data is empty')
         if input_data.ndim == 3:
             input_data = np.expand_dims(input_data, axis=0)
 
