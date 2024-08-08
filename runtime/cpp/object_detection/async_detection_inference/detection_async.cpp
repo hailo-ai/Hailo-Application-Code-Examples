@@ -244,7 +244,7 @@ hailo_status run_preprocess(std::vector<cv::Mat>& frames, std::vector<std::promi
 
     cv::Mat org_frame; 
 
-    if (input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos) {
+    if (input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
         capture >> org_frame;
         int frame_count = cmd_num_frames.empty() ? 1 : std::stoi(cmd_num_frames);
         use_single_frame(frames, frames_promises, std::ref(org_frame), frame_count, cv::Size(width, height));
@@ -485,7 +485,7 @@ int main(int argc, char** argv)
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
     
-    print_inference_statistics(inference_time, detection_hef, frame_count);
+    print_inference_statistics(inference_time, detection_hef, (double)frame_count);
 
     std::cout << BOLDBLUE << "\n-I- Application run finished successfully" << RESET << std::endl;
     std::cout << BOLDBLUE << "-I- Total application run time: " << (double)total_time.count() << " sec" << RESET << std::endl;
