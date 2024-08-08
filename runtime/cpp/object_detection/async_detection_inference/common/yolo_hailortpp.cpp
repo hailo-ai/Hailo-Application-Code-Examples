@@ -12,10 +12,6 @@ void filter(HailoROIPtr roi, void *params_void_ptr) {
         return;
     }
 
-    std::cout << "got here 0" << std::endl;
-    std::cout << (float)(*roi->get_tensors()[0]->data()) << std::endl;
-    std::cout << "got here 1" << std::endl;
-
     std::vector<HailoTensorPtr> tensors = roi->get_tensors();
     std::map<uint8_t, std::string> labels_map;
 
