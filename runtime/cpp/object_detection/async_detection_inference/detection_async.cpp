@@ -116,6 +116,8 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
                             std::vector<std::promise<cv::Mat>>& frames_promises,
                             std::vector<std::future<cv::Mat>>& frames_futures,
                             size_t frame_count,
+                            std::vector<std::shared_ptr<cv::Mat>>& input_buffer_guards,
+                            std::vector<std::shared_ptr<uint8_t>>& output_buffer_guards,
                             std::vector<std::string>& output_names,
                             TSQueue<std::vector<std::pair<uint8_t*, hailo_vstream_info_t>>>& inferred_data_queue,
                             std::chrono::duration<double>& inference_time) {
@@ -129,9 +131,6 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
     AsyncInferJob last_infer_job;
 
     std::shared_ptr<uint8_t> output_buffer;
-
-    std::vector<std::shared_ptr<cv::Mat>> input_buffer_guards;
-    std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
 
     auto bindings = configured_infer_model->create_bindings();
     if (!bindings) {
@@ -182,8 +181,9 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
         }
 
         auto job = configured_infer_model->run_async(bindings.value(), 
-                                                        [&inferred_data_queue, output_data_and_infos](const hailort::AsyncInferCompletionInfo& info){
+                                                        [&inferred_data_queue, output_data_and_infos, output_buffer](const hailort::AsyncInferCompletionInfo& info){
             inferred_data_queue.push(output_data_and_infos);
+            (void)output_buffer;
         });
 
         if (!job) {
@@ -288,8 +288,11 @@ hailo_status configure_and_infer(std::shared_ptr<hailort::InferModel> infer_mode
 
     // The buffers are stored here as a guard for the memory. The buffer will be freed only after
     // configured_infer_model will be released.
-    std::vector<std::shared_ptr<uint8_t>> buffer_guards;
-    buffer_guards.reserve(infer_model->outputs().size());
+    std::vector<std::shared_ptr<cv::Mat>> input_buffer_guards;
+    std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
+
+    input_buffer_guards.reserve(infer_model->inputs().size());
+    output_buffer_guards.reserve(infer_model->outputs().size());
 
     std::vector<std::string> output_names = infer_model->get_output_names();
 
@@ -317,6 +320,8 @@ hailo_status configure_and_infer(std::shared_ptr<hailort::InferModel> infer_mode
                                     std::ref(frames_promises),
                                     std::ref(frames_futures),
                                     frame_count,
+                                    std::ref(input_buffer_guards),
+                                    std::ref(output_buffer_guards),
                                     std::ref(output_names),
                                     std::ref(inferred_data_queue),
                                     std::ref(inference_time)));
