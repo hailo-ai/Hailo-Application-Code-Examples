@@ -1,0 +1,3 @@
+/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/async_detection_inference/build/x86_64/CMakeFiles/vstream_async_detection_example_cpp.dir
+/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/async_detection_inference/build/x86_64/CMakeFiles/edit_cache.dir
+/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/async_detection_inference/build/x86_64/CMakeFiles/rebuild_cache.dir
