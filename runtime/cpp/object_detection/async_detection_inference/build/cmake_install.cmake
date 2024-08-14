@@ -1,4 +1,4 @@
-# Install script for directory: /local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline
+# Install script for directory: /local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/object_detection/async_detection_inference
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/object_detection/async_detection_inference/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

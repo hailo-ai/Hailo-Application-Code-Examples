@@ -7,7 +7,7 @@ It annotates detected objects with bounding boxes and draws a mask on each insta
 Requirements
 ------------
 
-- hailo_platform==4.17.0
+- hailo_platform==4.18.0
 - OpenCV (cv2)
 - g++-9
  
@@ -45,7 +45,7 @@ Output
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.17.0``
+- The example was only tested with ``HailoRT v4.18.0``
 - The example expects a HEF which contains the HailoRT Postprocess
 - The script assumes that the input video is in a standard format supported by OpenCV (e.g., .mp4, .avi).
 
