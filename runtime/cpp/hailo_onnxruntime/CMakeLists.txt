@@ -1,9 +1,23 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(hailo_ort_example)
 
-find_library(ONNXRUNTIME onnxruntime /opt/onnxruntime-linux-x64-1.18.0/lib)
-message(STATUS "ONNXRUNTIME: ${ONNXRUNTIME}")
-set(ONNXRUNTIME_INCLUDE_DIR /opt/onnxruntime-linux-x64-1.18.0/include)
+file(GLOB ALL_SUBDIRS "/opt/*")
+set(ONNXRUNTIME_DIR "")
+
+foreach(DIR ${ALL_SUBDIRS})
+    if(IS_DIRECTORY ${DIR} AND "${DIR}" MATCHES ".*onnxruntime.*")
+        set(ONNXRUNTIME_DIR ${DIR})
+        break()
+    endif()
+endforeach()
+
+if(ONNXRUNTIME_DIR)
+    message(STATUS "Found directory: ${ONNXRUNTIME_DIR}")
+    find_library(ONNXRUNTIME onnxruntime ${ONNXRUNTIME_DIR}/lib)
+    set(ONNXRUNTIME_INCLUDE_DIR ${ONNXRUNTIME_DIR}/include)
+else()
+    message(STATUS "No directory containing 'onnxruntime' was found.")
+endif()
 
 set(COMPILE_OPTIONS -Wall -Werror -g -O3)
 
@@ -25,10 +39,6 @@ file(GLOB SOURCES
 
 link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS} ${ONNXRUNTIME_INCLUDE_DIR})
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
-target_link_libraries(${PROJECT_NAME} HailoRT::libhailort)
-target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME} ${ONNXRUNTIME})
+target_link_libraries(${PROJECT_NAME} HailoRT::libhailort ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS} ${ONNXRUNTIME})

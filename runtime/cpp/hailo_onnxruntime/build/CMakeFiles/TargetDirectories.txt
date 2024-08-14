@@ -1,3 +1,0 @@
-/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build/CMakeFiles/hailo_ort_example.dir
-/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build/CMakeFiles/edit_cache.dir
-/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/general/hailo_onnxruntime_pipeline/build/CMakeFiles/rebuild_cache.dir
