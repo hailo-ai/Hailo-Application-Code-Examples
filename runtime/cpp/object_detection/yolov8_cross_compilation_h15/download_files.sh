@@ -7,7 +7,7 @@
 IMAGE_URL="https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/images/"
 HEF_URL="https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/hefs/h15/"
 PLATFORM="h15"
-HEF_FILE="yolov8s_h15.hef"
+HEF_FILE="yolov8s.hef"
 IMAGE_FILE="bus.jpg"
 
 # Create the resources/hefs and resources/video directories if they do not exist
