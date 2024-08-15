@@ -119,17 +119,20 @@ class HailoInference:
         """
         self.target.release()
 
-
 class HailoAsyncInference:
-    def __init__(self, hef_path, batch_size=1, output_type='FLOAT32'):
+    def __init__(self, hef_path, input_queue, output_queue, batch_size=1, output_type='FLOAT32'):
         """
-        Initialize the HailoAsyncInference class with the provided HEF model file path.
+        Initialize the HailoAsyncInference class with the provided HEF model file path and input/output queues.
 
         Args:
             hef_path (str): Path to the HEF model file.
+            input_queue (queue.Queue): Queue from which to pull input frames for inference.
+            output_queue (queue.Queue): Queue to hold the inference results.
             batch_size (int): Batch size for inference.
             output_type (str): Format type of the output stream.
         """
+        self.input_queue = input_queue
+        self.output_queue = output_queue
         params = VDevice.create_params()
         params.scheduling_algorithm = HailoSchedulingAlgorithm.ROUND_ROBIN
 
@@ -140,7 +143,6 @@ class HailoAsyncInference:
         self._set_input_output(output_type)
         self.input_vstream_info, self.output_vstream_info = self._get_vstream_info()
         self.configured_infer_model = self.infer_model.configure()
-        self.output_results = []
 
     def _set_input_output(self, output_type):
         """
@@ -153,7 +155,7 @@ class HailoAsyncInference:
         self.infer_model.input().set_format_type(input_format_type)
         self.infer_model.output().set_format_type(getattr(FormatType, output_type))
 
-    def callback(self, completion_info, bindings):
+    def callback(self, completion_info, processed_image, bindings):
         """
         Callback function for handling inference results.
 
@@ -164,7 +166,8 @@ class HailoAsyncInference:
         if completion_info.exception:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
-            self.output_results.append(bindings.output().get_buffer()[0])
+            result = bindings.output().get_buffer()[0]
+            self.output_queue.put((processed_image,result))  # Add the result to the output queue
 
     def _get_vstream_info(self):
         """
@@ -184,38 +187,27 @@ class HailoAsyncInference:
         """
         return self.input_vstream_info[0].shape  # Assumes that the model has one input
 
-    def get_output_results(self):
+    def run(self):
         """
-        Get the results of the inference.
+        Run asynchronous inference on the Hailo-8 device, processing frames from the input queue.
+
+        Frames are fetched from the input queue until a sentinel value (None) is encountered.
 
         Returns:
-            list: List of inference outputs.
+            None: Results are added to the output queue.
         """
-        return self.output_results
+        while True:
+            frame = self.input_queue.get()  # Get a frame from the input queue
 
-    def run(self, input_data):
-        """
-        Run asynchronous inference on the Hailo-8 device.
+            if frame is None:
+                break  # Sentinel value to stop the inference loop
 
-        Args:
-            input_data (np.ndarray): Input data for inference.
-
-        Returns:
-            list: List of inference outputs.
-        """
-        if input_data.ndim == 1 or input_data.size == 0 or input_data is None:
-            logger.error('Input data is empty')
-        if input_data.ndim == 3:
-            input_data = np.expand_dims(input_data, axis=0)
-
-        for frame in input_data:
             bindings = self._create_bindings()
-            bindings.input().set_buffer(frame)
+            bindings.input().set_buffer(np.array(frame))
             self.configured_infer_model.wait_for_async_ready(timeout_ms=10000)
-            job = self.configured_infer_model.run_async([bindings], partial(self.callback, bindings=bindings))
+            job = self.configured_infer_model.run_async([bindings], partial(self.callback, processed_image=frame, bindings=bindings))
 
         job.wait(10000)  # Wait for the last job
-        return self.output_results
 
     def _create_bindings(self):
         """

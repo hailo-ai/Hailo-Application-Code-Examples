@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from loguru import logger
+import queue
+import threading
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -25,7 +27,7 @@ def parse_args():
         argparse.Namespace: Parsed arguments.
     """
     parser = argparse.ArgumentParser(description="Detection Example")
-    parser.add_argument("-n", "--net", help="Path for the HEF model.", default="yolov7.hef")
+    parser.add_argument("-n", "--net", help="Path for the network in HEF format.", default="yolov7.hef")
     parser.add_argument("-i", "--input", default="zidane.jpg", help="Path to the input - either an image or a folder of images.")
     parser.add_argument("-b", "--batch_size", default=1, type=int, required=False, help="Number of images in one batch")
     parser.add_argument("-l", "--labels", default="coco.txt", help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used.")
@@ -192,6 +194,42 @@ def divide_list_to_batches(images_list, batch_size):
         yield images_list[i : i + batch_size]
 
 
+def enqueue_images(images, input_queue, width, height):
+    """
+    Preprocess and enqueue images into the input queue as they are ready.
+
+    Args:
+        images (list): List of PIL.Image.Image objects.
+        input_queue (queue.Queue): Queue for input images.
+        width (int): Model input width.
+        height (int): Model input height.
+    """
+    for image in images:
+        processed_image = preprocess(image, width, height)
+        input_queue.put(processed_image) # Add the image to the input queue
+    input_queue.put(None)  # Add sentinel value to signal end of input
+
+def process_output(output_queue, labels, output_path, width, height):
+    """
+    Process and visualize the output results.
+
+    Args:
+        output_queue (queue.Queue): Queue for output results.
+        labels (list): List of class labels.
+        output_path (Path): Path to save the output images.
+        width (int): Image width.
+        height (int): Image height.
+    """
+    image_id = 0
+    while True:
+        result = output_queue.get()
+        if result is None:
+            break
+        processed_image, detections = result
+        detections = extract_detections(detections)
+        visualize(labels, detections, processed_image, image_id, output_path, width, height)
+        image_id += 1
+
 def main():
     """
     Main function to run the script.
@@ -203,38 +241,41 @@ def main():
     if not images:
         logger.error('No valid images found in the specified path.')
         return
+
+    if len(images) % args.batch_size != 0:
+        logger.error('The number of input images should be divisible by the batch size without any remainder. '
+                     'Please either change the batch size to divide the number of images with no remainder or '
+                     'change the number of images.')
+        return
     
     # Create output directory if it doesn't exist
     output_path = Path('output_images')
     output_path.mkdir(exist_ok=True)
     
     labels = get_labels(args.labels)
-    hailo_inference = HailoAsyncInference(args.net, args.batch_size)
+    input_queue = queue.Queue()
+    output_queue = queue.Queue()
+    
+    hailo_inference = HailoAsyncInference(args.net, input_queue, output_queue, batch_size=args.batch_size)
     height, width, _ = hailo_inference.get_input_shape()
 
-    # Divide images into batches and process each batch
-    batched_images = list(divide_list_to_batches(images, args.batch_size))
-    for batch_idx, batch_images in enumerate(batched_images):
-        processed_images = []
-        infer_images = []
-        
-        for image in batch_images:
-            # Preprocess images and prepare them for inference
-            processed_image = preprocess(image, width, height)
-            processed_images.append(processed_image)
-            infer_images.append(np.array(processed_image))
+    # Start the enqueueing and processing threads
+    enqueue_thread = threading.Thread(target=enqueue_images, args=(images, input_queue, width, height))
+    process_thread = threading.Thread(target=process_output, args=(output_queue, labels, output_path, width, height))
+    
+    enqueue_thread.start()
+    process_thread.start()
+    
+    # Start asynchronous inference
+    hailo_inference.run()
 
-        # Run inference on the preprocessed images
-        raw_detections = hailo_inference.run(np.array(infer_images))
-
-        # Extract and visualize detections
-        for i, image in enumerate(batch_images):
-            detections = extract_detections(raw_detections[i])
-            visualize(labels, detections, processed_images[i], (batch_idx * args.batch_size) + i, output_path, width, height)
+    # Wait for threads to finish
+    enqueue_thread.join()
+    output_queue.put(None)  # Signal to the processing thread to stop
+    process_thread.join()
 
     hailo_inference.release_device()
     logger.info(f'Inference was successful! Results have been saved in {output_path}')
-
 
 if __name__ == "__main__":
     main()
