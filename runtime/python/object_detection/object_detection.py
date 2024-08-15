@@ -194,7 +194,7 @@ def divide_list_to_batches(images_list, batch_size):
         yield images_list[i : i + batch_size]
 
 
-def enqueue_images(images, input_queue, width, height):
+def enqueue_images(images, batch_size, input_queue, width, height):
     """
     Preprocess and enqueue images into the input queue as they are ready.
 
@@ -204,9 +204,17 @@ def enqueue_images(images, input_queue, width, height):
         width (int): Model input width.
         height (int): Model input height.
     """
-    for image in images:
-        processed_image = preprocess(image, width, height)
-        input_queue.put(processed_image) # Add the image to the input queue
+    for batch in divide_list_to_batches(images, batch_size):
+        processed_batch = []
+        batch_array = []
+        
+        for image in batch:
+            processed_image = preprocess(image, width, height)
+            processed_batch.append(processed_image)
+            batch_array.append(np.array(processed_image))
+        
+        input_queue.put(processed_batch)  # Enqueue the batch of images and their arrays
+
     input_queue.put(None)  # Add sentinel value to signal end of input
 
 def process_output(output_queue, labels, output_path, width, height):
@@ -225,8 +233,9 @@ def process_output(output_queue, labels, output_path, width, height):
         result = output_queue.get()
         if result is None:
             break
-        processed_image, detections = result
-        detections = extract_detections(detections)
+        
+        processed_image, infer_results = result
+        detections = extract_detections(infer_results)
         visualize(labels, detections, processed_image, image_id, output_path, width, height)
         image_id += 1
 
@@ -256,11 +265,11 @@ def main():
     input_queue = queue.Queue()
     output_queue = queue.Queue()
     
-    hailo_inference = HailoAsyncInference(args.net, input_queue, output_queue, batch_size=args.batch_size)
+    hailo_inference = HailoAsyncInference(args.net, input_queue, output_queue, args.batch_size)
     height, width, _ = hailo_inference.get_input_shape()
 
     # Start the enqueueing and processing threads
-    enqueue_thread = threading.Thread(target=enqueue_images, args=(images, input_queue, width, height))
+    enqueue_thread = threading.Thread(target=enqueue_images, args=(images, args.batch_size, input_queue, width, height))
     process_thread = threading.Thread(target=process_output, args=(output_queue, labels, output_path, width, height))
     
     enqueue_thread.start()

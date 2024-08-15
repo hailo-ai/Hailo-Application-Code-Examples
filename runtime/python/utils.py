@@ -120,7 +120,7 @@ class HailoInference:
         self.target.release()
 
 class HailoAsyncInference:
-    def __init__(self, hef_path, input_queue, output_queue, batch_size=1, output_type='FLOAT32'):
+    def __init__(self, hef_path, input_queue, output_queue, batch_size=1, input_type=None, output_type=None):
         """
         Initialize the HailoAsyncInference class with the provided HEF model file path and input/output queues.
 
@@ -129,7 +129,8 @@ class HailoAsyncInference:
             input_queue (queue.Queue): Queue from which to pull input frames for inference.
             output_queue (queue.Queue): Queue to hold the inference results.
             batch_size (int): Batch size for inference.
-            output_type (str): Format type of the output stream.
+            input_type (str): Format type of the input stream. Possible values: 'UINT8', 'FLOAT32'.
+            output_type (str): Format type of the output stream. Possible values: 'UINT8', 'FLOAT32'.
         """
         self.input_queue = input_queue
         self.output_queue = output_queue
@@ -140,22 +141,27 @@ class HailoAsyncInference:
         self.target = VDevice(params)
         self.infer_model = self.target.create_infer_model(hef_path)
         self.infer_model.set_batch_size(batch_size)
-        self._set_input_output(output_type)
+        
+        if output_type is not None or input_type is not None:
+            self._set_input_output(input_type, output_type)
+        self.output_type = output_type
+            
         self.input_vstream_info, self.output_vstream_info = self._get_vstream_info()
         self.configured_infer_model = self.infer_model.configure()
 
-    def _set_input_output(self, output_type):
+    def _set_input_output(self, input_type, output_type):
         """
         Set the input and output layer information for the HEF model.
 
         Args:
             output_type (str): Format type of the output stream.
         """
-        input_format_type = self.hef.get_input_vstream_infos()[0].format.type
-        self.infer_model.input().set_format_type(input_format_type)
-        self.infer_model.output().set_format_type(getattr(FormatType, output_type))
+        if input_type is not None:
+            self.infer_model.input().set_format_type(getattr(FormatType, input_type))
+        if output_type is not None:
+            self.infer_model.output().set_format_type(getattr(FormatType, output_type))
 
-    def callback(self, completion_info, processed_image, bindings):
+    def callback(self, completion_info, bindings_list, processed_batch):
         """
         Callback function for handling inference results.
 
@@ -166,8 +172,9 @@ class HailoAsyncInference:
         if completion_info.exception:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
-            result = bindings.output().get_buffer()[0]
-            self.output_queue.put((processed_image,result))  # Add the result to the output queue
+            for i, bindings in enumerate(bindings_list):
+                result = bindings.output().get_buffer()[0]
+                self.output_queue.put((processed_batch[i],result))  # Add the result to the output queue
 
     def _get_vstream_info(self):
         """
@@ -189,23 +196,26 @@ class HailoAsyncInference:
 
     def run(self):
         """
-        Run asynchronous inference on the Hailo-8 device, processing frames from the input queue.
+        Run asynchronous inference on the Hailo-8 device, processing batches from the input queue.
 
-        Frames are fetched from the input queue until a sentinel value (None) is encountered.
+        Batches are fetched from the input queue until a sentinel value (None) is encountered.
 
         Returns:
             None: Results are added to the output queue.
         """
         while True:
-            frame = self.input_queue.get()  # Get a frame from the input queue
-
-            if frame is None:
+            batch_frames = self.input_queue.get()  # Get the tuple (processed_batch, batch_array) from the queue
+            if batch_frames is None:
                 break  # Sentinel value to stop the inference loop
-
-            bindings = self._create_bindings()
-            bindings.input().set_buffer(np.array(frame))
+            
+            bindings_list = []
+            for frame in batch_frames:
+                bindings = self._create_bindings()
+                bindings.input().set_buffer(np.array(frame))
+                bindings_list.append(bindings)
+                
             self.configured_infer_model.wait_for_async_ready(timeout_ms=10000)
-            job = self.configured_infer_model.run_async([bindings], partial(self.callback, processed_image=frame, bindings=bindings))
+            job = self.configured_infer_model.run_async(bindings_list, partial(self.callback, processed_batch=batch_frames, bindings_list=bindings_list))
 
         job.wait(10000)  # Wait for the last job
 
@@ -216,7 +226,13 @@ class HailoAsyncInference:
         Returns:
             bindings: Bindings object with input and output buffers.
         """
-        output_buffers = {name: np.empty(self.infer_model.output(name).shape, dtype=np.float32)
+        if self.output_type is None:
+            hef_output_type = str(self.hef.get_output_vstream_infos()[0].format.type).split(".")[1].lower()
+            output_type = getattr(np, hef_output_type)
+        else:
+            output_type = getattr(np, self.output_type.lower())
+            
+        output_buffers = {name: np.empty(self.infer_model.output(name).shape, dtype=output_type)
                           for name in self.infer_model.output_names}
         return self.configured_infer_model.create_bindings(output_buffers=output_buffers)
 
