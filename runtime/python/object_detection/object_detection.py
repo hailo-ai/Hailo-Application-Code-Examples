@@ -239,6 +239,41 @@ def process_output(output_queue, labels, output_path, width, height):
         visualize(labels, detections, processed_image, image_id, output_path, width, height)
         image_id += 1
 
+def infer(images, net_path, labels, batch_size, output_path):
+    """
+    Initialize queues, HailoAsyncInference instance, and run the inference.
+
+    Args:
+        images (list): List of images to process.
+        net_path (str): Path to the HEF model file.
+        labels (list): List of class labels.
+        batch_size (int): Number of images per batch.
+        output_path (Path): Path to save the output images.
+    """
+    input_queue = queue.Queue()
+    output_queue = queue.Queue()
+    
+    hailo_inference = HailoAsyncInference(net_path, input_queue, output_queue, batch_size)
+    height, width, _ = hailo_inference.get_input_shape()
+
+    # Start the enqueueing and processing threads
+    enqueue_thread = threading.Thread(target=enqueue_images, args=(images, batch_size, input_queue, width, height))
+    process_thread = threading.Thread(target=process_output, args=(output_queue, labels, output_path, width, height))
+    
+    enqueue_thread.start()
+    process_thread.start()
+    
+    # Start asynchronous inference
+    hailo_inference.run()
+
+    # Wait for threads to finish
+    enqueue_thread.join()
+    output_queue.put(None)  # Signal to the processing thread to stop
+    process_thread.join()
+
+    hailo_inference.release_device()
+    logger.info(f'Inference was successful! Results have been saved in {output_path}')
+
 def main():
     """
     Main function to run the script.
@@ -262,29 +297,10 @@ def main():
     output_path.mkdir(exist_ok=True)
     
     labels = get_labels(args.labels)
-    input_queue = queue.Queue()
-    output_queue = queue.Queue()
-    
-    hailo_inference = HailoAsyncInference(args.net, input_queue, output_queue, args.batch_size)
-    height, width, _ = hailo_inference.get_input_shape()
 
-    # Start the enqueueing and processing threads
-    enqueue_thread = threading.Thread(target=enqueue_images, args=(images, args.batch_size, input_queue, width, height))
-    process_thread = threading.Thread(target=process_output, args=(output_queue, labels, output_path, width, height))
-    
-    enqueue_thread.start()
-    process_thread.start()
-    
-    # Start asynchronous inference
-    hailo_inference.run()
-
-    # Wait for threads to finish
-    enqueue_thread.join()
-    output_queue.put(None)  # Signal to the processing thread to stop
-    process_thread.join()
-
-    hailo_inference.release_device()
-    logger.info(f'Inference was successful! Results have been saved in {output_path}')
+    # Run the inference process
+    infer(images, args.net, labels, args.batch_size, output_path)
 
 if __name__ == "__main__":
     main()
+

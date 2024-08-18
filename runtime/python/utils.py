@@ -167,13 +167,16 @@ class HailoAsyncInference:
 
         Args:
             completion_info: Information about the completion of the inference task.
-            bindings: Bindings object containing input and output buffers.
+            bindings_list: List of binding objects containing input and output buffers.
         """
         if completion_info.exception:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
             for i, bindings in enumerate(bindings_list):
-                result = bindings.output().get_buffer()[0]
+                if len(bindings._output_names) == 1:
+                    result = bindings.output().get_buffer()[0]
+                else:
+                    result = {name: bindings.output(name).get_buffer()[0] for name in bindings._output_names}
                 self.output_queue.put((processed_batch[i],result))  # Add the result to the output queue
 
     def _get_vstream_info(self):
