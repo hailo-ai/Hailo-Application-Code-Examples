@@ -116,6 +116,8 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
                             std::vector<std::promise<cv::Mat>>& frames_promises,
                             std::vector<std::future<cv::Mat>>& frames_futures,
                             size_t frame_count,
+                            std::vector<std::shared_ptr<cv::Mat>>& input_buffer_guards,
+                            std::vector<std::shared_ptr<uint8_t>>& output_buffer_guards,
                             std::vector<std::string>& output_names,
                             TSQueue<std::vector<std::pair<uint8_t*, hailo_vstream_info_t>>>& inferred_data_queue,
                             std::chrono::duration<double>& inference_time) {
@@ -129,9 +131,6 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
     AsyncInferJob last_infer_job;
 
     std::shared_ptr<uint8_t> output_buffer;
-
-    std::vector<std::shared_ptr<cv::Mat>> input_buffer_guards;
-    std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
 
     auto bindings = configured_infer_model->create_bindings();
     if (!bindings) {
@@ -182,8 +181,9 @@ hailo_status run_inference(std::shared_ptr<hailort::InferModel> infer_model,
         }
 
         auto job = configured_infer_model->run_async(bindings.value(), 
-                                                        [&inferred_data_queue, output_data_and_infos](const hailort::AsyncInferCompletionInfo& info){
+                                                        [&inferred_data_queue, output_data_and_infos, output_buffer](const hailort::AsyncInferCompletionInfo& info){
             inferred_data_queue.push(output_data_and_infos);
+            (void)output_buffer;
         });
 
         if (!job) {
@@ -242,11 +242,12 @@ hailo_status run_preprocess(std::vector<cv::Mat>& frames, std::vector<std::promi
             throw "Unable to read input file";
     }
 
-    cv::Mat org_frame;
+    cv::Mat org_frame; 
 
-    if (!cmd_num_frames.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
+    if (input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
         capture >> org_frame;
-        use_single_frame(frames, frames_promises, std::ref(org_frame), std::stoi(cmd_num_frames), cv::Size(width, height));
+        int frame_count = cmd_num_frames.empty() ? 1 : std::stoi(cmd_num_frames);
+        use_single_frame(frames, frames_promises, std::ref(org_frame), frame_count, cv::Size(width, height));
         org_frame.release();
         capture.release();
     }
@@ -287,8 +288,11 @@ hailo_status configure_and_infer(std::shared_ptr<hailort::InferModel> infer_mode
 
     // The buffers are stored here as a guard for the memory. The buffer will be freed only after
     // configured_infer_model will be released.
-    std::vector<std::shared_ptr<uint8_t>> buffer_guards;
-    buffer_guards.reserve(infer_model->outputs().size());
+    std::vector<std::shared_ptr<cv::Mat>> input_buffer_guards;
+    std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
+
+    input_buffer_guards.reserve(infer_model->inputs().size());
+    output_buffer_guards.reserve(infer_model->outputs().size());
 
     std::vector<std::string> output_names = infer_model->get_output_names();
 
@@ -316,6 +320,8 @@ hailo_status configure_and_infer(std::shared_ptr<hailort::InferModel> infer_mode
                                     std::ref(frames_promises),
                                     std::ref(frames_futures),
                                     frame_count,
+                                    std::ref(input_buffer_guards),
+                                    std::ref(output_buffer_guards),
                                     std::ref(output_names),
                                     std::ref(inferred_data_queue),
                                     std::ref(inference_time)));
@@ -345,8 +351,6 @@ hailo_status configure_and_infer(std::shared_ptr<hailort::InferModel> infer_mode
         std::cerr << "Post-processing failed with status " << postprocess_status << std::endl;
         return postprocess_status;
     }
-
-    // inference_time = end_time - start_time;
 
     return HAILO_SUCCESS;
 }
@@ -449,9 +453,17 @@ int main(int argc, char** argv)
         if (!capture.isOpened()){
             throw "Error when reading video";
         }
-        frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
-        if (!image_num.empty() && input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
-            frame_count = std::stoi(image_num);
+        if (!image_num.empty()){
+            if (input_path.find(".avi") == std::string::npos && input_path.find(".mp4") == std::string::npos){
+                frame_count = std::stoi(image_num);
+            }
+            else {
+                frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+                image_num = "";
+            }
+        }
+        else {
+            frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
         }
     }
 
@@ -478,7 +490,7 @@ int main(int argc, char** argv)
     std::chrono::time_point<std::chrono::system_clock> t_end = std::chrono::high_resolution_clock::now();
     total_time = t_end - t_start;
     
-    print_inference_statistics(inference_time, detection_hef, frame_count);
+    print_inference_statistics(inference_time, detection_hef, (double)frame_count);
 
     std::cout << BOLDBLUE << "\n-I- Application run finished successfully" << RESET << std::endl;
     std::cout << BOLDBLUE << "-I- Total application run time: " << (double)total_time.count() << " sec" << RESET << std::endl;

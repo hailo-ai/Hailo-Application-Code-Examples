@@ -7,7 +7,7 @@ It receives an input image, hef, frame count and return the image with detected 
 Requirements
 ------------
 
-- hailo_platform==4.17.0
+- hailo_platform==4.18.0
 - hailo15 cross development toolchain
 - hailo15 platform
 - OpenCV 4.5.5
@@ -61,7 +61,7 @@ Example
 	./build.sh
 	`scp build/aarch64/yolov8_cross_compilation_h15 root@10.0.0.1:~/yolov8_example/`
 	`scp resources/images/bus.jpg root@10.0.0.1:~/yolov8_example/`
-	`scp resources/hefs/h15/yolov8s_h15.hef root@10.0.0.1:~/yolov8_example/`
+	`scp resources/hefs/h15/yolov8s.hef root@10.0.0.1:~/yolov8_example/`
 	`./yolov8_cross_compilation_h15 -input=bus.jpg -hef=yolov8s_h15.hef -num=30`.
 	```	
 
@@ -73,7 +73,7 @@ Example
 
 Notes
 ----------------
-- The example was only tested with ``HailoRT v4.17.0``
+- The example was only tested with ``HailoRT v4.18.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 - There should be no spaces between "=" given in the command line arguments and the file name itself.
 

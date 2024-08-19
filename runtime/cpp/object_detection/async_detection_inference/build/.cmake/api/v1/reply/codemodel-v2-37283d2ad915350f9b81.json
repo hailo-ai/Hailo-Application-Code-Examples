@@ -1,0 +1,60 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "vstream_async_detection_example_cpp",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "vstream_async_detection_example_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-vstream_async_detection_example_cpp-Debug-be9a30e0c0dde4f3be34.json",
+					"name" : "vstream_async_detection_example_cpp",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/object_detection/async_detection_inference/build",
+		"source" : "/local/users/omerw/repo/Hailo-Application-Code-Examples-1/runtime/cpp/object_detection/async_detection_inference"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

@@ -77,15 +77,12 @@ void print_inference_statistics(std::size_t num_of_frames, double total_time_hai
     std::cout << BOLDGREEN << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- Total ONNXRuntime Time:   " << total_time_onnx << " sec" << std::endl;
     std::cout << "-I- Total Hailo Time:         " << total_time_hailo << " sec" << std::endl;
-    std::cout << "-I- Total Time:               " << total_time_onnx + total_time_hailo << " sec" << std::endl;
     std::cout << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- Average ONNXRuntime FPS:  " << (double)num_of_frames /total_time_onnx << std::endl;
     std::cout << "-I- Average Hailo FPS:        " << (double)num_of_frames / total_time_hailo << std::endl;
-    std::cout << "-I- Average FPS:              " << (double)num_of_frames / (total_time_onnx + total_time_hailo) << std::endl;
     std::cout << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- ONNXRuntime Latency:      " << 1.0 / ((double)num_of_frames /total_time_onnx)*1000 << " ms" << std::endl;
     std::cout << "-I- Hailo Latency:            " << 1.0 / ((double)num_of_frames / total_time_hailo)*1000 << " ms"<< std::endl;
-    std::cout << "-I- Total Latency:            " << 1.0 / ((double)num_of_frames / (total_time_onnx + total_time_hailo))*1000 << " ms" << std::endl;
     std::cout << "-I-----------------------------------------------\n" << std::endl << RESET;
 }
 
