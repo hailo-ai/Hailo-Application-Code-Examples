@@ -174,7 +174,6 @@ def infer(images: list, net_path: str, labels_path: str, batch_size: int, output
     output_queue.put(None)  # Signal process thread to exit
     process_thread.join()
 
-    hailo_inference.release_device()
     logger.info(f'Inference was successful! Results have been saved in {output_path}')
 
 
