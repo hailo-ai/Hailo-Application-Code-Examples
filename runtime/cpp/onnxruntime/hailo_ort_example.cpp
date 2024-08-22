@@ -182,7 +182,6 @@ hailo_status read_all(OutputVStream &output, Ort::AllocatorWithDefaultOptions& o
     for (size_t i = 0; i < num_of_frames; i++) {
         status = output.read(MemoryView(data.data(), data.size()));
         cv::Mat imageMat(output.get_info().shape.height, output.get_info().shape.width, CV_8U, data.data());
-        cv::imwrite("output_image_" + std::to_string(i) + ".jpg", imageMat);
         if (HAILO_SUCCESS != status) {
             std::cerr << "Failed reading with status = " <<  status << std::endl;
             return status;
