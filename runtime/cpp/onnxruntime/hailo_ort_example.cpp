@@ -77,12 +77,15 @@ void print_inference_statistics(std::size_t num_of_frames, double total_time_hai
     std::cout << BOLDGREEN << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- Total ONNXRuntime Time:   " << total_time_onnx << " sec" << std::endl;
     std::cout << "-I- Total Hailo Time:         " << total_time_hailo << " sec" << std::endl;
+    std::cout << "-I- Total Time:               " << total_time_onnx + total_time_hailo << " sec" << std::endl;
     std::cout << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- Average ONNXRuntime FPS:  " << (double)num_of_frames /total_time_onnx << std::endl;
     std::cout << "-I- Average Hailo FPS:        " << (double)num_of_frames / total_time_hailo << std::endl;
+    std::cout << "-I- Average FPS:              " << (double)num_of_frames / (total_time_onnx + total_time_hailo) << std::endl;
     std::cout << "-I-----------------------------------------------" << std::endl;
     std::cout << "-I- ONNXRuntime Latency:      " << 1.0 / ((double)num_of_frames /total_time_onnx)*1000 << " ms" << std::endl;
     std::cout << "-I- Hailo Latency:            " << 1.0 / ((double)num_of_frames / total_time_hailo)*1000 << " ms"<< std::endl;
+    std::cout << "-I- Total Latency:            " << 1.0 / ((double)num_of_frames / (total_time_onnx + total_time_hailo))*1000 << " ms" << std::endl;
     std::cout << "-I-----------------------------------------------\n" << std::endl << RESET;
 }
 
@@ -103,10 +106,7 @@ std::string info_to_str(hailo_vstream_info_t vstream_info) {
 std::vector<Ort::Value> onnxruntime_inference(Ort::AllocatorWithDefaultOptions& ort_alloc, 
                                                     Ort::Session& session,
                                                     std::chrono::duration<double>& onnx_elapsed_time_s_vec, 
-                                                    std::size_t num_of_frames) {
-                                                    // // WITH IMAGES
-                                                    // std::vector<std::vector<float32_t>> data_vector, std::size_t num_of_frames) {
-                                                    //////
+                                                    std::vector<std::vector<float32_t>> data_vector, std::size_t num_of_frames) {
     size_t input_num = session.GetInputCount();
     size_t output_num = session.GetOutputCount();
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
@@ -134,19 +134,15 @@ std::vector<Ort::Value> onnxruntime_inference(Ort::AllocatorWithDefaultOptions& 
         cv::Mat image(input_shape[2],input_shape[3],CV_32FC(input_shape[1]));
         input_images.push_back(image);
         input_shapes.push_back(input_shape);
-
-        // // WITH IMAGES
-        // input_shapes.push_back(input_shape);
-        //////
     }
 
     for (size_t i = 0; i < output_num; i++){
         auto output_shape = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
         if (output_shape[0] == -1)
             output_shape[0] = 1;
+
         input_shapes.push_back(output_shape);
     }
-
     std::vector<std::vector<float>> images_vector(input_num);
     for (size_t i = 0; i < images_vector.size(); i++) {
         images_vector[i].assign((float*)input_images[i].data, (float*)input_images[i].data + input_images[i].total()*input_images[i].channels());
@@ -158,15 +154,6 @@ std::vector<Ort::Value> onnxruntime_inference(Ort::AllocatorWithDefaultOptions& 
             input_shapes[i].data(), input_shapes[i].size()
             ));
     }
-
-    // // WITH IMAGES
-    // for (size_t i = 0; i < data_vector.size(); i++){
-    //     input_tensors.push_back(Ort::Value::CreateTensor<float>(
-    //         memory_info, data_vector[i].data(), data_vector[i].size(),
-    //         input_shapes[i].data(), input_shapes[i].size()
-    //         ));
-    // }
-    //////
 
     std::vector<Ort::Value> output_tensors;
 
@@ -186,10 +173,7 @@ std::vector<Ort::Value> onnxruntime_inference(Ort::AllocatorWithDefaultOptions& 
 template<typename T=float32_t>
 hailo_status read_all(OutputVStream &output, Ort::AllocatorWithDefaultOptions& ort_alloc, Ort::Session& session,
                     std::size_t num_of_frames, std::chrono::time_point<std::chrono::system_clock>& start_time,
-                    std::chrono::duration<double>& elapsed_time_s) {
-                    // // WITH IMAGES
-                    // std::chrono::duration<double>& elapsed_time_s, std::vector<std::vector<T>>& data_vector) {
-                    //////
+                    std::chrono::duration<double>& elapsed_time_s, std::vector<std::vector<T>>& data_vector) {
     m.lock();
     std::cout << BOLDCYAN << "-I- Started read thread: " << info_to_str(output.get_info()) << std::endl << RESET;
     m.unlock();
@@ -197,6 +181,13 @@ hailo_status read_all(OutputVStream &output, Ort::AllocatorWithDefaultOptions& o
     hailo_status status = HAILO_SUCCESS;
     for (size_t i = 0; i < num_of_frames; i++) {
         status = output.read(MemoryView(data.data(), data.size()));
+        cv::Mat imageMat(output.get_info().shape.height, output.get_info().shape.width, CV_8U, data.data());
+        cv::imwrite("output_image_" + std::to_string(i) + ".jpg", imageMat);
+        if (HAILO_SUCCESS != status) {
+            std::cerr << "Failed reading with status = " <<  status << std::endl;
+            return status;
+        }
+
         std::cout << YELLOW << std::ends;
         printf("\r-I-  Recv %lu/%lu",i+1, num_of_frames);
         std::cout << RESET << std::ends;
@@ -204,11 +195,9 @@ hailo_status read_all(OutputVStream &output, Ort::AllocatorWithDefaultOptions& o
     std::chrono::time_point<std::chrono::system_clock> end_t = std::chrono::high_resolution_clock::now();
     elapsed_time_s = end_t - start_time;
 
-    // // WITH IMAGES
-    // m_data.lock();
-    // data_vector.push_back(data);
-    // m_data.unlock();
-    //////
+    m_data.lock();
+    data_vector.push_back(data);
+    m_data.unlock();
 
     if (HAILO_SUCCESS != status) {
         return status;
@@ -219,29 +208,21 @@ hailo_status read_all(OutputVStream &output, Ort::AllocatorWithDefaultOptions& o
 
 template<typename T=float32_t>
 hailo_status write_all(InputVStream &input, std::size_t num_of_frames,
-                        std::chrono::time_point<std::chrono::system_clock>& start_time) {
-                        // // WITH IMAGES
-                        // std::chrono::time_point<std::chrono::system_clock>& start_time, cv::Mat image) {
-                        //////
+                        std::chrono::time_point<std::chrono::system_clock>& start_time, cv::Mat image) {
     m.lock();
     std::cout << BOLDWHITE << "-I- Started write thread: " << info_to_str(input.get_info()) << std::endl << RESET;
     m.unlock();
 
     std::vector<T> buff(input.get_frame_size());
     
-    // // WITH IMAGES
-    // auto shape = input.get_info().shape;
-    //////
+    auto shape = input.get_info().shape;
     
     hailo_status status = HAILO_SUCCESS;
     start_time = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < num_of_frames; i++) {
-        status = input.write(MemoryView(buff.data(), buff.size()));
         
-        // // WITH IMAGES
-        // int factor = std::is_same<T, uint8_t>::value ? 1 : 4;
-        // status = input.write(MemoryView(image.data, shape.height * shape.width * shape.features * factor));
-        //////
+        int factor = std::is_same<T, uint8_t>::value ? 1 : 4;
+        status = input.write(MemoryView(image.data, shape.height * shape.width * shape.features * factor));
     }
     if (HAILO_SUCCESS != status) {
         return status;
@@ -255,37 +236,23 @@ hailo_status infer(std::vector<InputVStream> &inputs, std::vector<OutputVStream>
                     std::chrono::time_point<std::chrono::system_clock>& start_time,
                     std::chrono::duration<double>& elapsed_time_s, 
                     std::chrono::duration<double>& onnx_elapsed_time_s, 
-                    Ort::AllocatorWithDefaultOptions& ort_alloc, Ort::Session& session) {
-                    // // WITH IMAGES
-                    // Ort::AllocatorWithDefaultOptions& ort_alloc, Ort::Session& session, cv::Mat& image) {
-                    //////
+                    Ort::AllocatorWithDefaultOptions& ort_alloc, Ort::Session& session, cv::Mat& image) {
     hailo_status input_status = HAILO_UNINITIALIZED;
     hailo_status output_status = HAILO_UNINITIALIZED;
     std::vector<std::thread> input_threads;
     std::vector<std::thread> output_threads;
-
-    // // WITH IMAGES
-    // std::vector<std::vector<OT>> data_vector;
-    //////
+    std::vector<std::vector<OT>> data_vector;
 
     for (auto &input: inputs)
         input_threads.push_back( std::thread(
-            [&input, &num_of_frames, &start_time, &input_status]() 
-            { input_status = write_all<IT>(input, num_of_frames, start_time); }
-            // // WITH IMAGES
-            // [&input, &num_of_frames, &start_time, &image, &input_status]() 
-            // { input_status = write_all<IT>(input, num_of_frames, start_time, image); }
-            //////
+            [&input, &num_of_frames, &start_time, &image, &input_status]() 
+            { input_status = write_all<IT>(input, num_of_frames, start_time, image); }
             ) );
     
     for (auto &output: outputs)
         output_threads.push_back( std::thread(
-            [&output, &ort_alloc, &session, &num_of_frames, &start_time, &elapsed_time_s, &output_status]() 
-            { output_status = read_all<OT>(output, ort_alloc, session, num_of_frames, start_time, elapsed_time_s); }
-            // // WITH IMAGES
-            // [&output, &ort_alloc, &session, &num_of_frames, &start_time, &elapsed_time_s, &data_vector, &output_status]() 
-            // { output_status = read_all<OT>(output, ort_alloc, session, num_of_frames, start_time, elapsed_time_s, std::ref(data_vector)); }
-            //////
+            [&output, &ort_alloc, &session, &num_of_frames, &start_time, &elapsed_time_s, &data_vector, &output_status]() 
+            { output_status = read_all<OT>(output, ort_alloc, session, num_of_frames, start_time, elapsed_time_s, std::ref(data_vector)); }
             ) );
 
     for (auto &in: input_threads)
@@ -298,10 +265,7 @@ hailo_status infer(std::vector<InputVStream> &inputs, std::vector<OutputVStream>
         return HAILO_INTERNAL_FAILURE;
     }
 
-    auto onnx_output = onnxruntime_inference(ort_alloc, session, onnx_elapsed_time_s, num_of_frames);
-    // // WITH IMAGES
-    // auto onnx_output = onnxruntime_inference(ort_alloc, session, onnx_elapsed_time_s, data_vector, num_of_frames);
-    //////
+    auto onnx_output = onnxruntime_inference(ort_alloc, session, onnx_elapsed_time_s, data_vector, num_of_frames);
 
     std::cout << BOLDBLUE << "\n\n-I- Inference finished successfully\n" << std::endl << RESET;
     return HAILO_SUCCESS;
@@ -396,14 +360,6 @@ int main(int argc, char**argv) {
     std::size_t num_of_frames = stoi(getCmdOption(argc, argv, "-num="));
     std::string image_path      = getCmdOption(argc, argv, "-image=");
 
-    // // WITH IMAGES
-    // cv::Mat imageBGR = cv::imread(image_path, cv::ImreadModes::IMREAD_COLOR); 
-
-    // cv::Mat resizedImageBGR, resizedImageRGB, image;
-    // cv::resize(imageBGR, resizedImageBGR, cv::Size(HEIGHT, WIDTH), cv::InterpolationFlags::INTER_CUBIC);
-    // cv::cvtColor(resizedImageBGR, resizedImageRGB, cv::ColorConversionCodes::COLOR_BGR2RGB);
-    // resizedImageRGB.convertTo(image, CV_32F, 1.0 / 255.0);
-    //////
 
     Ort::Env env;
     Ort::AllocatorWithDefaultOptions ort_alloc;
@@ -474,12 +430,16 @@ int main(int argc, char**argv) {
         return activated_network_group.status();
     }
 
-    auto status  = infer(vstreams.first, vstreams.second, num_of_frames, start_time_vec, elapsed_time_s_vec, onnx_elapsed_time_s_vec, ort_alloc, session);
+    cv::Mat imageBGR = cv::imread(image_path, cv::ImreadModes::IMREAD_COLOR); 
+    cv::Mat resizedImageBGR, resizedImageRGB, image;
+    int height = vstreams.first[0].get_info().shape.height;
+    int width = vstreams.first[0].get_info().shape.width;
+    
+    cv::resize(imageBGR, resizedImageBGR, cv::Size(height, width), cv::InterpolationFlags::INTER_CUBIC);
+    cv::cvtColor(resizedImageBGR, resizedImageRGB, cv::ColorConversionCodes::COLOR_BGR2RGB);
+    resizedImageRGB.convertTo(image, CV_32F, 1.0 / 255.0);
 
-    // WITH IMAGES
-    // auto status  = infer(vstreams.first, vstreams.second, num_of_frames, start_time_vec, elapsed_time_s_vec, onnx_elapsed_time_s_vec, ort_alloc, session, image);
-    //////
-
+    auto status  = infer(vstreams.first, vstreams.second, num_of_frames, start_time_vec, elapsed_time_s_vec, onnx_elapsed_time_s_vec, ort_alloc, session, image);
 
     print_inference_statistics(num_of_frames, elapsed_time_s_vec.count(), onnx_elapsed_time_s_vec.count());
 
