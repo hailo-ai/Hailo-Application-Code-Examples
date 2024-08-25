@@ -9,7 +9,7 @@ It annotates detected objects with bounding boxes and labels and tracks them acr
 Requirements
 ------------
 
-- hailo_platform==4.17.0
+- hailo_platform==4.18.0
 - ByteTracker
 - OpenCV (cv2)
 - tqdm
@@ -81,7 +81,7 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.17.0``
+- The example was only tested with ``HailoRT v4.18.0``
 - The example expects a HEF which contains the HailoRT Postprocess
 - The script assumes that the input video is in a standard format supported by OpenCV (e.g., .mp4, .avi).
 
