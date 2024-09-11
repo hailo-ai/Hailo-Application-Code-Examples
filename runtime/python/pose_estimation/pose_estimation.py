@@ -11,7 +11,7 @@ from zenlog import logging
 from PIL import Image
 from hailo_platform import HEF
 from pose_estimation_utils import (output_data_type2dict,
-                                   preprocess, check_process_errors, PoseEstPostProcessing)
+                                   check_process_errors, PoseEstPostProcessing)
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -72,12 +72,13 @@ def create_output_directory() -> Path:
     return output_path
 
 
-def enqueue_images(
+def preprocess_input(
     images: list[Image.Image],
     batch_size: int,
     input_queue: mp.Queue,
     width: int,
     height: int,
+    post_processing: PoseEstPostProcessing
 ) -> None:
     """
     Preprocess and enqueue images into the input queue as they are ready.
@@ -93,7 +94,7 @@ def enqueue_images(
         processed_batch = []
 
         for image in batch:
-            processed_image = preprocess(image, width, height)
+            processed_image = post_processing.preprocess(image, width, height)
             processed_batch.append(processed_image)
 
         input_queue.put(processed_batch)
@@ -101,7 +102,7 @@ def enqueue_images(
     input_queue.put(None)
 
 
-def process_output(
+def postprocess_output(
     output_queue: mp.Queue,
     output_path: Path,
     width: int,
@@ -162,31 +163,31 @@ def infer(
     )
     height, width, _ = hailo_inference.get_input_shape()
 
-    image_enqueuer = Process(
-        target=enqueue_images,
+    preprocess = Process(
+        target=preprocess_input,
         name="image_enqueuer",
-        args=(images, batch_size, input_queue, width, height)
+        args=(images, batch_size, input_queue, width, height, post_processing)
         
     )
-    image_processor = Process(
-        target=process_output,
+    postprocess = Process(
+        target=postprocess_output,
         name="image_processor",
         args=(
             output_queue, output_path, width, height, class_num, post_processing
         )
     )
 
-    image_enqueuer.start()
-    image_processor.start()
+    preprocess.start()
+    postprocess.start()
 
     try:
         hailo_inference.run()
-        image_enqueuer.join()
+        preprocess.join()
         # To signal processing process to exit
         output_queue.put(None)
-        image_processor.join()
+        postprocess.join()
       
-        check_process_errors(image_enqueuer, image_processor)
+        check_process_errors(preprocess, postprocess)
      
         logging.info(f'Inference was successful! Results have been saved in {output_path}')
       
@@ -195,8 +196,8 @@ def infer(
         # Ensure cleanup if there's an error
         input_queue.close()
         output_queue.close()
-        image_enqueuer.terminate()
-        image_processor.terminate()
+        preprocess.terminate()
+        postprocess.terminate()
 
         os._exit(1)  # Force exit on error
 
