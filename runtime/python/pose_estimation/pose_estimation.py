@@ -5,7 +5,6 @@ import sys
 import argparse
 import multiprocessing as mp
 from multiprocessing import Process
-import time
 from pathlib import Path
 from loguru import logger
 from PIL import Image
