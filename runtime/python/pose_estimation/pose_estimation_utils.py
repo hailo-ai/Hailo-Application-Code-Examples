@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from hailo_platform import HEF
-from zenlog import logging
+from loguru import logger
 
 # Joint pairs used for drawing pose estimations
 JOINT_PAIRS = [
@@ -482,7 +482,7 @@ def check_process_errors(*processes: Process) -> None:
     process_failed = False
     for process in processes:
         if process.exitcode != 0:
-            logging.error(f"{process.name} terminated with an error. Exit code: {process.exitcode}")
+            logger.error(f"{process.name} terminated with an error. Exit code: {process.exitcode}")
             process_failed = True
     if process_failed:
         raise RuntimeError("One or more processes terminated with an error.")
