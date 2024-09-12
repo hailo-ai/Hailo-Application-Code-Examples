@@ -5,9 +5,9 @@ import sys
 import argparse
 import multiprocessing as mp
 from multiprocessing import Process
-
+import time
 from pathlib import Path
-from zenlog import logging
+from loguru import logger
 from PIL import Image
 from hailo_platform import HEF
 from pose_estimation_utils import (output_data_type2dict,
@@ -189,10 +189,10 @@ def infer(
       
         check_process_errors(preprocess, postprocess)
      
-        logging.info(f'Inference was successful! Results have been saved in {output_path}')
+        logger.info(f'Inference was successful! Results have been saved in {output_path}')
       
     except Exception as e:
-        logging.error(f"Inference error: {e}")
+        logger.error(f"Inference error: {e}")
         # Ensure cleanup if there's an error
         input_queue.close()
         output_queue.close()
@@ -209,7 +209,7 @@ def main() -> None:
     try:
         validate_images(images, args.batch_size)
     except ValueError as e:
-        logging.error(e)
+        logger.error(e)
         return
 
     output_path = create_output_directory()
@@ -222,11 +222,11 @@ def main() -> None:
         regression_length=15,
         strides=[8, 16, 32]
     )
+
     infer(
         images, args.net, int(args.batch_size), int(args.class_num),
         output_path, output_type_dict, post_processing
     )
-
 
 if __name__ == "__main__":
     main()

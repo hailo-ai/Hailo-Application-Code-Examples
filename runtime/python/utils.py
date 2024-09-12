@@ -2,7 +2,7 @@ from typing import List, Generator, Optional, Tuple
 from pathlib import Path
 from functools import partial
 import queue
-from loguru import logger
+from zenlog import logging
 import numpy as np
 from PIL import Image
 from hailo_platform import (HEF, VDevice,
@@ -83,7 +83,7 @@ class HailoAsyncInference:
         """
 
         if completion_info.exception:
-            logger.error(f'Inference error: {completion_info.exception}')
+            logging.error(f'Inference error: {completion_info.exception}')
         else:
             for i, bindings in enumerate(bindings_list):
                 if len(bindings._output_names) == 1:
@@ -153,8 +153,7 @@ class HailoAsyncInference:
                         bindings_list=bindings_list
                     )
                 )
-
-                job.wait(10000)  # Wait for the last job
+            job.wait(10000)  # Wait for the last job
     
     def _get_output_type_str(self, output_info) -> str:
         if self.output_type is None:
