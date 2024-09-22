@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-n", "--net",
         help="Path for the network in HEF format.",
-        default="yolov8s_pose_v2.hef"
+        default="yolov8s_pose.hef"
     )
     parser.add_argument(
         "-i", "--input",
@@ -165,8 +165,7 @@ def infer(
     preprocess = Process(
         target=preprocess_input,
         name="image_enqueuer",
-        args=(images, batch_size, input_queue, width, height, post_processing)
-        
+        args=(images, batch_size, input_queue, width, height, post_processing)      
     )
     postprocess = Process(
         target=postprocess_output,
