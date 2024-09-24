@@ -1,4 +1,4 @@
-from typing import List, Generator, Optional, Tuple
+from typing import List, Generator, Optional, Tuple, Dict
 from pathlib import Path
 from functools import partial
 import queue
@@ -15,7 +15,7 @@ class HailoAsyncInference:
     def __init__(
         self, hef_path: str, input_queue: queue.Queue,
         output_queue: queue.Queue, batch_size: int = 1,
-        input_type: Optional[str] = None, output_type: Optional[dict[str, str]] = None
+        input_type: Optional[str] = None, output_type: Optional[Dict[str, str]] = None
     ) -> None:
         """
         Initialize the HailoAsyncInference class with the provided HEF model 
