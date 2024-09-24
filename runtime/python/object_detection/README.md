@@ -10,9 +10,9 @@ Requirements
 ------------
 
 - hailo_platform==4.18.0
-- zenlog
 - Pillow
 - numpy
+- loguru
 
 Supported Models
 ----------------
