@@ -4,7 +4,7 @@ Object Detection
 This example performs object detection using a Hailo8 device.
 It receives an input image and annotates it with detected objects and bounding boxes.
 
-![output example](output_image0.jpg)
+![output example](./output_image0.jpg)
 
 Requirements
 ------------

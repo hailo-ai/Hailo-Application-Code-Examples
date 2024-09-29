@@ -7,7 +7,7 @@ This example performs object detection using a Hailo8 device.
 The example takes an input (image), performs inference using the input HEF file and draws the detection boxes, class type, confidence, keypoints and joints connection on the resized image.  
 The example works with .jpg, .jpeg, .png and .bmp image files.  
 
-![output example](output_image1.jpg)
+![output example](./output_image1.jpg)
 
 Requirements
 ------------
