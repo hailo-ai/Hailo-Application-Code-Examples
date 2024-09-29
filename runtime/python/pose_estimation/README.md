@@ -13,7 +13,6 @@ Requirements
 ------------
 
 - hailo_platform==4.18.0
-- zenlog
 - Pillow
 - loguru
 - numpy
@@ -78,7 +77,7 @@ Example
 -------
 **Command**
 ```shell script
-./pose_estimation.py -n yolov8s_pose_mz.hef -i zidane.jpg -cn 2
+./pose_estimation.py -n yolov8s_pose.hef -i zidane.jpg -b 1
 ```
 
 Additional Notes
