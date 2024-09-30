@@ -1,4 +1,4 @@
-from typing import List, Generator, Optional, Tuple
+from typing import List, Generator, Optional, Tuple, Dict
 from pathlib import Path
 from functools import partial
 import queue
@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from hailo_platform import (HEF, VDevice,
                             FormatType, HailoSchedulingAlgorithm)
+from hailo_platform import InferVStreams, InputVStreamParams, OutputVStreamParams, ConfigureParams, HailoStreamInterface
 IMAGE_EXTENSIONS: Tuple[str, ...] = ('.jpg', '.png', '.bmp', '.jpeg')
 
 
@@ -14,8 +15,9 @@ class HailoAsyncInference:
     def __init__(
         self, hef_path: str, input_queue: queue.Queue,
         output_queue: queue.Queue, batch_size: int = 1,
-        input_type: Optional[str] = None, output_type: Optional[dict[str, str]] = None,
+        input_type: Optional[str] = None, output_type: Optional[Dict[str, str]] = None,
         send_original_frame: bool = False) -> None:
+
         """
         Initialize the HailoAsyncInference class with the provided HEF model 
         file path and input/output queues.
@@ -98,6 +100,7 @@ class HailoAsyncInference:
                 else:
                     self.output_queue.put((processed_batch[i], result))
 
+
     def get_vstream_info(self) -> Tuple[list, list]:
 
         """
@@ -149,13 +152,12 @@ class HailoAsyncInference:
 
                 configured_infer_model.wait_for_async_ready(timeout_ms=10000)
                 job = configured_infer_model.run_async(
-                    bindings_list,
-                    partial(
-                        self.callback,
-                        processed_batch=preprocessed_batch,
-                        original_batch=original_batch if self.send_original_frame else None,
-                        bindings_list=bindings_list
-                    )
+                      bindings_list,
+                      partial(
+                              self.callback,
+                              processed_batch=preprocessed_batch,
+                              original_batch=original_batch if self.send_original_frame else None,
+                              bindings_list=bindings_list)
                 )
             job.wait(10000)  # Wait for the last job
 

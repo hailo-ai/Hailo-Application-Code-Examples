@@ -8,6 +8,7 @@ from multiprocessing import Process
 from pathlib import Path
 from loguru import logger
 from PIL import Image
+from typing import List
 from hailo_platform import HEF
 from pose_estimation_utils import (output_data_type2dict,
                                    check_process_errors, PoseEstPostProcessing)
@@ -72,7 +73,7 @@ def create_output_directory() -> Path:
 
 
 def preprocess_input(
-    images: list[Image.Image],
+    images: List[Image.Image],
     batch_size: int,
     input_queue: mp.Queue,
     width: int,
@@ -134,7 +135,7 @@ def postprocess_output(
 
 
 def infer(
-    images: list[Image.Image],
+    images: List[Image.Image],
     net_path: str,
     batch_size: int,
     class_num: int,
