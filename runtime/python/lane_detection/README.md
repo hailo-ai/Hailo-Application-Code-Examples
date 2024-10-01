@@ -2,7 +2,7 @@ Lane Detection
 ================
 
 This example performs lane detection using a Hailo8 device.
-It receives an input video and annotates it.
+It receives an input video and annotates it with the lane detection coordinates.
 
 ![output GIF example](lane_det_output.gif)
 
@@ -80,7 +80,6 @@ Additional Notes
 ----------------
 
 - The example was only tested with ``HailoRT v4.18.0``
-- The example expects a HEF which contains the HailoRT Postprocess
 - The postprocessed video will be saved as **output_video.mp4**.  
 
 Disclaimer

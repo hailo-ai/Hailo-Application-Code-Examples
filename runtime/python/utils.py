@@ -59,19 +59,22 @@ class HailoAsyncInference:
         """
         self.infer_model.input().set_format_type(getattr(FormatType, input_type))
     
-    def _set_output_type(self, output_type_dict: Optional[str] = None) -> None:
+    def _set_output_type(self, output_type_dict: Optional[Dict[str, str]] = None) -> None:
         """
         Set the output type for the HEF model. If the model has multiple outputs,
-        it will set the same type of all of them.
+        it will set the same type for all of them.
 
         Args:
-            output_type (Optional[dict[str, str]]): Format type of the output stream.
+            output_type_dict (Optional[dict[str, str]]): Format type of the output stream.
         """
         for output_name, output_type in output_type_dict.items():
-            self.infer_model.output(output_name).set_format_type(getattr(FormatType, output_type)) 
+            self.infer_model.output(output_name).set_format_type(
+                getattr(FormatType, output_type)
+            )
+
     def callback(
-        self, completion_info, bindings_list: list, processed_batch: list,
-        original_batch: Optional[list]) -> None:
+        self, completion_info, bindings_list: list, input_batch: list,
+    ) -> None:
         """
         Callback function for handling inference results.
 
@@ -86,18 +89,18 @@ class HailoAsyncInference:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
             for i, bindings in enumerate(bindings_list):
+                # If the model has a single output, return the output buffer. 
+                # Else, return a dictionary of output buffers, where the keys are the output names.
                 if len(bindings._output_names) == 1:
                     result = bindings.output().get_buffer()
                 else:
                     result = {
-                        name: np.expand_dims(bindings.output(name).get_buffer(), axis=0)
+                        name: np.expand_dims(
+                            bindings.output(name).get_buffer(), axis=0
+                        )
                         for name in bindings._output_names
-                    }               
-                if self.send_original_frame:
-                    self.output_queue.put((original_batch[i], result))
-                else:
-                    self.output_queue.put((processed_batch[i], result))
-
+                    }
+                self.output_queue.put((input_batch[i], result))
 
     def get_vstream_info(self) -> Tuple[list, list]:
 
@@ -112,6 +115,7 @@ class HailoAsyncInference:
             self.hef.get_input_vstream_infos(), 
             self.hef.get_output_vstream_infos()
         )
+
     def get_hef(self) -> HEF:
         """
         Get the object's HEF file
@@ -152,14 +156,12 @@ class HailoAsyncInference:
                 job = configured_infer_model.run_async(
                     bindings_list, partial(
                         self.callback,
-                        processed_batch=preprocessed_batch,
-                        original_batch=original_batch if self.send_original_frame else None,
+                        input_batch=original_batch if self.send_original_frame else preprocessed_batch,
                         bindings_list=bindings_list
                     )
                 )
             job.wait(10000)  # Wait for the last job
 
-   
     def _get_output_type_str(self, output_info) -> str:
         if self.output_type is None:
             return str(output_info.format.type).split(".")[1].lower()
@@ -195,7 +197,8 @@ class HailoAsyncInference:
         return configured_infer_model.create_bindings(
             output_buffers=output_buffers
         )
-         
+
+
 def load_input_images(images_path: str) -> List[Image.Image]:
     """
     Load images from the specified path.
