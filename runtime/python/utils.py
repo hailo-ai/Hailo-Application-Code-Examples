@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 from hailo_platform import (HEF, VDevice,
                             FormatType, HailoSchedulingAlgorithm)
-from hailo_platform import InferVStreams, InputVStreamParams, OutputVStreamParams, ConfigureParams, HailoStreamInterface
 IMAGE_EXTENSIONS: Tuple[str, ...] = ('.jpg', '.png', '.bmp', '.jpeg')
 
 
@@ -15,8 +14,8 @@ class HailoAsyncInference:
     def __init__(
         self, hef_path: str, input_queue: queue.Queue,
         output_queue: queue.Queue, batch_size: int = 1,
-        input_type: Optional[str] = None, output_type: Optional[Dict[str, str]] = None
-    ) -> None:
+        input_type: Optional[str] = None, output_type: Optional[Dict[str, str]] = None,
+        send_original_frame: bool = False) -> None:
         """
         Initialize the HailoAsyncInference class with the provided HEF model 
         file path and input/output queues.
@@ -29,12 +28,12 @@ class HailoAsyncInference:
             batch_size (int): Batch size for inference. Defaults to 1.
             input_type (Optional[str]): Format type of the input stream. 
                                         Possible values: 'UINT8', 'UINT16'.
-            output_type (Optional[str]): Format type of the output stream. 
+            output_type Optional[dict[str, str]] : Format type of the output stream. 
                                          Possible values: 'UINT8', 'UINT16', 'FLOAT32'.
         """
         self.input_queue = input_queue
         self.output_queue = output_queue
-        params = VDevice.create_params()     
+        params = VDevice.create_params()    
         # Set the scheduling algorithm to round-robin to activate the scheduler
         params.scheduling_algorithm = HailoSchedulingAlgorithm.ROUND_ROBIN
 
@@ -48,6 +47,7 @@ class HailoAsyncInference:
             self._set_output_type(output_type)
 
         self.output_type = output_type
+        self.send_original_frame = send_original_frame
 
     def _set_input_type(self, input_type: Optional[str] = None) -> None:
         """
@@ -59,18 +59,21 @@ class HailoAsyncInference:
         """
         self.infer_model.input().set_format_type(getattr(FormatType, input_type))
     
-    def _set_output_type(self, output_type_dict: Optional[str] = None) -> None:
+    def _set_output_type(self, output_type_dict: Optional[Dict[str, str]] = None) -> None:
         """
         Set the output type for the HEF model. If the model has multiple outputs,
-        it will set the same type of all of them.
+        it will set the same type for all of them.
 
         Args:
-            output_type (Optional[dict[str, str]]): Format type of the output stream.
+            output_type_dict (Optional[dict[str, str]]): Format type of the output stream.
         """
         for output_name, output_type in output_type_dict.items():
-            self.infer_model.output(output_name).set_format_type(getattr(FormatType, output_type)) 
+            self.infer_model.output(output_name).set_format_type(
+                getattr(FormatType, output_type)
+            )
+
     def callback(
-        self, completion_info, bindings_list: list, processed_batch: list
+        self, completion_info, bindings_list: list, input_batch: list,
     ) -> None:
         """
         Callback function for handling inference results.
@@ -86,14 +89,18 @@ class HailoAsyncInference:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
             for i, bindings in enumerate(bindings_list):
+                # If the model has a single output, return the output buffer. 
+                # Else, return a dictionary of output buffers, where the keys are the output names.
                 if len(bindings._output_names) == 1:
                     result = bindings.output().get_buffer()
                 else:
                     result = {
-                        name: np.expand_dims(bindings.output(name).get_buffer(), axis=0)
+                        name: np.expand_dims(
+                            bindings.output(name).get_buffer(), axis=0
+                        )
                         for name in bindings._output_names
-                    }               
-                self.output_queue.put((processed_batch[i], result))
+                    }
+                self.output_queue.put((input_batch[i], result))
 
     def get_vstream_info(self) -> Tuple[list, list]:
 
@@ -108,6 +115,7 @@ class HailoAsyncInference:
             self.hef.get_input_vstream_infos(), 
             self.hef.get_output_vstream_infos()
         )
+
     def get_hef(self) -> HEF:
         """
         Get the object's HEF file
@@ -127,22 +135,19 @@ class HailoAsyncInference:
         return self.hef.get_input_vstream_infos()[0].shape  # Assumes one input
 
     def run(self) -> None:
-        """
-        Run asynchronous inference on the Hailo device, processing batches 
-        from the input queue.
-
-        Batches are fetched from the input queue until a sentinel value 
-        (None) is encountered.
-        """
         with self.infer_model.configure() as configured_infer_model:
             while True:
-                batch_frames = self.input_queue.get()  
-                # Get the tuple (processed_batch, batch_array) from the queue
-                if batch_frames is None:
+                batch_data = self.input_queue.get()
+                if batch_data is None:
                     break  # Sentinel value to stop the inference loop
 
+                if self.send_original_frame:
+                    original_batch, preprocessed_batch = batch_data
+                else:
+                    preprocessed_batch = batch_data
+
                 bindings_list = []
-                for frame in batch_frames:
+                for frame in preprocessed_batch:
                     bindings = self._create_bindings(configured_infer_model)
                     bindings.input().set_buffer(np.array(frame))
                     bindings_list.append(bindings)
@@ -150,12 +155,13 @@ class HailoAsyncInference:
                 configured_infer_model.wait_for_async_ready(timeout_ms=10000)
                 job = configured_infer_model.run_async(
                     bindings_list, partial(
-                        self.callback, processed_batch=batch_frames,
+                        self.callback,
+                        input_batch=original_batch if self.send_original_frame else preprocessed_batch,
                         bindings_list=bindings_list
                     )
                 )
             job.wait(10000)  # Wait for the last job
-    
+
     def _get_output_type_str(self, output_info) -> str:
         if self.output_type is None:
             return str(output_info.format.type).split(".")[1].lower()
@@ -191,7 +197,8 @@ class HailoAsyncInference:
         return configured_infer_model.create_bindings(
             output_buffers=output_buffers
         )
-         
+
+
 def load_input_images(images_path: str) -> List[Image.Image]:
     """
     Load images from the specified path.
@@ -252,117 +259,3 @@ def divide_list_to_batches(
     """
     for i in range(0, len(images_list), batch_size):
         yield images_list[i: i + batch_size]
-
-class HailoInference:
-    def __init__(self, hef_path, output_type='FLOAT32'):
-        """
-        Initialize the HailoInference class with the provided HEF model file path.
- 
-        Args:
-            hef_path (str): Path to the HEF model file.
-        """
-        self.hef = HEF(hef_path)
-        self.target = VDevice()
-        self.network_group = self._configure_and_get_network_group()
-        self.network_group_params = self.network_group.create_params()
-        self.input_vstreams_params, self.output_vstreams_params = self._create_vstream_params(output_type)
-        self.input_vstream_info, self.output_vstream_info = self._get_and_print_vstream_info()
- 
-    def _configure_and_get_network_group(self):
-        """
-        Configure the Hailo device and get the network group.
- 
-        Returns:
-            NetworkGroup: Configured network group.
-        """
-        configure_params = ConfigureParams.create_from_hef(self.hef, interface=HailoStreamInterface.PCIe)
-        network_group = self.target.configure(self.hef, configure_params)[0]
-        return network_group
- 
-    def _create_vstream_params(self, output_type):
-        """
-        Create input and output stream parameters.
- 
-        Args:
-            output_type (str): Format type of the output stream.
- 
-        Returns:
-            tuple: Input and output stream parameters.
-        """
-        input_format_type = self.hef.get_input_vstream_infos()[0].format.type
-        input_vstreams_params = InputVStreamParams.make_from_network_group(self.network_group, format_type=input_format_type)
-        output_vstreams_params = OutputVStreamParams.make_from_network_group(self.network_group, format_type=getattr(FormatType, output_type))
-        return input_vstreams_params, output_vstreams_params
- 
-    def _get_and_print_vstream_info(self):
-        """
-        Get and print information about input and output stream layers.
- 
-        Returns:
-            tuple: List of input stream layer information, List of output stream layer information.
-        """
-        input_vstream_info = self.hef.get_input_vstream_infos()
-        output_vstream_info = self.hef.get_output_vstream_infos()
- 
-        for layer_info in input_vstream_info:
-            logger.info(f'Input layer: {layer_info.name} {layer_info.shape} {layer_info.format.type}')
-        for layer_info in output_vstream_info:
-            logger.info(f'Output layer: {layer_info.name} {layer_info.shape} {layer_info.format.type}')
- 
-        return input_vstream_info, output_vstream_info
- 
-    def get_input_shape(self):
-        """
-        Get the shape of the model's input layer.
- 
-        Returns:
-            tuple: Shape of the model's input layer.
-        """
-        return self.input_vstream_info[0].shape  # Assumes that the model has one input
- 
-    def run(self, input_data):
-        """
-        Run inference on Hailo-8 device.
- 
-        Args:
-            input_data (np.ndarray, dict, list, tuple): Input data for inference.
- 
-        Returns:
-            np.ndarray: Inference output.
-        """
-        input_dict = self._prepare_input_data(input_data)
- 
-        with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:
-            with self.network_group.activate(self.network_group_params):
-                output = infer_pipeline.infer(input_dict)[self.output_vstream_info[0].name]
-
-        return output
- 
-    def _prepare_input_data(self, input_data):
-        """
-        Prepare input data for inference.
- 
-        Args:
-            input_data (np.ndarray, dict, list, tuple): Input data for inference.
- 
-        Returns:
-            dict: Prepared input data.
-        """
-        input_dict = {}
-        if isinstance(input_data, dict):
-            return input_data
-        elif isinstance(input_data, (list, tuple)):
-            for layer_info in self.input_vstream_info:
-                input_dict[layer_info.name] = input_data
-        else:
-            if input_data.ndim == 3:
-                input_data = np.expand_dims(input_data, axis=0)
-            input_dict[self.input_vstream_info[0].name] = input_data
- 
-        return input_dict
- 
-    def release_device(self):
-        """
-        Release the Hailo device.
-        """
-        self.target.release()
