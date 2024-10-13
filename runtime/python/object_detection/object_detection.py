@@ -117,7 +117,7 @@ def process_output(
             break  # Exit the loop if sentinel value is received
         
         processed_image, infer_results = result
-        detections = utils.extract_detections(infer_results[0])
+        detections = utils.extract_detections(infer_results)
         utils.visualize(
             detections, processed_image, image_id, 
             output_path, width, height
