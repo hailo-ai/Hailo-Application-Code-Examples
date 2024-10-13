@@ -9,7 +9,7 @@ It receives an input image and annotates it with detected objects and bounding b
 Requirements
 ------------
 
-- hailo_platform==4.18.0
+- hailo_platform==4.19.0
 - Pillow
 - numpy
 - loguru
@@ -80,7 +80,7 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.18.0``
+- The example was only tested with ``HailoRT v4.19.0``
 - The example expects a HEF which contains the HailoRT Postprocess
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 
