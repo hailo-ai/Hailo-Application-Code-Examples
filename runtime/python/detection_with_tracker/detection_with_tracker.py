@@ -171,9 +171,13 @@ def main() -> None:
             results: List[np.ndarray]
             _, results = output_queue.get()
 
+            # Deals with the expanded results from hailort versions < 4.19.0
+            if len(results) == 1:
+                results = results[0]
+
             # Extract detections from the inference results
             detections: Dict[str, np.ndarray] = extract_detections(
-                results[0], video_h, video_w, args.score_thresh
+                results, video_h, video_w, args.score_thresh
             )
 
             # Postprocess the detections and annotate the frame
