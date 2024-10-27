@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from utils import HailoAsyncInference, load_input_images, validate_images, divide_list_to_batches
 
 import argparse
 import os
@@ -15,6 +14,7 @@ from object_detection_utils import ObjectDetectionUtils
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import HailoAsyncInference, load_input_images, validate_images, divide_list_to_batches
 
 
 def parse_args() -> argparse.Namespace:
