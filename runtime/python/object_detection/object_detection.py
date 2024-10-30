@@ -117,7 +117,6 @@ def process_output(
             break  # Exit the loop if sentinel value is received
 
         processed_image, infer_results = result
-        detections = utils.extract_detections(infer_results)
 
         # Deals with the expanded results from hailort versions < 4.19.0
         if len(infer_results) == 1:
