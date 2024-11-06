@@ -26,6 +26,7 @@ APP | Description |
 
 APP | Description |
 |:---|:---|
+| `zero_shot_classification` | Zero-Shot Classification with CLIP ViT L14
 | `classifier` | Classification with models trained on ImageNet
 | `depth_estimation` | Depth estimation with scdepthv3 and stereonet
 | `hailo_onnxruntime` | Inference with a Hailo device and postprocessing with ONNXRuntime
