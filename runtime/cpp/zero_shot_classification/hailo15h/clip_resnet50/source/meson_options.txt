@@ -1,0 +1,7 @@
+option('libargs', type : 'array', value : [])
+
+# APPS
+option('apps_install_dir', type : 'string', value : '')
+option('libcxxopts', type : 'string', value : '')
+option('include_python', type : 'boolean', value : false)
+option('post_processes_install_dir', type : 'string', value : '')

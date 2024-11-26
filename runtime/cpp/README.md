@@ -2,7 +2,7 @@
 
 APP | Description |
 |:---|:---|
-| `zero_shot_classification` | Zero-Shot Classification with with clip_vut_l14 on hailo8 and Clip_resnet50 on hailo15h
+| `zero_shot_classification` | Zero-Shot Classification with with clip_vit_l14 on hailo8 and clip_resnet50 on hailo15h
 | `classifier` | Classification with models trained on ImageNet
 | `depth_estimation` | Depth estimation with scdepthv3 and stereonet
 | `hailo_onnxruntime` | Inference with a Hailo device and postprocessing with ONNXRuntime
