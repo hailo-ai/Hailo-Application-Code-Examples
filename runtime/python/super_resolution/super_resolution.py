@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 
-import argparse
-import os
-import sys
-from pathlib import Path
 import numpy as np
-from loguru import logger
-import queue
-import threading
 from PIL import Image
+from pathlib import Path
+import os
+from loguru import logger
+import argparse
+import sys
 from typing import List
-from object_detection_utils import ObjectDetectionUtils
+import threading
+import queue
+from super_resolution_utils import SrganUtils, Espcnx4Utils, SuperResolutionUtils
 
-# Add the parent directory to the system path to access utils module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from utils import HailoAsyncInference, load_input_images, validate_images, divide_list_to_batches
-
 
 def parse_args() -> argparse.Namespace:
     """
@@ -24,15 +22,15 @@ def parse_args() -> argparse.Namespace:
     Returns:
         argparse.Namespace: Parsed arguments.
     """
-    parser = argparse.ArgumentParser(description="Detection Example")
+    parser = argparse.ArgumentParser(description="Super Resolution Example")
     parser.add_argument(
         "-n", "--net", 
         help="Path for the network in HEF format.",
-        default="yolov7.hef"
+        default="real_esrgan_x2.hef"
     )
     parser.add_argument(
         "-i", "--input", 
-        default="zidane.jpg",
+        default="input_image.png",
         help="Path to the input - either an image or a folder of images."
     )
     parser.add_argument(
@@ -43,9 +41,10 @@ def parse_args() -> argparse.Namespace:
         help="Number of images in one batch"
     )
     parser.add_argument(
-        "-l", "--labels", 
-        default="coco.txt",
-        help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used."
+        "-o",
+        "--output",
+        default="output_images",
+        help="Path of folder for output images",
     )
 
     args = parser.parse_args()
@@ -55,11 +54,8 @@ def parse_args() -> argparse.Namespace:
         raise FileNotFoundError(f"Network file not found: {args.net}")
     if not os.path.exists(args.input):
         raise FileNotFoundError(f"Input path not found: {args.input}")
-    if not os.path.exists(args.labels):
-        raise FileNotFoundError(f"Labels file not found: {args.labels}")
 
     return args
-
 
 def enqueue_images(
     images: List[Image.Image],
@@ -67,48 +63,44 @@ def enqueue_images(
     input_queue: queue.Queue,
     width: int,
     height: int,
-    utils: ObjectDetectionUtils
+    utils: SuperResolutionUtils,
 ) -> None:
     """
     Preprocess and enqueue images into the input queue as they are ready.
 
     Args:
         images (List[Image.Image]): List of PIL.Image.Image objects.
+        batch_size (int): Number of images per batch.
         input_queue (queue.Queue): Queue for input images.
         width (int): Model input width.
         height (int): Model input height.
-        utils (ObjectDetectionUtils): Utility class for object detection preprocessing.
+        utils (SuperResolutionUtils): Utility class for super resolution preprocessing.
     """
     for batch in divide_list_to_batches(images, batch_size):
         processed_batch = []
-        batch_array = []
 
         for image in batch:
-            processed_image = utils.preprocess(image, width, height)
+            processed_image = utils.pre_process(image, width, height)
             processed_batch.append(processed_image)
-            batch_array.append(np.array(processed_image))
 
         input_queue.put(processed_batch)
 
-    input_queue.put(None)  # Add sentinel value to signal end of input
-
+    input_queue.put(None)
 
 def process_output(
     output_queue: queue.Queue,
-    output_path: Path,
-    width: int,
-    height: int,
-    utils: ObjectDetectionUtils
+    input_images: List[Image.Image],
+    utils: SuperResolutionUtils,
+    results: List[Image.Image], 
 ) -> None:
     """
     Process and visualize the output results.
 
     Args:
         output_queue (queue.Queue): Queue for output results.
-        output_path (Path): Path to save the output images.
-        width (int): Image width.
-        height (int): Image height.
-        utils (ObjectDetectionUtils): Utility class for object detection visualization.
+        input_images (List[Image.Image]): List of input images.
+        utils (SuperResolutionUtils): Utility class for super resolution visualization.
+        results (List[Image.Image]): List to store the processed output images.
     """
     image_id = 0
     while True:
@@ -116,56 +108,57 @@ def process_output(
         if result is None:
             break  # Exit the loop if sentinel value is received
 
-        processed_image, infer_results = result
+        _, infer_results = result
 
         # Deals with the expanded results from hailort versions < 4.19.0
         if len(infer_results) == 1:
             infer_results = infer_results[0]
 
-        detections = utils.extract_detections(infer_results)
-        utils.visualize(
-            detections, processed_image, image_id,
-            output_path, width, height
-        )
+        infer_results = utils.post_process(infer_results, input_images[image_id])
         image_id += 1
+        results.append(infer_results)
 
     output_queue.task_done()  # Indicate that processing is complete
 
-
 def infer(
-    images: List[Image.Image],
+    input_images: List[Image.Image],
     net_path: str,
-    labels_path: str,
     batch_size: int,
-    output_path: Path
+    output_path: Path,
 ) -> None:
     """
     Initialize queues, HailoAsyncInference instance, and run the inference.
 
     Args:
-        images (List[Image.Image]): List of images to process.
+        input_images (List[Image.Image]): List of images to process.
         net_path (str): Path to the HEF model file.
-        labels_path (str): Path to a text file containing labels.
         batch_size (int): Number of images per batch.
         output_path (Path): Path to save the output images.
     """
-    utils = ObjectDetectionUtils(labels_path)
-
+    utils = None
     input_queue = queue.Queue()
     output_queue = queue.Queue()
+    results = [] 
 
-    hailo_inference = HailoAsyncInference(
-        net_path, input_queue, output_queue, batch_size
-    )
+    if 'espcn' in net_path:
+        utils = Espcnx4Utils()
+        hailo_inference = HailoAsyncInference(
+            net_path, input_queue, output_queue, batch_size, "FLOAT32", {"espcn_x4_78x120/depth_to_space1": "FLOAT32"}
+        )
+    else:
+        utils = SrganUtils()
+        hailo_inference = HailoAsyncInference(
+            net_path, input_queue, output_queue, batch_size
+        )
+    
     height, width, _ = hailo_inference.get_input_shape()
-
     enqueue_thread = threading.Thread(
         target=enqueue_images, 
-        args=(images, batch_size, input_queue, width, height, utils)
+        args=(input_images, batch_size, input_queue, width, height, utils)
     )
     process_thread = threading.Thread(
         target=process_output, 
-        args=(output_queue, output_path, width, height, utils)
+        args=(output_queue, input_images, utils, results)
     )
 
     enqueue_thread.start()
@@ -177,10 +170,28 @@ def infer(
     output_queue.put(None)  # Signal process thread to exit
     process_thread.join()
 
+    # Save the results
+    save_results(input_images, results, output_path)
+
     logger.info(
         f'Inference was successful! Results have been saved in {output_path}'
     )
 
+def save_results(images: List[Image.Image], results: List[Image.Image], output_path: Path) -> None:    
+    """
+    Save the results of the inference to the output path.
+
+    Args:
+        images (List[Image.Image]): List of PIL.Image.Image objects.
+        results (List[Image.Image]): List of PIL.Image.Image objects.
+        output_path (Path): Path to save the output images.
+    """
+    if results:
+        width, height = results[0].size
+    for idx, (image, result) in enumerate(zip(images, results)):
+        image = image.resize((width, height), Image.BICUBIC)
+        result.save(output_path / f"sr_output_{idx}.png")
+        Image.fromarray(np.hstack((np.array(image), np.array(result)))).save(output_path / f"comparison_{idx}.png")
 
 def main() -> None:
     """
@@ -188,6 +199,10 @@ def main() -> None:
     """
     # Parse command line arguments
     args = parse_args()
+
+    # Create output directory if it doesn't exist
+    output_path = Path(args.output)
+    output_path.mkdir(exist_ok=True)
 
     # Load input images
     images = load_input_images(args.input)
@@ -199,13 +214,8 @@ def main() -> None:
         logger.error(e)
         return
 
-    # Create output directory if it doesn't exist
-    output_path = Path('output_images')
-    output_path.mkdir(exist_ok=True)
-
     # Start the inference
-    infer(images, args.net, args.labels, args.batch_size, output_path)
-
+    infer(images, args.net, args.batch_size, output_path)
 
 if __name__ == "__main__":
     main()
