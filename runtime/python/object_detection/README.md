@@ -55,7 +55,7 @@ Usage
 
 4. Run the script:
     ```shell script
-    ./object_detection -n <model_path> -i <input_image_path> -o <output_path> -l <label_file_path>
+    ./object_detection -n <model_path> -i <input_image_path> -l <label_file_path> -b <batch_size>
     ```
 
 Arguments
@@ -63,8 +63,8 @@ Arguments
 
 - ``-n, --net``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image on which object detection will be performed.
-- ``-o, --output``: Path to save the output image with annotated objects.
 - ``-l, --labels``: Path to a text file containing class labels for the detected objects.
+- ``-b, --batch_size``:[optional] Number of images in one batch. Defaults to 1.
 
 For more information:
 ```shell script
@@ -80,9 +80,10 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.19.0``
+- The example was only tested with ``HailoRT v4.20.0``
 - The example expects a HEF which contains the HailoRT Postprocess
-- The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
+- The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp
+- Number of input images should be divisible by batch_size 
 
 Disclaimer
 ----------
