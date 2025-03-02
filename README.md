@@ -16,7 +16,6 @@ APP | Description |
 | `lane_detection` | Lane detection with UFLDv2
 | `object_detection` | Object detection with yolo, ssd, centernet
 | `pose_estimation` | Pose estimation with yolov8
-| `streaming` | Object detection on a streaming input from a camera using OpenCV
 | `super_resolution` | Super resolution with espcnx4, srgan
 
 </details>
@@ -31,10 +30,8 @@ APP | Description |
 | `depth_estimation` | Depth estimation with scdepthv3 and stereonet
 | `hailo_onnxruntime` | Inference with a Hailo device and postprocessing with ONNXRuntime
 | `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
-| `object_detection` | Object detection - generic, asynchronous, H15
+| `object_detection` | Object detection - generic, asynchronous
 | `pose estimation` | Pose estimation with yolov8
-| `re_id` | People re-identification using yolov5s and repvgg_a0
-| `scheduler` | Multi-model inference using the Hailo scheduler
 | `semantic_segmentation` | Semantic segmentation with Resnet18_fcn trained on cityscape
 
 </details>

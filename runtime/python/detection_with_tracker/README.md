@@ -39,7 +39,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd detection_with_tracker
+    cd Hailo-Application-Code-Examples/runtime/python/detection_with_tracker
     ```
 
 2. Install dependencies:

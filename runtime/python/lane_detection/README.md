@@ -40,7 +40,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd lane_detection
+    cd Hailo-Application-Code-Examples/runtime/python/lane_detection
     ```
 
 2. Install dependencies:
