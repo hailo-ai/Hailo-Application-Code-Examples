@@ -2,36 +2,35 @@ Object Detection
 ================
 
 This example performs object detection using a Hailo8 device.
-It receives an input image and annotates it with detected objects and bounding boxes.
+It processes input images, videos, or a camera stream and annotates it with the detected objects.
 
-![output example](./output_image0.jpg)
+![output example](./output.gif)
 
 Requirements
 ------------
 
-- hailo_platform==4.19.0
-- Pillow
+- hailo_platform==4.20.0
+- opencv
 - numpy
 - loguru
 
 Supported Models
 ----------------
 
-This example expects the hef to contain HailoRT-Postprocess. 
-
-Because of that, this example only supports detections models that allow hailort-postprocess:
-- yolov5/6/7/8
-- yolox
-- ssd
-- centernet
+This example only supports detections models that allow HailoRT-Postprocess:
+- YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLOv10
+- YOLOx
+- SSD
+- CenterNet
  
 
 Usage
 -----
+To avoid compatibility issues, it's recommended to have a separate venv from the DFC.
 
-0. Install PyHailoRT
-    - Download the HailoRT whl from the Hailo website - make sure to select the correct Python version. 
-    - Install whl:
+0. Install PCIe driver and PyHailoRT
+    - Download and install the PCIe driver and PyHailoRT from the Hailo website
+    - To install the PyHailoRT whl:
         ```shell script
         pip install hailort-X.X.X-cpXX-cpXX-linux_x86_64.whl
         ```
@@ -40,7 +39,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd object_detection
+    cd Hailo-Application-Code-Examples/runtime/python/object_detection
     ```
 
 2. Install dependencies:
@@ -57,13 +56,15 @@ Usage
     ```shell script
     ./object_detection -n <model_path> -i <input_image_path> -l <label_file_path> -b <batch_size>
     ```
+The output results will be saved under a folder named output.
 
 Arguments
 ---------
 
 - ``-n, --net``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image on which object detection will be performed.
-- ``-l, --labels``: Path to a text file containing class labels for the detected objects.
+- ``-l, --labels``:[optional] Path to a text file containing class labels for the detected objects.
+- ``-s, --save_stream_output``:[optional] Save the output of the inference from a stream.
 - ``-b, --batch_size``:[optional] Number of images in one batch. Defaults to 1.
 
 For more information:
@@ -72,9 +73,21 @@ For more information:
 ```
 Example 
 -------
-**Command**
+**Inference on a camera stream**
+```shell script
+./object_detection.py -n ./yolov7.hef -i camera
+```
+**Inference on a video**
+```shell script
+./object_detection.py -n ./yolov7.hef -i input_video.mp4
+```
+**Inference on an image**
 ```shell script
 ./object_detection.py -n ./yolov7.hef -i zidane.jpg
+```
+**Inference on a folder of images**
+```shell script
+./object_detection.py -n ./yolov7.hef -i input_folder
 ```
 
 Additional Notes
@@ -82,8 +95,9 @@ Additional Notes
 
 - The example was only tested with ``HailoRT v4.20.0``
 - The example expects a HEF which contains the HailoRT Postprocess
-- The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp
-- Number of input images should be divisible by batch_size 
+- Images are only supported in the following formats: .jpg, .jpeg, .png or .bmp
+- Number of input images should be divisible by batch_size
+- For any issues, open a post on the [Hailo Community](https://community.hailo.ai)
 
 Disclaimer
 ----------

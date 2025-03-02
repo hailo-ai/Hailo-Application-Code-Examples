@@ -9,5 +9,4 @@ APP | Description |
 | `lane_detection` | Lane detection with UFLDv2
 | `object_detection` | Object detection with yolo, ssd or centernet
 | `pose_estimation` | Pose estimation with yolov8
-| `streaming` | Object detection on a streaming input from a camera using OpenCV
 | `super_resolution` | Super resolution with espcnx4 or srgan

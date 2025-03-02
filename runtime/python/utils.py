@@ -4,7 +4,6 @@ from functools import partial
 import queue
 from loguru import logger
 import numpy as np
-from PIL import Image
 from hailo_platform import (HEF, VDevice,
                             FormatType, HailoSchedulingAlgorithm)
 IMAGE_EXTENSIONS: Tuple[str, ...] = ('.jpg', '.png', '.bmp', '.jpeg')
@@ -33,7 +32,7 @@ class HailoAsyncInference:
         """
         self.input_queue = input_queue
         self.output_queue = output_queue
-        params = VDevice.create_params()    
+        params = VDevice.create_params()
         # Set the scheduling algorithm to round-robin to activate the scheduler
         params.scheduling_algorithm = HailoSchedulingAlgorithm.ROUND_ROBIN
 
@@ -199,7 +198,28 @@ class HailoAsyncInference:
         )
 
 
-def load_input_images(images_path: str) -> List[Image.Image]:
+def load_images_opencv(images_path: str) -> List[np.ndarray]:
+    """
+    Load images from the specified path.
+
+    Args:
+        images_path (str): Path to the input image or directory of images.
+
+    Returns:
+        List[np.ndarray]: List of images as NumPy arrays.
+    """
+    import cv2
+    path = Path(images_path)
+    if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS:
+        return [cv2.imread(str(path))]
+    elif path.is_dir():
+        return [
+            cv2.imread(str(img)) for img in path.glob("*")
+            if img.suffix.lower() in IMAGE_EXTENSIONS
+        ]
+    return []
+
+def load_input_images(images_path: str):
     """
     Load images from the specified path.
 
@@ -209,6 +229,7 @@ def load_input_images(images_path: str) -> List[Image.Image]:
     Returns:
         List[Image.Image]: List of PIL.Image.Image objects.
     """
+    from PIL import Image
     path = Path(images_path)
     if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS:
         return [Image.open(path)]
@@ -219,13 +240,12 @@ def load_input_images(images_path: str) -> List[Image.Image]:
         ]
     return []
 
-
-def validate_images(images: List[Image.Image], batch_size: int) -> None:
+def validate_images(images: List[np.ndarray], batch_size: int) -> None:
     """
     Validate that images exist and are properly divisible by the batch size.
 
     Args:
-        images (List[Image.Image]): List of images.
+        images (List[np.ndarray]): List of images.
         batch_size (int): Number of images per batch.
 
     Raises:
@@ -244,17 +264,17 @@ def validate_images(images: List[Image.Image], batch_size: int) -> None:
 
 
 def divide_list_to_batches(
-    images_list: List[Image.Image], batch_size: int
-) -> Generator[List[Image.Image], None, None]:
+    images_list: List[np.ndarray], batch_size: int
+) -> Generator[List[np.ndarray], None, None]:
     """
     Divide the list of images into batches.
 
     Args:
-        images_list (List[Image.Image]): List of images.
+        images_list (List[np.ndarray]): List of images.
         batch_size (int): Number of images in each batch.
 
     Returns:
-        Generator[List[Image.Image], None, None]: Generator yielding batches 
+        Generator[List[np.ndarray], None, None]: Generator yielding batches 
                                                   of images.
     """
     for i in range(0, len(images_list), batch_size):
