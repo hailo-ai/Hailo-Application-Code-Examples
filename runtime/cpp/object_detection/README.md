@@ -8,7 +8,7 @@ It receives a HEF and images/video/camera as input, and returns the image\video 
 Requirements
 ------------
 
-- hailo_platform==4.20.0
+- HailoRT==4.20.0
 - OpenCV >= 4.5.4
     ```shell script
     sudo apt-get install -y libopencv-dev python3-opencv
