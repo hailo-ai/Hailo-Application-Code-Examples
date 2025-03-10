@@ -194,7 +194,7 @@ bool is_video(const std::string& path) {
 }
 
 InputType determine_input_type(const std::string& input_path, cv::VideoCapture &capture,
-                               double org_height, double org_width, size_t frame_count) {
+                               double &org_height, double &org_width, size_t &frame_count) {
 
     InputType input_type;
     int directory_entry_count;
@@ -370,7 +370,7 @@ std::vector<NamedBbox> parse_nms_data(uint8_t* data, size_t max_class_count) {
 }
 
 cv::VideoCapture open_video_capture(const std::string &input_path, cv::VideoCapture capture,
-                                    double org_height, double org_width, size_t frame_count) {
+                                    double &org_height, double &org_width, size_t &frame_count) {
     capture.open(input_path, cv::CAP_ANY); 
     if (!capture.isOpened()) {
         throw std::runtime_error("Unable to read input file");

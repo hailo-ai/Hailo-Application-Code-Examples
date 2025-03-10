@@ -8,24 +8,33 @@ It receives a HEF and images/video/camera as input, and returns the image\video 
 Requirements
 ------------
 
-- hailo_platform==4.20.0
+- HailoRT==4.20.0
 - OpenCV >= 4.5.4
-- CMake >= 3.20
+    ```shell script
+    sudo apt-get install -y libopencv-dev python3-opencv
+    ```
+- Boost
+    ```shell script
+    sudo apt-get install libboost-all-dev
+    ```
+- CMake >= 3.16
+- Gtk
+
 
 Supported Models
 ----------------
 This example expects the HEF to contain HailoRT-Postprocess. 
 
 Because of that, this example only supports detections models that allow HailoRT-Postprocess:
-- yolov5/6/7/8/9/10/11
-- yolox
-- ssd
-- centernet
+- YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv10, YOLOv11
+- YOLOX
+- SSD
+- CenterNet
 
 
 Usage
 -----
-0. Make sure you have the HailoRT correct version and you installed all dependencies. 
+0. Make sure you have installed all of the requirements.
 
 1. Clone the repository:
     ```shell script
@@ -34,11 +43,11 @@ Usage
     cd Hailo-Application-Code-Examples/runtime/cpp/object_detection
     ``` 
 
-2. Download example files:
+2. Download sample resources:
 	```shell script
-    ./get_resources.sh
+    ./download_resources.sh
     ```
-    Which copies the following files to the example's directory:
+    The following files will be downloaded:
     ```
     full_mov_slow.mp4
     bus.jpg
@@ -49,7 +58,7 @@ Usage
 	```shell script
     ./build.sh
     ```
-	Which creates the directory hierarchy build/x86 and compile an executable file called obj_det
+	This creates the directory hierarchy build/x86_64 and compile an executable file called obj_det
 
 5. Run the example:
 
@@ -64,22 +73,27 @@ Arguments
 - ``-hef``: Path to HEF file to run inference on.
 - ``-s (optional)``: A flag for saving the output video of a camera input. 
 
-Example 
--------
-**Command**
-
-	./get_resources.sh
-
-	./build.sh
-
-    For video:
+Running the Example
+-------------------
+- For a video:
+    ```shell script
 	./build/x86_64/obj_det -hef=yolov8n.hef -input=full_mov_slow.mp4
-    For a single image:
-    ./build/x86_64/obj_det -hef=yolov8s.hef -input=bus.jpg
-    For a directory of images:
-    ./build/x86_64/obj_det -hef=yolov8s.hef -input=images
-    For saving camera input:
-    ./build/x86_64/obj_det -hef=yolox_tiny.hef -input=/dev/video0 -s
+    ```
+    The output video is saved as processed_video.mp4
+- For a single image:
+    ```shell script
+    ./build/x86_64/obj_det -hef=yolov8n.hef -input=bus.jpg
+    ```
+    The output image is saved as processed_image_0.jpg
+- For a directory of images:
+    ```shell script
+    ./build/x86_64/obj_det -hef=yolov8n.hef -input=images
+    ````
+    Each image i will be saved as processed_image_i.jpg
+- For camera, enabling saving the output:
+    ```shell script
+    ./build/x86_64/obj_det -hef=yolov8n.hef -input=/dev/video0 -s
+    ```
 
 Notes
 ----------------
@@ -89,8 +103,12 @@ Notes
 - The example only works for detection models that have the NMS on-Hailo (either on the NN-core or on the CPU)
 - When using camera as input:
     - To exit gracefully from openCV window, press 'q'.
-    - Camera path is usually found under /dev/video0 .
-    - In case OpenCV is defaulting to GStreamer for video capture warnings might occur.
+    - Camera path is usually found under /dev/video0.
+    - Ensure you have the permissions for the camera. You may need to run, for example:
+        ```shell script
+        sudo chmod 777 /dev/video0
+        ```
+    - In case OpenCV is defaulting to GStreamer for video capture, warnings might occur.
       To solve, force OpenCV to use V4L2 instead of GStreamer by setting these environment variables:
       ```
         export OPENCV_VIDEOIO_PRIORITY_GSTREAMER=0
