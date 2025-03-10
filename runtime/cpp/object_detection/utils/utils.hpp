@@ -106,7 +106,7 @@ bool is_directory_of_images(const std::string &path, int &entry_count);
 bool is_image(const std::string &path);
 bool is_video(const std::string &path);
 InputType determine_input_type(const std::string &input_path, cv::VideoCapture &capture,
-                               double org_height, double org_width, size_t frame_count);
+                               double &org_height, double &org_width, size_t &frame_count);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DISPLAY
@@ -129,7 +129,7 @@ void print_inference_statistics(std::chrono::duration<double> inference_time,
 void init_video_writer(const std::string &output_path, cv::VideoWriter &video,
                        double fps, int org_width, int org_height);
 cv::VideoCapture open_video_capture(const std::string &input_path, cv::VideoCapture capture,
-                                    double org_height, double org_width, size_t frame_count);
+                                    double &org_height, double &org_width, size_t &rame_count);
 bool show_frame(const InputType &input_type, const cv::Mat &frame_to_draw);
 
 // ─────────────────────────────────────────────────────────────────────────────
