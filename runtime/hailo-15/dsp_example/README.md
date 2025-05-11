@@ -38,8 +38,9 @@ Usage
     cd Hailo-Application-Code-Examples/runtime/hailo-15/dsp_example
     ``` 
 
-2. Copy the raw image to the hailo15:
+2. Download the raw image and copy it to the hailo15:
     ```shell script
+    ./download_resources.sh
     scp bus.raw root@10.0.0.1:/home/root
     ```  
 
