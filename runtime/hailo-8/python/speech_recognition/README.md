@@ -52,7 +52,7 @@ Follow these steps to set up the environment and install dependencies for infere
 - Make sure you have a microphone connected to your system. If you have multiple microphones connected, please make sure the proper one is selected in the system configuration, and that the input volume is set to a medium/high level.  
   A good quality microphone (or a USB camera) is suggested to acquire the audio.
 - The application allows the user to acquire and process an audio sample up to 10 seconds long.
-- The current pipeline works with **English language only**.
+- The current pipeline supports **English language only**.
 
 ## Usage from CLI
 1. Activate the virtual environment from the repository root folder:
