@@ -1,4 +1,4 @@
-# Automatic Speech Recognition Pipeline based on OpenAI Whisper model.
+# Automatic Speech Recognition with OpenAI Whisper model
 
 This application performs a speech-to-text transcripstion using OpenAI's *Whisper-tiny* model on the Hailo-8/8L AI accelerator.
 
