@@ -24,8 +24,8 @@ Follow these steps to set up the environment and install dependencies for infere
 1. Clone this repository:
 
   ```sh
-  git clone git@github.com:topper-ai/WhisperingHeights.git
-  cd WhisperingHeights
+  git clone https://github.com/hailo-ai/Hailo-Application-Code-Examples.git
+  cd Hailo-Application-Code-Examples/runtime/python/speech_recognition
   ```
   If you have any authentization issues, add your SSH key or download the zip.
 
@@ -91,8 +91,8 @@ The following command line options are available:
 
 - Make sure that the microphone is connected to your host and that it can be detected by the system.
 - Post-processing is being applied to improve the quality of the transcription, e.g. applying peanlty on repeated tokens and removing model's hallucinations (if any). These methods can be modified by the user to find an optimal solution.
-- the `--reuse-audio` flag can be used to load the audio acquired during the previous run, for debugging purposes.
-
+- The `--reuse-audio` flag can be used to load the audio acquired during the previous run, for debugging purposes.
+- If the transcription is not generated, listen to the saved audio record to make sure that the audio was actually recorded and that the quality is good.
 
 ## Disclaimer
 This code example is provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running this example, please open a ticket in the "Issues" tab.
