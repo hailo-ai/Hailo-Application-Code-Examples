@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from hailo_platform import (HEF, VDevice, HailoSchedulingAlgorithm, FormatType)
 from transformers import AutoTokenizer
 from queue import Queue, Empty
@@ -45,15 +46,19 @@ class HailoWhisperPipeline:
         """
         Load token embedding weights.
         """
-        return np.load(f"./app/decoder_assets/{self.variant}/decoder_tokenization/token_embedding_weight_{self.variant}.npy"
-        )
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_path,
+                                 f"decoder_assets/{self.variant}/decoder_tokenization/token_embedding_weight_{self.variant}.npy")
+        return np.load(file_path)
 
     def _load_onnx_add_input(self):
         """
         Load ONNX add input.
         """
-        return np.load(f"./app/decoder_assets/{self.variant}/decoder_tokenization/onnx_add_input_{self.variant}.npy"
-        )
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_path,
+                                 f"decoder_assets/{self.variant}/decoder_tokenization/onnx_add_input_{self.variant}.npy")
+        return np.load(file_path)
 
     def _load_tokenizer(self):
         """

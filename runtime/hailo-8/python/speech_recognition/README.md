@@ -23,29 +23,30 @@ Follow these steps to set up the environment and install dependencies for infere
 
 1. Clone this repository:
 
-  ```sh
-  git clone https://github.com/hailo-ai/Hailo-Application-Code-Examples.git
-  cd Hailo-Application-Code-Examples/runtime/python/speech_recognition
-  ```
-  If you have any authentization issues, add your SSH key or download the zip.
+   ```sh
+   git clone https://github.com/hailo-ai/Hailo-Application-Code-Examples.git
+   cd Hailo-Application-Code-Examples/runtime/python/speech_recognition
+   ```
+   If you have any authentization issues, add your SSH key or download the zip.
 
-2. Run the setup script to install dependencies:
+2. Run the setup script to install dependencies:  
 
-  ```sh
-  python3 setup.py
-  ```
+   ```sh
+   python3 setup.py
+   ```
 
 3. Activate the virtual environment from the repository root folder:
 
-  ```sh
-  source whisper_env/bin/activate
-  ```
+   ```sh
+   source whisper_env/bin/activate
+   ```
 
-4. Install pyHailoRT inside the virtual environment (must be downloaded from the Hailo Developer Zone), for example:
-  ```sh
-  pip install hailort-4.20.0-cp310-cp310-linux_x86_64.whl
-  ```
-  The pyHailoRT version must match the installed HailoRT version.
+4. Install PyHailoRT inside the virtual environment (must be downloaded from the Hailo Developer Zone), for example:
+   ```sh
+   pip install hailort-4.20.0-cp310-cp310-linux_x86_64.whl
+   ```
+   The PyHailoRT version must match the installed HailoRT version.
+   **_NOTE:_** This step is not necessary for Raspberry Pi 5 users who installed the *hailo-all* package, since the *venv* will inherit the system package.
 
 ## Before running the app
 
@@ -57,13 +58,13 @@ Follow these steps to set up the environment and install dependencies for infere
 ## Usage from CLI
 1. Activate the virtual environment from the repository root folder:
 
-  ```sh
-  source whisper_env/bin/activate
-  ```
+   ```sh
+   source whisper_env/bin/activate
+   ```
 2. Run the command line app (from the root folder)
-  ```sh
-  python3 -m app.app_hailo_whisper
-  ```
+   ```sh
+   python3 -m app.app_hailo_whisper
+   ```
 
 ### Command line arguments
 Use the `python3 -m app.app_hailo_whisper --help` command to print the helper.

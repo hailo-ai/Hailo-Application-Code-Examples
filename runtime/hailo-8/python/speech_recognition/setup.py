@@ -13,11 +13,23 @@ def run_command(command, cwd=None):
     """Helper function to run shell commands."""
     subprocess.run(command, shell=True, cwd=cwd, check=True)
 
+def is_raspberry_pi_5():
+    """Checks if the host platform is a Raspberry Pi 5."""
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().strip().lower()
+        return ("raspberry pi 5" in model)
+    except FileNotFoundError:
+        return False
+
 def create_venv():
     """Creates a virtual environment if it doesn't exist."""
     if not os.path.exists(VENV_DIR):
         print(f"Creating virtual environment in {VENV_DIR}...")
-        run_command(f"python3 -m venv {VENV_DIR}")
+        if is_raspberry_pi_5():  # Raspberry Pi 5 with hailo-all package installed. Reuse existing packages.
+            run_command(f"python3 -m venv --system-site-packages {VENV_DIR}")
+        else:  # x86 and other cases
+            run_command(f"python3 -m venv {VENV_DIR}")
     else:
         print("Virtual environment already exists.")
 
