@@ -35,11 +35,11 @@ fi
 
 
 echo "Creating new 'decoder_assets/tiny' directory..."
-mkdir decoder_assets/tiny
-mkdir decoder_assets/tiny/decoder_tokenization
+mkdir -P decoder_assets/tiny
+mkdir -P decoder_assets/tiny/decoder_tokenization
 echo "Downloading decoder assets..."
-wget -P decoder_assets/tiny/decoder_tokenization "https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/npy files/whisper/decoder_assets/tiny/decoder_tokenization/onnx_add_input_tiny.npy"
-wget -P decoder_assets/tiny/decoder_tokenization "https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/npy files/whisper/decoder_assets/tiny/decoder_tokenization/token_embedding_weight_tiny.npy"
+wget -P decoder_assets/tiny/decoder_tokenization "https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/npy%20files/whisper/decoder_assets/tiny/decoder_tokenization/onnx_add_input_tiny.npy"
+wget -P decoder_assets/tiny/decoder_tokenization "https://hailo-csdata.s3.eu-west-2.amazonaws.com/resources/npy%20files/whisper/decoder_assets/tiny/decoder_tokenization/token_embedding_weight_tiny.npy"
 
 
 echo "Download complete."
