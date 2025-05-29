@@ -65,6 +65,10 @@ Follow these steps to set up the environment and install dependencies for infere
    ```sh
    python3 -m app.app_hailo_whisper
    ```
+   The app uses Hailo-8 models as default. If you have an Hailo-8L device, run the following command instead:
+   ```sh
+   python3 -m app.app_hailo_whisper --hw-arch hailo8l
+   ```
 
 ### Command line arguments
 Use the `python3 -m app.app_hailo_whisper --help` command to print the helper.

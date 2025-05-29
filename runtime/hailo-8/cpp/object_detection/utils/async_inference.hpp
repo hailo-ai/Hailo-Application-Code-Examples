@@ -16,7 +16,7 @@
 #include <atomic>
 
 using namespace hailort;
-
+using Operation = std::function<void(const hailort::AsyncInferCompletionInfo&, cv::Mat org_frame)>;
 template<typename T>
 class BoundedTSQueue {
 private:
@@ -71,11 +71,9 @@ public:
     }
 };
 
-
 class AsyncModelInfer {
     private:
         std::unique_ptr<hailort::VDevice> vdevice;
-
         std::shared_ptr<hailort::InferModel> infer_model;
         hailort::ConfiguredInferModel configured_infer_model;
         hailort::ConfiguredInferModel::Bindings bindings;
@@ -84,36 +82,32 @@ class AsyncModelInfer {
         std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
         std::map<std::string, hailo_vstream_info_t> output_vstream_info_by_name;
         std::shared_ptr<uint8_t> output_data_holder;
-        std::shared_ptr<BoundedTSQueue<InferenceOutputItem>> output_data_queue;
 
     public:
         // Constructors
-        AsyncModelInfer() = default; // Default constructor
-        AsyncModelInfer(std::shared_ptr<hailort::InferModel> infer_model);
-        AsyncModelInfer(const std::string &hef_path,
-                    std::shared_ptr<BoundedTSQueue<InferenceOutputItem>> results_queue);
 
-        AsyncModelInfer(const AsyncModelInfer&) = delete; // Copy constructor (deleted because of shared_ptr)
-        AsyncModelInfer& operator=(const AsyncModelInfer&) = delete; // Copy assignment operator (deleted because of shared_ptr)
-        AsyncModelInfer(AsyncModelInfer&& other) noexcept = default; // Move constructor
-        AsyncModelInfer& operator=(AsyncModelInfer&& other) noexcept = default; // Move assignment
-        ~AsyncModelInfer() = default; // Destructor
+        // Constructor for when using only one model one device
+        AsyncModelInfer(const std::string &hef_path);
+        // Constructor for when using multiple models on the same device
+        AsyncModelInfer(const std::string &hef_path, const std::string &group_id);
 
         // Getters
         const std::vector<hailort::InferModel::InferStream>& get_inputs();
         const std::vector<hailort::InferModel::InferStream>& get_outputs();
         const std::shared_ptr<hailort::InferModel> get_infer_model();
-        std::shared_ptr<BoundedTSQueue<InferenceOutputItem>> get_queue();
-
+        
         // Functions
-        void configure(std::shared_ptr<BoundedTSQueue<InferenceOutputItem>> output_data_queue);
-        void infer(std::shared_ptr<cv::Mat> input_data, cv::Mat original_frame);
+        void infer(
+            std::shared_ptr<cv::Mat> input_data,
+            std::function<void(const hailort::AsyncInferCompletionInfo&,
+                               const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback);
 
         //Helpers
         void set_input_buffers(const std::shared_ptr<cv::Mat> &input_data);
         std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> prepare_output_buffers();
-        void wait_and_run_async(cv::Mat original_frame,
-                                const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos);
+        void wait_and_run_async(
+            const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos,
+            std::function<void(const hailort::AsyncInferCompletionInfo&,
+                               const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback);
 };
-
 #endif /* _HAILO_ASYNC_INFERENCE_HPP_ */

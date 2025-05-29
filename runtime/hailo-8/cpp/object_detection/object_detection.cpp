@@ -20,7 +20,7 @@ std::shared_ptr<BoundedTSQueue<PreprocessedFrameItem>> preprocessed_queue =
 std::shared_ptr<BoundedTSQueue<InferenceOutputItem>>   results_queue =
     std::make_shared<BoundedTSQueue<InferenceOutputItem>>(MAX_QUEUE_SIZE);
 
-void release_resources(cv::VideoCapture &capture, cv::VideoWriter &video, InputType &input_type) {
+void release_resources(cv::VideoCapture &capture, cv::VideoWriter &video, InputType &input_type){
     if (input_type.is_video) {
         video.release();
     }
@@ -40,9 +40,8 @@ hailo_status run_post_process(
     size_t frame_count,
     cv::VideoCapture &capture,
     size_t class_count = 80,
-    double fps = 30) 
+    double fps = 30)
     {
-
     cv::VideoWriter video;
     if (input_type.is_video || (input_type.is_camera && args.save)) {    
         init_video_writer("./processed_video.mp4", video, fps, org_width, org_height);
@@ -130,9 +129,17 @@ hailo_status run_inference_async(AsyncModelInfer& model,
         if (!preprocessed_queue->pop(item)) {
             break;
         }
-        model.infer(std::make_shared<cv::Mat>(item.resized_for_infer), item.org_frame);
+        // Pass as parameters the device input and a lambda that captures the original frame and uses the provided output buffers.
+        model.infer(std::make_shared<cv::Mat>(item.resized_for_infer),
+                    [org_frame = item.org_frame, queue = results_queue](const hailort::AsyncInferCompletionInfo &info,
+                                                                            const auto &output_data_and_infos) {
+                    InferenceOutputItem output_item;
+                    output_item.org_frame = org_frame;
+                    output_item.output_data_and_infos = output_data_and_infos;
+                    queue->push(output_item);
+                    });
     }
-    model.get_queue()->stop();
+    results_queue->stop();
     auto end_time = std::chrono::high_resolution_clock::now();
 
     inference_time = end_time - start_time;
@@ -153,7 +160,7 @@ int main(int argc, char** argv)
     InputType input_type;
 
     CommandLineArgs args = parse_command_line_arguments(argc, argv);
-    AsyncModelInfer model(args.detection_hef, results_queue);
+    AsyncModelInfer model(args.detection_hef);
     input_type = determine_input_type(args.input_path, std::ref(capture), org_height, org_width, frame_count);
 
     auto preprocess_thread = std::async(run_preprocess,

@@ -8,7 +8,7 @@ It receives a HEF and images/video/camera as input, and returns the image\video 
 Requirements
 ------------
 
-- HailoRT==4.20.0
+- HailoRT==4.21.0
 - OpenCV >= 4.5.4
     ```shell script
     sudo apt-get install -y libopencv-dev python3-opencv
@@ -97,7 +97,7 @@ Running the Example
 
 Notes
 ----------------
-- Last HailoRT version checked - ``HailoRT v4.20.0``
+- Last HailoRT version checked - ``HailoRT v4.21.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 - There should be no spaces between "=" given in the command line arguments and the file name itself
 - The example only works for detection models that have the NMS on-Hailo (either on the NN-core or on the CPU)
@@ -114,9 +114,15 @@ Notes
         export OPENCV_VIDEOIO_PRIORITY_GSTREAMER=0
         export OPENCV_VIDEOIO_PRIORITY_V4L2=100
       ```
-
-    
-    
+- Using multiple models on same device:
+    - If you need to run multiple models on the same virtual device (vdevice), use the AsyncModelInfer constructor that accepts two arguments. Initialize each model using the same group_id. 
+    - Example:
+      ```
+         std::string group_id = "<group_id>";
+         AsyncModelInfer model1("<hef1_path>", group_id);
+         AsyncModelInfer model2("<hef2_path>", group_id);
+      ```
+    - By assigning the same group_id to models from different HEF files, you enable the runtime to treat them as part of the same group, allowing them to share resources and run more efficiently on the same hardware.
 
 Disclaimer
 ----------

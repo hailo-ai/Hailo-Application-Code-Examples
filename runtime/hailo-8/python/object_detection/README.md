@@ -9,7 +9,7 @@ It processes input images, videos, or a camera stream and annotates it with the 
 Requirements
 ------------
 
-- hailo_platform==4.20.0
+- hailo_platform==4.21.0
 - opencv
 - numpy
 - loguru
@@ -75,25 +75,25 @@ Example
 -------
 **Inference on a camera stream**
 ```shell script
-./object_detection.py -n ./yolov7.hef -i camera
+./object_detection.py -n ./yolov8n.hef -i camera
 ```
 **Inference on a video**
 ```shell script
-./object_detection.py -n ./yolov7.hef -i input_video.mp4
+./object_detection.py -n ./yolov8n.hef -i full_mov_slow.mp4
 ```
 **Inference on an image**
 ```shell script
-./object_detection.py -n ./yolov7.hef -i zidane.jpg
+./object_detection.py -n ./yolov8n.hef -i bus.jpg
 ```
 **Inference on a folder of images**
 ```shell script
-./object_detection.py -n ./yolov7.hef -i input_folder
+./object_detection.py -n ./yolov8n.hef -i input_folder
 ```
 
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.20.0``
+- The example was only tested with ``HailoRT v4.21.0``
 - The example expects a HEF which contains the HailoRT Postprocess
 - Images are only supported in the following formats: .jpg, .jpeg, .png or .bmp
 - Number of input images should be divisible by batch_size
