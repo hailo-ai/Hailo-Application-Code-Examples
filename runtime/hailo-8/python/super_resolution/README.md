@@ -9,16 +9,15 @@ It receives an input image and enhances the image quality and details.
 Requirements
 ------------
 
-- hailo_platform==4.20.0
-- Pillow
+- hailo_platform==4.21.0
 - loguru
+- Pillow
 - opencv-python
 
 Supported Models
 ----------------
 
 - real_esrgan_x2
-- espcn_x4
  
 Usage
 -----
@@ -34,7 +33,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/python/super_resolution
+    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/super_resolution
     ```
 
 2. Install dependencies:
@@ -73,7 +72,7 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.20.0``
+- The example was only tested with ``HailoRT v4.21.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 
 Disclaimer

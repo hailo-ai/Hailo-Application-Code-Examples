@@ -4,6 +4,7 @@ import argparse
 import sys
 import os
 from multiprocessing import Process
+from functools import partial
 
 import numpy as np
 from loguru import logger
@@ -11,11 +12,13 @@ import cv2
 
 from lane_detection_utils import (UFLDProcessing,
                                   check_process_errors,
-                                  output_data_type2dict,
                                   compute_scaled_radius)
 
+# Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import HailoAsyncInference
+from common.hailo_inference import HailoAsyncInference
+
+
 
 def parser_init():
     """
@@ -30,7 +33,7 @@ def parser_init():
         "-n",
         "--net",
         help="Path of model file in HEF format.",
-        default="ufld_v2.hef"
+        default="ufld_v2_tu.hef"
     )
 
     parser.add_argument(
@@ -93,8 +96,9 @@ def preprocess_input(video_path: str,
 
     while success:
         resized_frame = ufld_processing.resize(frame, height, width)
-        input_queue.put((np.array([frame]),
-                         np.array([resized_frame])))
+        input_queue.put(([frame], [resized_frame]))
+
+
         success, frame = vidcap.read()
 
     input_queue.put(None)  # Sentinel value to signal the end of processing
@@ -129,7 +133,15 @@ def postprocess_output(output_queue: mp.Queue,
         if result is None:
             break  # Exit when the sentinel value is received
         original_frame, inference_output = result
-        lanes = ufld_processing.get_coordinates(np.array([inference_output]))
+        slices = [
+            inference_output['ufld_v2_tu/slice1'],
+            inference_output['ufld_v2_tu/slice2'],
+            inference_output['ufld_v2_tu/slice3'],
+            inference_output['ufld_v2_tu/slice4']
+        ]
+        output_tensor = np.concatenate(slices, axis=1)  # Shape: (1, total_features)
+        lanes = ufld_processing.get_coordinates(output_tensor)
+
 
         for lane in lanes:
             for coord in lane:
@@ -139,6 +151,39 @@ def postprocess_output(output_queue: mp.Queue,
 
     pbar.close()
     output_video.release()
+
+
+
+def inference_callback(
+        completion_info,
+        bindings_list: list,
+        input_batch: list,
+        output_queue: mp.Queue
+) -> None:
+    """
+    infernce callback to handle inference results and push them to a queue.
+
+    Args:
+        completion_info: Hailo inference completion info.
+        bindings_list (list): Output bindings for each inference.
+        input_batch (list): Original input frames.
+        output_queue (queue.Queue): Queue to push output results to.
+    """
+    if completion_info.exception:
+        logger.error(f'Inference error: {completion_info.exception}')
+    else:
+        for i, bindings in enumerate(bindings_list):
+            if len(bindings._output_names) == 1:
+                result = bindings.output().get_buffer()
+            else:
+                result = {
+                    name: np.expand_dims(
+                        bindings.output(name).get_buffer(), axis=0
+                    )
+                    for name in bindings._output_names
+                }
+            output_queue.put((input_batch[i], result))
+
 
 def infer(
     video_path: str,
@@ -160,13 +205,8 @@ def infer(
 
     input_queue = mp.Queue()
     output_queue = mp.Queue()
-
-    output_dict = output_data_type2dict(net_path, "FLOAT32")
-
-    hailo_inference = HailoAsyncInference(net_path,input_queue,
-                                          output_queue, batch_size,
-                                          output_type=output_dict,
-                                          send_original_frame=True)
+    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
+    hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size, output_type="FLOAT32", send_original_frame=True)
 
 
     preprocessed_frame_height, preprocessed_frame_width, _ = hailo_inference.get_input_shape()

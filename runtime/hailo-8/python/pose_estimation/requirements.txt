@@ -1,3 +1,3 @@
 loguru
-pillow
 opencv-python
+Pillow

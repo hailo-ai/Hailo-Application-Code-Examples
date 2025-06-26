@@ -12,11 +12,9 @@ The example works with .jpg, .jpeg, .png and .bmp image files.
 Requirements
 ------------
 
-- hailo_platform==4.18.0
-- Pillow
+- hailo_platform==4.21.0
 - loguru
-- numpy
-- opencv
+
 
 Supported Models
 ----------------
@@ -42,7 +40,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/python/pose_estimation
+    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/pose_estimation
     ```
 
 2. Install dependencies:
@@ -83,7 +81,7 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.18.0``
+- The example was only tested with ``HailoRT v4.21.0``
 - The example expects a HEF which contains the HailoRT Postprocess
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp
 - The annotated files will be saved in the `output_images` folder. 

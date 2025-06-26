@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import os
 import sys
 import argparse
@@ -9,13 +8,17 @@ from pathlib import Path
 from loguru import logger
 from PIL import Image
 from typing import List
-from hailo_platform import HEF
-from pose_estimation_utils import (output_data_type2dict,
-                                   check_process_errors, PoseEstPostProcessing)
+from functools import partial
+import numpy as np
+
+from pose_estimation_utils import (check_process_errors, PoseEstPostProcessing)
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import HailoAsyncInference, load_input_images, validate_images, divide_list_to_batches
+from common.hailo_inference import HailoAsyncInference
+from common.toolbox import load_input_images, validate_images, divide_list_to_batches
+
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -134,6 +137,38 @@ def postprocess_output(
         image_id += 1
 
 
+def inference_callback(
+        completion_info,
+        bindings_list: list,
+        input_batch: list,
+        output_queue: mp.Queue
+) -> None:
+    """
+    infernce callback to handle inference results and push them to a queue.
+
+    Args:
+        completion_info: Hailo inference completion info.
+        bindings_list (list): Output bindings for each inference.
+        input_batch (list): Original input frames.
+        output_queue (queue.Queue): Queue to push output results to.
+    """
+    if completion_info.exception:
+        logger.error(f'Inference error: {completion_info.exception}')
+    else:
+        for i, bindings in enumerate(bindings_list):
+            if len(bindings._output_names) == 1:
+                result = bindings.output().get_buffer()
+            else:
+                result = {
+                    name: np.expand_dims(
+                        bindings.output(name).get_buffer(), axis=0
+                    )
+                    for name in bindings._output_names
+                }
+            output_queue.put((input_batch[i], result))
+
+
+
 def infer(
     images: List[Image.Image],
     net_path: str,
@@ -157,10 +192,10 @@ def infer(
     """
     input_queue = mp.Queue()
     output_queue = mp.Queue()
+    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
 
     hailo_inference = HailoAsyncInference(
-        net_path, input_queue, output_queue, batch_size, output_type=data_type_dict
-    )
+        net_path, input_queue, inference_callback_fn, batch_size, output_type="FLOAT32")
     height, width, _ = hailo_inference.get_input_shape()
 
     preprocess = Process(
@@ -212,7 +247,7 @@ def main() -> None:
         return
 
     output_path = create_output_directory()
-    output_type_dict = output_data_type2dict(HEF(args.net), 'FLOAT32')
+    output_type = 'FLOAT32'
 
     post_processing = PoseEstPostProcessing(
         max_detections=300,
@@ -224,7 +259,7 @@ def main() -> None:
 
     infer(
         images, args.net, int(args.batch_size), int(args.class_num),
-        output_path, output_type_dict, post_processing
+        output_path, output_type, post_processing
     )
 
 if __name__ == "__main__":

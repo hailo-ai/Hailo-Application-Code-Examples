@@ -189,6 +189,7 @@ class PoseEstPostProcessing:
             detection_keypoints_score) in zip(box, score, keypoint, keypoint_score):
             if detection_score < detection_threshold:
                 continue
+
             xmin, ymin, xmax, ymax = [int(x) for x in detection_box]
 
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0, 0), 1)
@@ -226,7 +227,7 @@ class PoseEstPostProcessing:
         img_w, img_h = image.size
         scale = min(model_w / img_w, model_h / img_h)
         new_img_w, new_img_h = int(img_w * scale), int(img_h * scale)
-        image = image.resize((new_img_w, new_img_h), Image.Resampling.BICUBIC)
+        image = image.resize((new_img_w, new_img_h), Image.BICUBIC)
         padding_color = (114, 114, 114)
         padded_image = Image.new('RGB', (model_w, model_h), padding_color)
         padded_image.paste(image, ((model_w - new_img_w) // 2, (model_h - new_img_h) // 2))

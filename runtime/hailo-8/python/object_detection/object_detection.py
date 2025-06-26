@@ -1,303 +1,169 @@
 #!/usr/bin/env python3
-
 import argparse
 import os
 import sys
-from pathlib import Path
-import numpy as np
 from loguru import logger
 import queue
 import threading
-import cv2
-from typing import List
-from object_detection_utils import ObjectDetectionUtils
+from functools import partial
+from types import SimpleNamespace
+import time
+from pathlib import Path
+import numpy as np
 
-# Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import HailoAsyncInference, load_images_opencv, validate_images, divide_list_to_batches
+from common.tracker.byte_tracker import BYTETracker
+from common.hailo_inference import HailoAsyncInference
+from common.toolbox import init_input_source, get_labels, load_json_file, preprocess, visualize
+from object_detection_post_process import inference_result_handler
+
+frame_counter = [0]  # Using a mutable list to share counter
 
 
-CAMERA_CAP_WIDTH = 1920
-CAMERA_CAP_HEIGHT = 1080 
-        
 def parse_args() -> argparse.Namespace:
     """
     Initialize argument parser for the script.
-
     Returns:
         argparse.Namespace: Parsed arguments.
     """
     parser = argparse.ArgumentParser(description="Detection Example")
-    parser.add_argument(
-        "-n", "--net", 
-        help="Path for the network in HEF format.",
-        default="yolov7.hef"
-    )
-    parser.add_argument(
-        "-i", "--input", 
-        default="zidane.jpg",
-        help="Path to the input - either an image or a folder of images."
-    )
-    parser.add_argument(
-        "-b", "--batch_size", 
-        default=1,
-        type=int,
-        required=False,
-        help="Number of images in one batch"
-    )
-    parser.add_argument(
-        "-l", "--labels", 
-        default="coco.txt",
-        help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used."
-    )
-    parser.add_argument(
-        "-s", "--save_stream_output",
-        action="store_true",
-        help="Save the output of the inference from a stream."
-    )
+
+    parser.add_argument("-n", "--net", help="Path for the network in HEF format.",
+                        default="yolov8n.hef")
+    parser.add_argument("-i", "--input", default="bus.jpg",
+                        help="Path to the input - either an image or a folder of images.")
+    parser.add_argument("-b", "--batch_size", default=1, type=int, required=False,
+                        help="Number of images in one batch")
+    parser.add_argument("-l", "--labels",
+                        default=str(Path(__file__).parent.parent / "common" / "coco.txt"),
+                        help="Path to a text file containing labels. If no labels file is provided, coco2017 will be used.")
+    parser.add_argument("-s", "--save_stream_output", action="store_true",
+                        help="Save the output of the inference from a stream.")
+    parser.add_argument("-o", "--output-dir", help="Directory to save the results.",
+                        default=None)
+    parser.add_argument("-r", "--resolution", choices=["sd", "hd", "fhd"], default="sd",
+                        help="Choose input resolution: 'sd' (640x480), 'hd' (1280x720), or 'fhd' (1920x1080). Default is 'sd'.")
+    parser.add_argument("--track", action="store_true",
+                        help="Enable object tracking across frames.")
+    parser.add_argument("--show-fps", action="store_true",
+                        help="Enable FPS performance measurement.")
 
     args = parser.parse_args()
 
     # Validate paths
     if not os.path.exists(args.net):
-        raise FileNotFoundError(f"Network file not found: {args.net}")
+        raise FileNotFoundError(f"Network file not found: {args.model}")
     if not os.path.exists(args.labels):
         raise FileNotFoundError(f"Labels file not found: {args.labels}")
+
+    if args.output_dir is None:
+        args.output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(args.output_dir, exist_ok=True)
 
     return args
 
 
-def preprocess(
-    images: List[np.ndarray],
-    cap: cv2.VideoCapture,
-    batch_size: int,
-    input_queue: queue.Queue,
-    width: int,
-    height: int,
-    utils: ObjectDetectionUtils
-) -> None:
-    """
-    Preprocess and enqueue images or camera frames into the input queue as they are ready.
-
-    Args:
-        images (List[np.ndarray], optional): List of images as NumPy arrays.
-        camera (bool, optional): Boolean indicating whether to use the camera stream.
-        batch_size (int): Number of images per batch.
-        input_queue (queue.Queue): Queue for input images.
-        width (int): Model input width.
-        height (int): Model input height.
-        utils (ObjectDetectionUtils): Utility class for object detection preprocessing.
-    """
-    if cap is None:
-        preprocess_images(images, batch_size, input_queue, width, height, utils)
-    else:
-        preprocess_from_cap(cap, batch_size, input_queue, width, height, utils)
-
-    input_queue.put(None)  # Add sentinel value to signal end of input
-
-def preprocess_from_cap(cap: cv2.VideoCapture, batch_size: int, input_queue: queue.Queue, width: int, height: int, utils: ObjectDetectionUtils) -> None:
-    """
-    Process frames from the camera stream and enqueue them.
-
-    Args:
-        batch_size (int): Number of images per batch.
-        input_queue (queue.Queue): Queue for input images.
-        width (int): Model input width.
-        height (int): Model input height.
-        utils (ObjectDetectionUtils): Utility class for object detection preprocessing.
-    """
-    frames = []
-    processed_frames = []
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        frames.append(frame)
-        processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        processed_frame = utils.preprocess(processed_frame, width, height)
-        processed_frames.append(processed_frame)
-
-        if len(frames) == batch_size:
-            input_queue.put((frames, processed_frames))
-            processed_frames, frames = [], []
-
-
-def preprocess_images(images: List[np.ndarray], batch_size: int, input_queue: queue.Queue, width: int, height: int, utils: ObjectDetectionUtils) -> None:
-    """
-    Process a list of images and enqueue them.
-
-    Args:
-        images (List[np.ndarray]): List of images as NumPy arrays.
-        batch_size (int): Number of images per batch.
-        input_queue (queue.Queue): Queue for input images.
-        width (int): Model input width.
-        height (int): Model input height.
-        utils (ObjectDetectionUtils): Utility class for object detection preprocessing.
-    """
-    for batch in divide_list_to_batches(images, batch_size):
-        input_tuple = ([image for image in batch], [utils.preprocess(image, width, height) for image in batch])
-        input_queue.put(input_tuple)
-
-def postprocess(
-    output_queue: queue.Queue,
-    cap: cv2.VideoCapture,
-    save_stream_output: bool,
-    utils: ObjectDetectionUtils
-) -> None:
-    """
-    Process and visualize the output results.
-
-    Args:
-        output_queue (queue.Queue): Queue for output results.
-        camera (bool): Flag indicating if the input is from a camera.
-        save_stream_output (bool): Flag indicating if the camera output should be saved.
-        utils (ObjectDetectionUtils): Utility class for object detection visualization.
-    """
-    image_id = 0
-    out = None
-    output_path = Path('output')
-    if cap is not None:
-        # Create a named window
-        cv2.namedWindow("Output", cv2.WND_PROP_FULLSCREEN)
-
-        # Set the window to fullscreen
-        cv2.setWindowProperty("Output", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-        if save_stream_output:
-            output_path.mkdir(exist_ok=True)
-            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-             # Define the codec and create VideoWriter object
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            # Save the output video in the output path
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            if fps == 0:  # If FPS is not available, set a default value
-                print(f"fps: {fps}")
-                fps = 20.0
-            out = cv2.VideoWriter(str(output_path / 'output_video.avi'), fourcc, fps, (frame_width, frame_height))
-
-    if (cap is None):
-        # Create output directory if it doesn't exist
-        output_path.mkdir(exist_ok=True)
-
-    while True:
-        result = output_queue.get()
-        if result is None:
-            break  # Exit the loop if sentinel value is received
-
-        original_frame, infer_results = result
-
-        # Deals with the expanded results from hailort versions < 4.19.0
-        if len(infer_results) == 1:
-            infer_results = infer_results[0]
-
-        detections = utils.extract_detections(infer_results)
-
-        frame_with_detections = utils.draw_detections(
-            detections, original_frame,
-        )
-        
-        if cap is not None:
-            # Display output
-            cv2.imshow("Output", frame_with_detections)
-            if save_stream_output:
-                out.write(frame_with_detections)
-        else:
-            cv2.imwrite(str(output_path / f"output_{image_id}.png"), frame_with_detections)
-
-        # Wait for key press "q"
-        image_id += 1
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            # Close the window and release the camera
-            if save_stream_output:
-                out.release()  # Release the VideoWriter object
-            cap.release()
-            cv2.destroyAllWindows()
-            break
-
-    if cap is not None and save_stream_output:
-            out.release()  # Release the VideoWriter object
-    output_queue.task_done()  # Indicate that processing is complete
-
-
-def infer(
-    input,
-    save_stream_output: bool,
-    net_path: str,
-    labels_path: str,
-    batch_size: int,
-) -> None:
+def infer(net, input, batch_size, labels, output_dir,
+          save_stream_output=False, resolution="sd",
+          enable_tracking=False, show_fps=False) -> None:
     """
     Initialize queues, HailoAsyncInference instance, and run the inference.
-
-    Args:
-        images (List[Image.Image]): List of images to process.
-        net_path (str): Path to the HEF model file.
-        labels_path (str): Path to a text file containing labels.
-        batch_size (int): Number of images per batch.
-        output_path (Path): Path to save the output images.
     """
-    det_utils = ObjectDetectionUtils(labels_path)
-    
-    cap = None
-    images = []
-    if input == "camera":
-        cap = cv2.VideoCapture(0)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_CAP_WIDTH)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_CAP_HEIGHT)
-    elif any(input.lower().endswith(suffix) for suffix in ['.mp4', '.avi', '.mov', '.mkv']):
-        cap = cv2.VideoCapture(input)
-    else:
-        images = load_images_opencv(input)
+    labels = get_labels(labels)
+    config_data = load_json_file("config.json")
 
-        # Validate images
-        try:
-            validate_images(images, batch_size)
-        except ValueError as e:
-            logger.error(e)
-            return
+    # Initialize input source from string: "camera", video file, or image folder.
+    cap, images = init_input_source(input, batch_size, resolution)
+    tracker = None
+
+    if enable_tracking:
+        # load tracker config from config_data
+        tracker_config = config_data.get("visualization_params", {}).get("tracker", {})
+        tracker = BYTETracker(SimpleNamespace(**tracker_config))
 
     input_queue = queue.Queue()
     output_queue = queue.Queue()
 
+    post_process_callback_fn = partial(
+        inference_result_handler, labels=labels,
+        config_data=config_data, tracker=tracker
+    )
+    inference_callback_fn = partial(
+        inference_callback, output_queue=output_queue
+    )
+
     hailo_inference = HailoAsyncInference(
-        net_path, input_queue, output_queue, batch_size, send_original_frame=True
+        net, input_queue, inference_callback_fn,
+        batch_size, send_original_frame=True
     )
     height, width, _ = hailo_inference.get_input_shape()
 
     preprocess_thread = threading.Thread(
-        target=preprocess,
-        args=(images, cap, batch_size, input_queue, width, height, det_utils)
+        target=preprocess, args=(images, cap, batch_size, input_queue, width, height)
     )
     postprocess_thread = threading.Thread(
-        target=postprocess,
-        args=(output_queue, cap, save_stream_output, det_utils)
+        target=visualize, args=(output_queue, cap, save_stream_output,
+                                output_dir, post_process_callback_fn, frame_counter)
     )
+
+    if show_fps:
+        start_time = time.time()
 
     preprocess_thread.start()
     postprocess_thread.start()
-
     hailo_inference.run()
-    
+
     preprocess_thread.join()
     output_queue.put(None)  # Signal process thread to exit
     postprocess_thread.join()
 
     logger.info('Inference was successful!')
 
+    if show_fps:
+        end_time = time.time()
+        fps = frame_counter[0] / (end_time - start_time)
+        logger.debug(f"Processed {frame_counter[0]} frames at {fps:.2f} FPS")
+
+
+def inference_callback(
+    completion_info,
+    bindings_list: list,
+    input_batch: list,
+    output_queue: queue.Queue
+) -> None:
+    """
+    infernce callback to handle inference results and push them to a queue.
+
+    Args:
+        completion_info: Hailo inference completion info.
+        bindings_list (list): Output bindings for each inference.
+        input_batch (list): Original input frames.
+        output_queue (queue.Queue): Queue to push output results to.
+    """
+    if completion_info.exception:
+        logger.error(f'Inference error: {completion_info.exception}')
+    else:
+        for i, bindings in enumerate(bindings_list):
+            if len(bindings._output_names) == 1:
+                result = bindings.output().get_buffer()
+            else:
+                result = {
+                    name: np.expand_dims(
+                        bindings.output(name).get_buffer(), axis=0
+                    )
+                    for name in bindings._output_names
+                }
+            output_queue.put((input_batch[i], result))
+
 
 def main() -> None:
     """
     Main function to run the script.
     """
-    # Parse command line arguments
     args = parse_args()
-
-    # Start the inference
-    infer(args.input, args.save_stream_output, args.net, args.labels, args.batch_size)
+    infer(args.net, args.input, args.batch_size, args.labels,
+          args.output_dir, args.save_stream_output, args.resolution,
+          args.track, args.show_fps)
 
 
 if __name__ == "__main__":

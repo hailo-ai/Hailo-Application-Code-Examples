@@ -1,4 +1,0 @@
-tensorflow
-zenlog  
-Pillow  
-psutil

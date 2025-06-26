@@ -90,10 +90,6 @@ APP | Description |
 </br>**Pointpillars:** Hailo device offload of the heavy 2D-convolutional part of a 3D-object-detection network operating on point-clouds
 </br>**16-bit Optimization:** Guide on how to perform 16-bit optimization
 
-## 📚 [Resources](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/resources)
-
-Documents and other files
-
 
 ## ⚠️ Disclaimer
 
