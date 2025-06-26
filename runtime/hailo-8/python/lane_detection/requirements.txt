@@ -1,3 +1,3 @@
 loguru
-opencv-python
 tqdm
+opencv-python

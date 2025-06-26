@@ -1,3 +1,5 @@
-numpy
-zenlog
-Pillow>=8.1.2
+loguru
+opencv-python
+scipy
+lap
+cython_bbox

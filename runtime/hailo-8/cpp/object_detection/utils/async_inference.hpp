@@ -77,12 +77,21 @@ class AsyncModelInfer {
         std::shared_ptr<hailort::InferModel> infer_model;
         hailort::ConfiguredInferModel configured_infer_model;
         hailort::ConfiguredInferModel::Bindings bindings;
-
-        std::vector<std::shared_ptr<cv::Mat>> input_buffer_guards;
-        std::vector<std::shared_ptr<uint8_t>> output_buffer_guards;
+        hailort::AsyncInferJob last_infer_job;
         std::map<std::string, hailo_vstream_info_t> output_vstream_info_by_name;
-        std::shared_ptr<uint8_t> output_data_holder;
 
+        //Helpers
+        void set_input_buffers(const std::shared_ptr<cv::Mat> &input_data,
+                               std::vector<std::shared_ptr<cv::Mat>> &input_guards);
+        std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> prepare_output_buffers(
+            std::vector<std::shared_ptr<uint8_t>> &output_guards);
+        void wait_and_run_async(
+            const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos,
+            const std::vector<std::shared_ptr<uint8_t>> &output_guards,
+            const std::vector<std::shared_ptr<cv::Mat>> &input_guards,
+            std::function<void(const hailort::AsyncInferCompletionInfo&,
+                const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &,
+                const std::vector<std::shared_ptr<uint8_t>> &)> callback);
     public:
         // Constructors
 
@@ -90,6 +99,8 @@ class AsyncModelInfer {
         AsyncModelInfer(const std::string &hef_path);
         // Constructor for when using multiple models on the same device
         AsyncModelInfer(const std::string &hef_path, const std::string &group_id);
+        // Destructor
+        ~AsyncModelInfer();
 
         // Getters
         const std::vector<hailort::InferModel::InferStream>& get_inputs();
@@ -99,15 +110,10 @@ class AsyncModelInfer {
         // Functions
         void infer(
             std::shared_ptr<cv::Mat> input_data,
-            std::function<void(const hailort::AsyncInferCompletionInfo&,
-                               const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback);
+            std::function<void(
+                const hailort::AsyncInferCompletionInfo &,
+                const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &,
+                const std::vector<std::shared_ptr<uint8_t>> &)> callback);
 
-        //Helpers
-        void set_input_buffers(const std::shared_ptr<cv::Mat> &input_data);
-        std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> prepare_output_buffers();
-        void wait_and_run_async(
-            const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos,
-            std::function<void(const hailort::AsyncInferCompletionInfo&,
-                               const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback);
 };
 #endif /* _HAILO_ASYNC_INFERENCE_HPP_ */
