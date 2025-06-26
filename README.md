@@ -1,11 +1,9 @@
-# Hailo Application Code Examples 
 ![github_code](banner.jpeg)
  
 
 ## 🚀 [Runtime](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/runtime)
 Application examples for Hailo inference with different languages and operating systems
-<details>
-<summary>Hailo-8</summary>
+### Hailo-8 
 
 <div style="margin-left: 20px;">
 <details>
@@ -21,6 +19,19 @@ APP | Description |
 | `pose_estimation` | Pose estimation with yolov8
 | `semantic_segmentation` | Semantic segmentation with Resnet18_fcn trained on cityscape
 | `zero_shot_classification` | Zero-Shot Classification with clip_vit_l14
+
+</details>
+
+<details>
+<summary>Python</summary>
+
+APP | Description |
+|:---|:---|
+| `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
+| `lane_detection` | Lane detection with UFLDv2
+| `object_detection` | Object detection with yolo, ssd, centernet
+| `pose_estimation` | Pose estimation with yolov8
+| `super_resolution` | Super resolution with espcnx4, srgan
 
 </details>
 
@@ -45,22 +56,6 @@ APP | Description |
 </details>
 
 <details>
-<summary>Python</summary>
-
-APP | Description |
-|:---|:---|
-| `depth_estimation` | Depth estimation with StereoNet
-| `detection_with_tracker` | Object detection with tracking using ByteTracker and Supervision
-| `hailo_onnxruntime` | Inference with a Hailo device and postprocessing with ONNXRuntime
-| `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
-| `lane_detection` | Lane detection with UFLDv2
-| `object_detection` | Object detection with yolo, ssd, centernet
-| `pose_estimation` | Pose estimation with yolov8
-| `super_resolution` | Super resolution with espcnx4, srgan
-
-</details>
-
-<details>
 <summary>Windows</summary>
 
 APP | Description |
@@ -72,8 +67,9 @@ APP | Description |
 </details>
 </div>
 
-<details>
-<summary>Hailo-15</summary>
+<br>
+
+### Hailo-15
 
 APP | Description |
 |:---|:---|
@@ -82,7 +78,7 @@ APP | Description |
 
 </details>
 
-
+<br>
 
 ## 🏗️ [Compilation](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/compilation)
 
@@ -90,6 +86,7 @@ APP | Description |
 </br>**Pointpillars:** Hailo device offload of the heavy 2D-convolutional part of a 3D-object-detection network operating on point-clouds
 </br>**16-bit Optimization:** Guide on how to perform 16-bit optimization
 
+<br>
 
 ## ⚠️ Disclaimer
 
