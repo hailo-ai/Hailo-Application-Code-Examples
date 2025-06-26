@@ -71,8 +71,9 @@ struct PreprocessedFrameItem {
 };
 
 struct InferenceOutputItem {
-    cv::Mat org_frame;  
+    cv::Mat org_frame;
     std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> output_data_and_infos;
+    std::vector<std::shared_ptr<uint8_t>> output_guards;
 };
 
 struct NamedBbox {
@@ -155,4 +156,4 @@ PreprocessedFrameItem create_preprocessed_frame_item(const cv::Mat &frame, uint3
 void initialize_class_colors(std::unordered_map<int, cv::Scalar> &class_colors);
 std::string get_coco_name_from_int(int cls);
 
-#endif 
+#endif

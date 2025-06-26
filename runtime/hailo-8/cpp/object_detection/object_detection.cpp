@@ -10,6 +10,7 @@
 #include "async_inference.hpp"
 #include "utils.hpp"
 
+
 /////////// Constants ///////////
 constexpr size_t MAX_QUEUE_SIZE = 60;
 /////////////////////////////////
@@ -129,14 +130,20 @@ hailo_status run_inference_async(AsyncModelInfer& model,
         if (!preprocessed_queue->pop(item)) {
             break;
         }
+
         // Pass as parameters the device input and a lambda that captures the original frame and uses the provided output buffers.
-        model.infer(std::make_shared<cv::Mat>(item.resized_for_infer),
-                    [org_frame = item.org_frame, queue = results_queue](const hailort::AsyncInferCompletionInfo &info,
-                                                                            const auto &output_data_and_infos) {
-                    InferenceOutputItem output_item;
-                    output_item.org_frame = org_frame;
-                    output_item.output_data_and_infos = output_data_and_infos;
-                    queue->push(output_item);
+        model.infer(
+                    std::make_shared<cv::Mat>(item.resized_for_infer),
+                    [org_frame = item.org_frame, queue = results_queue](
+                        const hailort::AsyncInferCompletionInfo &info,
+                        const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos,
+                        const std::vector<std::shared_ptr<uint8_t>> &output_guards)
+                    {
+                        InferenceOutputItem output_item;
+                        output_item.org_frame = org_frame;
+                        output_item.output_data_and_infos = output_data_and_infos;
+                        output_item.output_guards = output_guards;  // <-- Add this field to the struct!
+                        queue->push(output_item);
                     });
     }
     results_queue->stop();

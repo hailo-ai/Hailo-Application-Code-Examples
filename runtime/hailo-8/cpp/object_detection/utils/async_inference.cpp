@@ -22,7 +22,7 @@ static std::shared_ptr<uint8_t> page_aligned_alloc(size_t size, void* buff = nul
 
 AsyncModelInfer::AsyncModelInfer(const std::string &hef_path)
 {
-    
+
     this->vdevice = hailort::VDevice::create().expect("Failed to create VDevice");
 
     auto infer_model_exp = this->vdevice->create_infer_model(hef_path);
@@ -32,8 +32,6 @@ AsyncModelInfer::AsyncModelInfer(const std::string &hef_path)
     }
     this->infer_model = infer_model_exp.release();
 
-    this->input_buffer_guards.reserve(this->infer_model->inputs().size());
-    this->output_buffer_guards.reserve(this->infer_model->outputs().size());
     for (auto& output_vstream_info : this->infer_model->hef().get_output_vstream_infos().release()) {
         std::string name(output_vstream_info.name);
         this->output_vstream_info_by_name[name] = output_vstream_info;
@@ -42,8 +40,8 @@ AsyncModelInfer::AsyncModelInfer(const std::string &hef_path)
     this->bindings = configured_infer_model.create_bindings().expect("Failed to create infer bindings");
 }
 
-AsyncModelInfer::AsyncModelInfer(const std::string &hef_path,const std::string &group_id) 
-{   
+AsyncModelInfer::AsyncModelInfer(const std::string &hef_path,const std::string &group_id)
+{
     hailo_vdevice_params_t vdevice_params = {0};
     hailo_init_vdevice_params(&vdevice_params);
     vdevice_params.group_id = group_id.c_str();
@@ -56,14 +54,21 @@ AsyncModelInfer::AsyncModelInfer(const std::string &hef_path,const std::string &
     }
     this->infer_model = infer_model_exp.release();
 
-    this->input_buffer_guards.reserve(this->infer_model->inputs().size());
-    this->output_buffer_guards.reserve(this->infer_model->outputs().size());
+
     for (auto& output_vstream_info : this->infer_model->hef().get_output_vstream_infos().release()) {
         std::string name(output_vstream_info.name);
         this->output_vstream_info_by_name[name] = output_vstream_info;
     }
     this->configured_infer_model = this->infer_model->configure().expect("Failed to create configured infer model");
     this->bindings = configured_infer_model.create_bindings().expect("Failed to create infer bindings");
+}
+
+AsyncModelInfer::~AsyncModelInfer()
+{
+    auto status = last_infer_job.wait(std::chrono::milliseconds(1000));
+    if (HAILO_SUCCESS != status) {
+        std::cerr << "Failed to wait for last infer job, status = " << status << std::endl;
+    }
 }
 
 const std::vector<hailort::InferModel::InferStream>& AsyncModelInfer::get_inputs(){
@@ -78,51 +83,58 @@ const std::shared_ptr<hailort::InferModel> AsyncModelInfer::get_infer_model(){
     return this->infer_model;
 }
 
+
 void AsyncModelInfer::infer(
     std::shared_ptr<cv::Mat> input_data,
     std::function<void(const hailort::AsyncInferCompletionInfo&,
-                    const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback)
-{
-    set_input_buffers(input_data);
-    auto output_data_and_infos = prepare_output_buffers();
-    wait_and_run_async(output_data_and_infos, callback);
+                       const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &,
+                       const std::vector<std::shared_ptr<uint8_t>> &)> callback) {
+
+    std::vector<std::shared_ptr<cv::Mat>> input_guards;
+    set_input_buffers(input_data, input_guards);
+
+    std::vector<std::shared_ptr<uint8_t>> output_guards;
+    auto output_data_and_infos = prepare_output_buffers(output_guards);
+
+    wait_and_run_async(output_data_and_infos, output_guards, input_guards, callback);
 }
 
-void AsyncModelInfer::set_input_buffers(const std::shared_ptr<cv::Mat> &input_data)
-{
+void AsyncModelInfer::set_input_buffers(const std::shared_ptr<cv::Mat> &input_data,
+                                        std::vector<std::shared_ptr<cv::Mat>> &input_guards) {
     for (const auto &input_name : infer_model->get_input_names()) {
         size_t frame_size = infer_model->input(input_name)->get_frame_size();
         auto status = bindings.input(input_name)->set_buffer(MemoryView(input_data->data, frame_size));
         if (HAILO_SUCCESS != status) {
             std::cerr << "Failed to set infer input buffer, status = " << status << std::endl;
         }
-        input_buffer_guards.push_back(input_data);
+        input_guards.push_back(input_data);
     }
 }
 
-std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> AsyncModelInfer::prepare_output_buffers()
-{
+std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> AsyncModelInfer::prepare_output_buffers(
+    std::vector<std::shared_ptr<uint8_t>> &output_guards) {
+
     std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> result;
     for (const auto &output_name : infer_model->get_output_names()) {
         size_t frame_size = infer_model->output(output_name)->get_frame_size();
-        output_data_holder = page_aligned_alloc(frame_size);
-        auto status = bindings.output(output_name)->set_buffer(MemoryView(output_data_holder.get(), frame_size));
+        auto buffer = page_aligned_alloc(frame_size);
+        auto status = bindings.output(output_name)->set_buffer(MemoryView(buffer.get(), frame_size));
         if (HAILO_SUCCESS != status) {
-            std::cerr << "Failed to set infer output buffer, status = " << status << std::endl;
+            std::cerr << "Failed to set output buffer, status = " << status << std::endl;
         }
-        result.push_back(std::make_pair(
-            bindings.output(output_name)->get_buffer()->data(),
-            output_vstream_info_by_name[output_name]
-        ));
-        output_buffer_guards.push_back(output_data_holder);
+        result.emplace_back(bindings.output(output_name)->get_buffer()->data(), output_vstream_info_by_name[output_name]);
+        output_guards.push_back(buffer);
     }
     return result;
 }
 
 void AsyncModelInfer::wait_and_run_async(
     const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &output_data_and_infos,
+    const std::vector<std::shared_ptr<uint8_t>> &output_guards,
+    const std::vector<std::shared_ptr<cv::Mat>> &input_guards,
     std::function<void(const hailort::AsyncInferCompletionInfo&,
-                    const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &)> callback)
+                       const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &,
+                       const std::vector<std::shared_ptr<uint8_t>> &)> callback)
 {
     auto status = configured_infer_model.wait_for_async_ready(std::chrono::milliseconds(1000));
     if (HAILO_SUCCESS != status) {
@@ -130,14 +142,15 @@ void AsyncModelInfer::wait_and_run_async(
     }
     auto job = configured_infer_model.run_async(
         bindings,
-        [callback, output_data_and_infos](const hailort::AsyncInferCompletionInfo& info)
+        [callback, output_data_and_infos, input_guards, output_guards](const hailort::AsyncInferCompletionInfo& info)
         {
             // callback sent by the applicative side
-            callback(info, output_data_and_infos);
+            callback(info, output_data_and_infos, output_guards);
         }
     );
     if (!job) {
         std::cerr << "Failed to start async infer job, status = " << job.status() << std::endl;
     }
     job->detach();
+    last_infer_job = std::move(job.release());
 }
