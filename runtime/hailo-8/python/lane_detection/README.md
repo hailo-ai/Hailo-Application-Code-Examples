@@ -9,11 +9,12 @@ It receives an input video and annotates it with the lane detection coordinates.
 Requirements
 ------------
 
-- hailo_platform==4.18.0
-- openCV
-- numpy
+- hailo_platform==4.21.0
 - loguru
 - tqdm
+- opencv-python
+
+
 
 Supported Models
 ----------------
@@ -40,7 +41,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/python/lane_detection
+    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/lane_detection
     ```
 
 2. Install dependencies:
@@ -73,13 +74,13 @@ Example
 -------
 **Command**
 ```shell script
-./lane_detection.py -n ./ufld_v2.hef -i input_video.mp4
+./lane_detection.py -n ./ufld_v2_tu.hef -i input_video.mp4
 ```
 
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.18.0``
+- The example was only tested with ``HailoRT v4.21.0``
 - The postprocessed video will be saved as **output_video.mp4**.  
 
 Disclaimer

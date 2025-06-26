@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import numpy as np
 from PIL import Image
 from pathlib import Path
@@ -11,9 +10,12 @@ from typing import List
 import threading
 import queue
 from super_resolution_utils import SrganUtils, Espcnx4Utils, SuperResolutionUtils
+from functools import partial
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from utils import HailoAsyncInference, load_input_images, validate_images, divide_list_to_batches
+# Add the parent directory to the system path to access utils module
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from common.hailo_inference import HailoAsyncInference
+from common.toolbox import load_input_images, validate_images, divide_list_to_batches
 
 def parse_args() -> argparse.Namespace:
     """
@@ -120,6 +122,39 @@ def process_output(
 
     output_queue.task_done()  # Indicate that processing is complete
 
+
+
+def inference_callback(
+        completion_info,
+        bindings_list: list,
+        input_batch: list,
+        output_queue: queue.Queue
+) -> None:
+    """
+    infernce callback to handle inference results and push them to a queue.
+
+    Args:
+        completion_info: Hailo inference completion info.
+        bindings_list (list): Output bindings for each inference.
+        input_batch (list): Original input frames.
+        output_queue (queue.Queue): Queue to push output results to.
+    """
+    if completion_info.exception:
+        logger.error(f'Inference error: {completion_info.exception}')
+    else:
+        for i, bindings in enumerate(bindings_list):
+            if len(bindings._output_names) == 1:
+                result = bindings.output().get_buffer()
+            else:
+                result = {
+                    name: np.expand_dims(
+                        bindings.output(name).get_buffer(), axis=0
+                    )
+                    for name in bindings._output_names
+                }
+            output_queue.put((input_batch[i], result))
+
+
 def infer(
     input_images: List[Image.Image],
     net_path: str,
@@ -140,16 +175,14 @@ def infer(
     output_queue = queue.Queue()
     results = [] 
 
+    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
+
     if 'espcn' in net_path:
         utils = Espcnx4Utils()
-        hailo_inference = HailoAsyncInference(
-            net_path, input_queue, output_queue, batch_size, "FLOAT32", {"espcn_x4_78x120/depth_to_space1": "FLOAT32"}
-        )
+        hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size, input_type="FLOAT32", output_type="FLOAT32")
     else:
         utils = SrganUtils()
-        hailo_inference = HailoAsyncInference(
-            net_path, input_queue, output_queue, batch_size
-        )
+        hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size)
     
     height, width, _ = hailo_inference.get_input_shape()
     enqueue_thread = threading.Thread(
@@ -189,7 +222,7 @@ def save_results(images: List[Image.Image], results: List[Image.Image], output_p
     if results:
         width, height = results[0].size
     for idx, (image, result) in enumerate(zip(images, results)):
-        image = image.resize((width, height), Image.BICUBIC)
+        image = image.resize((width, height), Image.Resampling.BICUBIC)
         result.save(output_path / f"sr_output_{idx}.png")
         Image.fromarray(np.hstack((np.array(image), np.array(result)))).save(output_path / f"comparison_{idx}.png")
 

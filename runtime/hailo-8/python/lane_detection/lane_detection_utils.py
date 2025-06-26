@@ -1,10 +1,8 @@
 from multiprocessing import Process
-
 from math import hypot
 import numpy as np
 import cv2
 from loguru import logger
-from hailo_platform import HEF
 
 class UFLDProcessing:
     def __init__(self,
@@ -217,22 +215,6 @@ def configure_output_video(output_path,
     output_video = cv2.VideoWriter(output_path, fourcc, frame_rate, resolution)
     return output_video
 
-def output_data_type2dict(hef: HEF, data_type: str) -> dict:
-    """
-    Initiates a dictionary where the keys are layers names and 
-    all values are the same requested data type.
-    
-    Args:
-        hef(HEF) : the HEF model file.
-        data_type(str) : the requested data type (e.g 'FLOAT32', 'UINT8', or 'UINT16')
-    
-    Returns:
-        Dict: layer name to data type 
-    """
-    hef = HEF(hef)
-    data_type_dict = {info.name: data_type for info in hef.get_output_vstream_infos()}
-
-    return data_type_dict
 
 def compute_scaled_radius(
     width: int,
