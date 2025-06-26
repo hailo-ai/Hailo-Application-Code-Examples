@@ -27,11 +27,12 @@ APP | Description |
 
 APP | Description |
 |:---|:---|
+| `object_detection` | Object detection + tracker with yolo, ssd, centernet
 | `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
 | `lane_detection` | Lane detection with UFLDv2
-| `object_detection` | Object detection with yolo, ssd, centernet
 | `pose_estimation` | Pose estimation with yolov8
-| `super_resolution` | Super resolution with espcnx4, srgan
+| `speech_recognition` |  Automatic Speech Recognition with Whisper model
+| `super_resolution` | Super-resolution with espcnx4, srgan
 
 </details>
 
