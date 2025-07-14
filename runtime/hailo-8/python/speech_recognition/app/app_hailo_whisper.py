@@ -3,14 +3,16 @@
 import time
 import argparse
 import os
+import sys
 from app.hailo_whisper_pipeline import HailoWhisperPipeline
 from common.audio_utils import load_audio
 from common.preprocessing import preprocess, improve_input_audio
 from common.postprocessing import clean_transcription
 from common.record_utils import record_audio
+from app.whisper_hef_registry import HEF_REGISTRY
 
 
-DURATION = 10  # recording duration in seconds
+DURATION = 5  # recording duration in seconds
 
 
 def get_args():
@@ -34,6 +36,13 @@ def get_args():
         help="Hardware architecture to use (default: hailo8)"
     )
     parser.add_argument(
+        "--variant",
+        type=str,
+        default="base",
+        choices=["base", "tiny"],
+        help="Whisper variant to use (default: base)"
+    )
+    parser.add_argument(
         "--multi-process-service", 
         action="store_true", 
         help="Enable multi-process service to run other models in addition to Whisper"
@@ -41,44 +50,27 @@ def get_args():
     return parser.parse_args()
 
 
-def get_encoder_hef_path(hw_arch):
+def get_hef_path(model_variant: str, hw_arch: str, component: str) -> str:
     """
-    Get the HEF path for the encoder based on the Hailo hardware architecture.
+    Method to retrieve HEF path.
 
     Args:
-        hw_arch (str): Hardware architecture ("hailo8" or "hailo8l").
+        model_variant (str): e.g. "tiny", "base"
+        hw_arch (str): e.g. "hailo8", "hailo8l"
+        component (str): "encoder" or "decoder"
 
     Returns:
-        str: Path to the encoder HEF file.
+        str: Absolute path to the requested HEF file.
     """
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    if hw_arch == "hailo8l":
-        hef_path = os.path.join(base_path, 'hefs', 'h8l', 'tiny', 'tiny-whisper-encoder-10s_15dB_h8l.hef')
-    else:
-        hef_path = os.path.join(base_path, 'hefs', 'h8', 'tiny', 'tiny-whisper-encoder-10s_15dB.hef')
+    try:
+        hef_path = HEF_REGISTRY[model_variant][hw_arch][component]
+    except KeyError as e:
+        raise FileNotFoundError(
+            f"HEF not available for model '{model_variant}' on hardware '{hw_arch}'."
+        ) from e
+
     if not os.path.exists(hef_path):
-        raise FileNotFoundError(f"Encoder HEF file not found: {hef_path}. Please check the path.")
-    return hef_path
-
-
-def get_decoder_hef_path(hw_arch):
-    """
-    Get the HEF path for the decoder based on the Hailo hardware architecture and host type.
-
-    Args:
-        hw_arch (str): Hardware architecture ("hailo8" or "hailo8l").
-        host (str): Host type ("x86" or "arm64").
-
-    Returns:
-        str: Path to the decoder HEF file.
-    """
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    if hw_arch == "hailo8l":
-        hef_path = os.path.join(base_path, "hefs", "h8l", "tiny", "tiny-whisper-decoder-fixed-sequence-matmul-split_h8l.hef")
-    else:
-        hef_path = os.path.join(base_path, "hefs", "h8", "tiny", "tiny-whisper-decoder-fixed-sequence-matmul-split.hef")
-    if not os.path.exists(hef_path):
-        raise FileNotFoundError(f"Decoder HEF file not found: {hef_path}. Please check the path.")
+        raise FileNotFoundError(f"HEF file not found at: {hef_path}\nIf not done yet, please run ./download_resources.sh from the app/ folder to download the required HEF files.")
     return hef_path
 
 
@@ -89,10 +81,10 @@ def main():
     # Get command line arguments
     args = get_args()
 
-    encoder_path = get_encoder_hef_path(args.hw_arch)
-    decoder_path = get_decoder_hef_path(args.hw_arch)
-
-    variant = "tiny"  # only tiny model is available for now
+    variant = args.variant
+    print(f"Selected variant: Whisper {variant}")
+    encoder_path = get_hef_path(variant, args.hw_arch, "encoder")
+    decoder_path = get_hef_path(variant, args.hw_arch, "decoder")
 
     whisper_hailo = HailoWhisperPipeline(encoder_path, decoder_path, variant, multi_process_service=args.multi_process_service)
     print("Hailo Whisper pipeline initialized.")

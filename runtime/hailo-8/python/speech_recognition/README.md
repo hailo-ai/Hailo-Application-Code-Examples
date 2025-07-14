@@ -1,6 +1,6 @@
 # Automatic Speech Recognition with Whisper model
 
-This application performs a speech-to-text transcription using OpenAI's *Whisper-tiny* model on the Hailo-8/8L AI accelerator.
+This application performs a speech-to-text transcription using OpenAI's *Whisper-tiny* and *Whisper-base* model on the Hailo-8/8L AI accelerator.
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ Follow these steps to set up the environment and install dependencies for infere
 
 - Make sure you have a microphone connected to your system. If you have multiple microphones connected, please make sure the proper one is selected in the system configuration, and that the input volume is set to a medium/high level.  
   A good quality microphone (or a USB camera) is suggested to acquire the audio.
-- The application allows the user to acquire and process an audio sample up to 10 seconds long.
+- The application allows the user to acquire and process an audio sample up to 5 seconds long. The duration can be modified in the application code.
 - The current pipeline supports **English language only**.
 
 ## Usage from CLI
@@ -69,6 +69,12 @@ Follow these steps to set up the environment and install dependencies for infere
    ```sh
    python3 -m app.app_hailo_whisper --hw-arch hailo8l
    ```
+   If you want to select a specific Whisper model, use the *--variant* argument:
+   ```sh
+   python3 -m app.app_hailo_whisper --variant base
+   python3 -m app.app_hailo_whisper --variant tiny
+   ```
+   
 
 ### Command line arguments
 Use the `python3 -m app.app_hailo_whisper --help` command to print the helper.
@@ -76,8 +82,33 @@ Use the `python3 -m app.app_hailo_whisper --help` command to print the helper.
 The following command line options are available:
 
 - **--reuse-audio**: Reloads the audio from the previous run.
-- **--hw-arch**: Selects the correct Whisper models from Hailo-8 / 8L.
+- **--hw-arch**: Selects the Whisper models compiled for the target architecture (*hailo8* / *hailo8l*). If not specified, the *hailo8* architecture is selected.
+- **--variant**: Variant of the Whisper model to use (*tiny* / *base*). If not specified, the *base* model is used.
 - **--multi-process-service**: Enables the multi-process service, to run other models on the same chip in addition to Whisper
+
+## Usage from GUI
+1. Activate the virtual environment from the repository root folder:
+
+   ```sh
+   source whisper_env/bin/activate
+   ```
+2. Install **streamlit**:
+   ```sh
+   pip install streamlit
+   ```
+3. Set the PYTHONPATH to the repository root folder:
+   ```sh
+   export PYTHONPATH=$(pwd)
+   ```
+4. Run the GUI:
+   ```
+   streamlit run gui/gui.py
+   ```
+5. The *--hw-arch* and *--variant* arguments are available for the GUI as well.
+   Please use **--** as a separator between the streamlit command and the arguments, for example:
+   ```
+   streamlit run gui/gui.py -- --hw-arch hailo8l
+   ```
 
 
 ## Additional notes
@@ -96,7 +127,7 @@ The following command line options are available:
 
 - Make sure that the microphone is connected to your host and that it can be detected by the system.
 - Post-processing is being applied to improve the quality of the transcription, e.g. applying peanlty on repeated tokens and removing model's hallucinations (if any). These methods can be modified by the user to find an optimal solution.
-- The `--reuse-audio` flag can be used to load the audio acquired during the previous run, for debugging purposes.
+- In the CLI application, the `--reuse-audio` flag can be used to load the audio acquired during the previous run, for debugging purposes.
 - If the transcription is not generated, listen to the saved audio record to make sure that the audio was actually recorded and that the quality is good.
 
 ## Disclaimer
