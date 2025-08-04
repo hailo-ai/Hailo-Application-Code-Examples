@@ -3,21 +3,17 @@ import os
 import sys
 import argparse
 import multiprocessing as mp
-from multiprocessing import Process
-from pathlib import Path
+from queue import Queue
 from loguru import logger
-from PIL import Image
-from typing import List
 from functools import partial
 import numpy as np
-
-from pose_estimation_utils import (check_process_errors, PoseEstPostProcessing)
+import threading
+from pose_estimation_utils import PoseEstPostProcessing
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from common.hailo_inference import HailoAsyncInference
-from common.toolbox import load_input_images, validate_images, divide_list_to_batches
-
+from common.hailo_inference import HailoInfer
+from common.toolbox import init_input_source, preprocess, visualize, FrameRateTracker
 
 
 
@@ -53,88 +49,38 @@ def parse_args() -> argparse.Namespace:
         help="The number of classes the model is trained on. Defaults to 1",
         default=1
     )
+    parser.add_argument(
+        "-s", "--save_stream_output", action="store_true",
+        help="Save the output of the inference from a stream."
+    )
+    parser.add_argument(
+        "-o", "--output-dir", help="Directory to save the results.",
+        default=None
+    )
+    parser.add_argument(
+        "-r", "--resolution",
+        choices=["sd", "hd", "fhd"],
+        default="sd",
+        help="Camera only: Choose input resolution: 'sd' (640x480), 'hd' (1280x720), or 'fhd' (1920x1080). Default is 'sd'."
+    )
+
+    parser.add_argument(
+        "--show-fps",
+        action="store_true",
+        help="Enable FPS measurement and display."
+    )
 
     args = parser.parse_args()
     # Validate paths
     if not os.path.exists(args.net):
         raise FileNotFoundError(f"Network file not found: {args.net}")
-    if not os.path.exists(args.input):
-        raise FileNotFoundError(f"Input path not found: {args.input}")
+
+    if args.output_dir is None:
+        args.output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(args.output_dir, exist_ok=True)
+
     return args
 
-
-def create_output_directory() -> Path:
-    """
-    Create the output directory if it does not exist.
-
-    Returns:
-        Path: Path object for the output directory.
-    """
-    output_path = Path('output_images')
-    output_path.mkdir(exist_ok=True)
-    return output_path
-
-
-def preprocess_input(
-    images: List[Image.Image],
-    batch_size: int,
-    input_queue: mp.Queue,
-    width: int,
-    height: int,
-    post_processing: PoseEstPostProcessing
-) -> None:
-    """
-    Preprocess and enqueue images into the input queue as they are ready.
-
-    Args:
-        images (list[Image.Image]): list of PIL.Image.Image objects.
-        batch_size (int): Number of images in one batch.
-        input_queue (mp.Queue): Queue for input images.
-        width (int): Model input width.
-        height (int): Model input height.
-    """
-    for batch in divide_list_to_batches(images, batch_size):
-        processed_batch = []
-
-        for image in batch:
-            processed_image = post_processing.preprocess(image, width, height)
-            processed_batch.append(processed_image)
-
-        input_queue.put(processed_batch)
-
-    input_queue.put(None)
-
-
-def postprocess_output(
-    output_queue: mp.Queue,
-    output_path: Path,
-    width: int,
-    height: int,
-    class_num: int,
-   post_processing: PoseEstPostProcessing
-) -> None:
-    """
-    Process and visualize the output results.
-
-    Args:
-        output_queue (mp.Queue): Queue for output results.
-        output_path (Path): Path to save the output images.
-        width (int): Image width.
-        height (int): Image height.
-        class_num (int): Number of classes.
-        post_processing (PoseEstPostProcessing): Post-processing configuration.
-    """
-    image_id = 0
-    while True:
-        result = output_queue.get()
-        if result is None:
-            break  # Exit the loop if sentinel value is received
-
-        processed_image, raw_detections = result
-        post_processing.postprocess_and_visualize(processed_image, raw_detections,
-                                    output_path, image_id, height, width, class_num)
-
-        image_id += 1
 
 
 def inference_callback(
@@ -169,87 +115,77 @@ def inference_callback(
 
 
 
-def infer(
-    images: List[Image.Image],
-    net_path: str,
-    batch_size: int,
-    class_num: int,
-    output_path: Path,
-    data_type_dict: dict,
-    post_processing: PoseEstPostProcessing
-) -> None:
+def infer(hailo_inference, input_queue, output_queue):
     """
-    Run inference with HailoAsyncInference, handle processes, and ensure proper cleanup.
+    Main inference loop that pulls data from the input queue, runs asynchronous
+    inference, and pushes results to the output queue.
+
+    Each item in the input queue is expected to be a tuple:
+        (input_batch, preprocessed_batch)
+        - input_batch: Original frames (used for visualization or tracking)
+        - preprocessed_batch: Model-ready frames (e.g., resized, normalized)
 
     Args:
-        images (list[Image.Image]): List of images to process.
-        net_path (str): Path to the HEF model file.
-        batch_size (int): Number of images per batch.
-        class_num (int): Number of classes.
-        output_path (Path): Path to save the output images.
-        data_type_dict (dict): Dictionary of layer names and data types.
-        post_processing (PoseEstPostProcessing): Post-processing configuration.
+        hailo_inference (HailoInfer): The inference engine to run model predictions.
+        input_queue (queue.Queue): Provides (input_batch, preprocessed_batch) tuples.
+        output_queue (queue.Queue): Collects (input_frame, result) tuples for visualization.
+
+    Returns:
+        None
     """
-    input_queue = mp.Queue()
-    output_queue = mp.Queue()
-    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
+    while True:
+        next_batch = input_queue.get()
+        if not next_batch:
+            break  # Stop signal received
 
-    hailo_inference = HailoAsyncInference(
-        net_path, input_queue, inference_callback_fn, batch_size, output_type="FLOAT32")
-    height, width, _ = hailo_inference.get_input_shape()
+        input_batch, preprocessed_batch = next_batch
 
-    preprocess = Process(
-        target=preprocess_input,
-        name="image_enqueuer",
-        args=(images, batch_size, input_queue, width, height, post_processing)      
-    )
-    postprocess = Process(
-        target=postprocess_output,
-        name="image_processor",
-        args=(
-            output_queue, output_path, width, height, class_num, post_processing
+        # Prepare the callback for handling the inference result
+        inference_callback_fn = partial(
+            inference_callback,
+            input_batch=input_batch,
+            output_queue=output_queue
         )
-    )
 
-    preprocess.start()
-    postprocess.start()
+        # Run async inference
+        hailo_inference.run(preprocessed_batch, inference_callback_fn)
 
-    try:
-        hailo_inference.run()
-        preprocess.join()
-        # To signal processing process to exit
-        output_queue.put(None)
-        postprocess.join()
-      
-        check_process_errors(preprocess, postprocess)
-     
-        logger.info(f'Inference was successful! Results have been saved in {output_path}')
-      
-    except Exception as e:
-        logger.error(f"Inference error: {e}")
-        # Ensure cleanup if there's an error
-        input_queue.close()
-        output_queue.close()
-        preprocess.terminate()
-        postprocess.terminate()
-
-        os._exit(1)  # Force exit on error
+    # Release resources and context
+    hailo_inference.close()
 
 
-def main() -> None:
-    args = parse_args()
-    images = load_input_images(args.input)
 
-    try:
-        validate_images(images, args.batch_size)
-    except ValueError as e:
-        logger.error(e)
-        return
+def run_inference_pipeline(
+    net_path: str,
+    input :str,
+    batch_size: int,
+    class_num: int,
+    output_dir: str,
+    save_stream_output :bool,
+    resolution: str,
+    show_fps: bool
+) -> None:
+    """
+    Run the inference pipeline using HailoInfer.
 
-    output_path = create_output_directory()
-    output_type = 'FLOAT32'
+    Args:
+        net_path (str): Path to the HEF model file.
+        input (str): Path to the input source (image, video, folder, or camera).
+        batch_size (int): Number of frames to process per batch.
+        class_num (int): Number of output classes expected by the model.
+        output_dir (str): Directory where processed output will be saved.
+        save_stream_output (bool): If True, saves the output stream as a video file.
+        resolution (str): Camera only, resolution of the input source (e.g., "1280x720").
+        show_fps (bool): If True, display real-time FPS on the output.
 
-    post_processing = PoseEstPostProcessing(
+    Returns:
+        None
+    """
+    input_queue = Queue()
+    output_queue = Queue()
+
+
+    pose_post_processing = PoseEstPostProcessing(
         max_detections=300,
         score_threshold=0.001,
         nms_iou_thresh=0.7,
@@ -257,11 +193,65 @@ def main() -> None:
         strides=[8, 16, 32]
     )
 
-    infer(
-        images, args.net, int(args.batch_size), int(args.class_num),
-        output_path, output_type, post_processing
+    # Initialize input source from string: "camera", video file, or image folder.
+    cap, images = init_input_source(input, batch_size, resolution)
+
+    fps_tracker = None
+    if show_fps:
+        fps_tracker = FrameRateTracker()
+
+    hailo_inference = HailoInfer(
+        net_path, batch_size, output_type="FLOAT32")
+    height, width, _ = hailo_inference.get_input_shape()
+
+    post_process_callback_fn = partial(
+        pose_post_processing.inference_result_handler,
+        model_height=height,
+        model_width=width,
+        class_num = class_num
     )
+
+    preprocess_thread = threading.Thread(
+        target=preprocess,
+        args=(images, cap, batch_size, input_queue, width, height)
+    )
+
+    postprocess_thread = threading.Thread(
+        target=visualize,
+        args=(output_queue, cap, save_stream_output,
+            output_dir, post_process_callback_fn, fps_tracker)
+        )
+
+    infer_thread = threading.Thread(
+        target=infer,
+        args=(hailo_inference, input_queue, output_queue)
+    )
+
+    infer_thread.start()
+    preprocess_thread.start()
+    postprocess_thread.start()
+
+    if show_fps:
+        fps_tracker.start()
+    infer_thread.join()
+    preprocess_thread.join()
+    output_queue.put(None)     # To signal processing process to exit
+    postprocess_thread.join()
+
+    if show_fps:
+        logger.debug(fps_tracker.frame_rate_summary())
+
+    logger.info(f'Inference was successful! Results have been saved in {output_dir}')
+
+
+def main() -> None:
+    args = parse_args()
+    run_inference_pipeline(
+        args.net, args.input, int(args.batch_size), int(args.class_num),
+        args.output_dir, args.save_stream_output, args.resolution,
+        args.show_fps
+    )
+
 
 if __name__ == "__main__":
     main()
-# End-of-file (EOF)

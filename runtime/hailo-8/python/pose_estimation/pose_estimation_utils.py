@@ -15,6 +15,7 @@ JOINT_PAIRS = [
     [11, 13], [12, 14], [13, 15], [14, 16]
 ]
 
+
 class PoseEstPostProcessing:
     def __init__(self, max_detections: int, score_threshold: float, nms_iou_thresh: float,
                  regression_length: int, strides: List[int]):
@@ -34,33 +35,29 @@ class PoseEstPostProcessing:
         self.regression_length = regression_length
         self.strides = strides
 
-    def postprocess_and_visualize(
-        self, image: Image.Image, raw_detections: dict, output_path: Path,
-        image_index: int, height: int, width: int, class_num: int
+    def inference_result_handler(
+            self, image, raw_detections: dict, model_height: int, model_width: int, class_num: int = 1
     ) -> None:
         """
-        Post-process the inference results and save the output image.
+        Post-process the inference results and return the output image with visualizations.
 
         Args:
-            image (Image.Image): The input image.
-            raw_detections (Dict): Raw detections from the inference.
-            output_path (Path): Path to the output directory.
-            image_index (int): Index of the image for naming the output file.
-            height (int): The height of the input image.
-            width (int): The width of the input image.
-            class_num (int): Number of classes.  
+            image (np.ndarray): The input image frame.
+            raw_detections (dict): Raw inference results from the model.
+            model_height (int): The height of the model input.
+            model_width (int): The width of the model input.
+            class_num (int, optional): Number of output classes. Defaults to 1.
 
         Returns:
-            None
+            np.ndarray: The image with visualized inference results.
         """
         # Post-process results
-        results = self.post_process(raw_detections, height, width, class_num)
+        results = self.post_process(raw_detections, model_height, model_width, class_num)
 
         # Visualize and save results
-        output_image = self.visualize_pose_estimation_result(results, image)
-        output_image_pil = Image.fromarray(cv2.cvtColor(output_image, cv2.COLOR_BGR2RGB))
-        output_image_pil.save(output_path / f'output_image{image_index}.jpg', 'JPEG')
+        output_image = self.visualize_pose_estimation_result(results, image, model_height, model_width)
 
+        return  output_image
 
     def post_process(self, raw_detections: dict, height: int, width: int, class_num: int) -> dict:
         """
@@ -90,12 +87,12 @@ class PoseEstPostProcessing:
             raw_detections[layer_from_shape[1, 80, 80, class_num]],
             raw_detections[layer_from_shape[1, 80, 80, keypoints]]
         ]
-       
+
         predictions_dict = self.extract_pose_estimation_results(endnodes, height, width, class_num)
         return predictions_dict
-    
+
     def extract_pose_estimation_results(
-        self, endnodes: List[np.ndarray], height: int, width: int, class_num: int
+            self, endnodes: List[np.ndarray], height: int, width: int, class_num: int
     ) -> Dict[str, np.ndarray]:
         """
         Post-process the pose estimation results.
@@ -105,7 +102,7 @@ class PoseEstPostProcessing:
             height (int): Height of the input image.
             width (int): Width of the input image.
             class_num (int): Number of classes.
-    
+
         Returns:
             dict: Processed detections with keys:
                 'bboxes': numpy.ndarray with shape (batch_size, max_detections, 4),
@@ -116,7 +113,7 @@ class PoseEstPostProcessing:
         batch_size = endnodes[0].shape[0]
         strides = self.strides[::-1]
         image_dims = (height, width)
-       
+
         raw_boxes = endnodes[:7:3]
         scores = [
             np.reshape(s, (-1, s.shape[1] * s.shape[2], class_num)) for s in endnodes[1:8:3]
@@ -128,13 +125,13 @@ class PoseEstPostProcessing:
         ]
 
         decoded_boxes, decoded_kpts = self.decoder(raw_boxes,
-                                              kpts, strides,
-                                              image_dims, self.regression_length)
+                                                   kpts, strides,
+                                                   image_dims, self.regression_length)
         decoded_kpts = np.reshape(decoded_kpts, (batch_size, -1, 51))
         predictions = np.concatenate([decoded_boxes, scores, decoded_kpts], axis=2)
 
         nms_res = self.non_max_suppression(
-            predictions, conf_thres=self.score_threshold, 
+            predictions, conf_thres=self.score_threshold,
             iou_thres=self.nms_iou_thresh, max_det=self.max_detections
         )
 
@@ -149,27 +146,115 @@ class PoseEstPostProcessing:
             output['bboxes'][b, :nms_res[b]['num_detections']] = nms_res[b]['bboxes']
             output['keypoints'][b, :nms_res[b]['num_detections']] = nms_res[b]['keypoints'][..., :2]
             output['joint_scores'][b, :nms_res[b]['num_detections'],
-                                   ..., 0] = self._sigmoid(nms_res[b]['keypoints'][..., 2])
+            ..., 0] = self._sigmoid(nms_res[b]['keypoints'][..., 2])
             output['scores'][b, :nms_res[b]['num_detections'], ..., 0] = nms_res[b]['scores']
 
         return output
 
 
-    def visualize_pose_estimation_result(
-        self, results: dict, img: Image.Image, *, detection_threshold: float = 0.5,
-        joint_threshold: float = 0.5
-    ) -> np.ndarray:
+    def map_box_to_original_coords(self,
+            box: list[float],
+            orig_w: int, orig_h: int,
+            model_w: int, model_h: int
+    ) -> list[int]:
         """
-        Visualize pose estimation results on an image.
+        Maps a bounding box from preprocessed image space back to original image space.
 
         Args:
-            results (Dict): The processed pose estimation results.
-            img (Image.Image): The input image on which to draw the results.
-            detection_threshold (float): Threshold for detecting bounding boxes.
-            joint_threshold (float): Threshold for detecting joints.
+            box (list[float]): [xmin, ymin, xmax, ymax] in preprocessed image coordinates.
+            orig_w (int): Original image width.
+            orig_h (int): Original image height.
+            model_w (int): Model input width.
+            model_h (int): Model input height.
 
         Returns:
-            np.ndarray: Image with visualized pose estimations.
+            list[int]: Mapped [xmin, ymin, xmax, ymax] in original image coordinates.
+        """
+        # Calculate scaling and offset used during preprocessing
+        scale = min(model_w / orig_w, model_h / orig_h)
+        new_w, new_h = int(orig_w * scale), int(orig_h * scale)
+        x_offset = (model_w - new_w) // 2
+        y_offset = (model_h - new_h) // 2
+
+        xmin, ymin, xmax, ymax = box
+
+        # Remove padding
+        xmin -= x_offset
+        xmax -= x_offset
+        ymin -= y_offset
+        ymax -= y_offset
+
+        # Rescale to original coordinates
+        xmin = int(xmin / scale)
+        xmax = int(xmax / scale)
+        ymin = int(ymin / scale)
+        ymax = int(ymax / scale)
+
+        # Clip to image boundaries
+        xmin = max(0, min(orig_w - 1, xmin))
+        xmax = max(0, min(orig_w - 1, xmax))
+        ymin = max(0, min(orig_h - 1, ymin))
+        ymax = max(0, min(orig_h - 1, ymax))
+
+        return [xmin, ymin, xmax, ymax]
+
+    def map_keypoints_to_original_coords(self,
+            keypoints: np.ndarray,  # shape (17, 2)
+            orig_w: int, orig_h: int,
+            model_w: int, model_h: int
+    ) -> np.ndarray:
+        """
+        Map keypoints from preprocessed image space back to original image space.
+
+        Args:
+            keypoints (np.ndarray): Array of shape (17, 2) with (x, y) keypoints.
+            orig_w (int): Width of the original image.
+            orig_h (int): Height of the original image.
+            model_w (int): Width of the preprocessed (model input) image.
+            model_h (int): Height of the preprocessed (model input) image.
+
+        Returns:
+            np.ndarray: Mapped keypoints of shape (17, 2) in original image coordinates.
+        """
+        scale = min(model_w / orig_w, model_h / orig_h)
+        new_w, new_h = int(orig_w * scale), int(orig_h * scale)
+        x_offset = (model_w - new_w) // 2
+        y_offset = (model_h - new_h) // 2
+
+        # Subtract padding and divide by scale
+        keypoints[:, 0] = (keypoints[:, 0] - x_offset) / scale
+        keypoints[:, 1] = (keypoints[:, 1] - y_offset) / scale
+
+        # Clip to image bounds
+        keypoints[:, 0] = np.clip(keypoints[:, 0], 0, orig_w - 1)
+        keypoints[:, 1] = np.clip(keypoints[:, 1], 0, orig_h - 1)
+
+        return keypoints
+
+    def visualize_pose_estimation_result(
+            self,
+            results: dict,
+            image: np.ndarray,
+            model_height: int,
+            model_width: int,
+            detection_threshold: float = 0.5,
+            joint_threshold: float = 0.5,
+    ) -> np.ndarray:
+        """
+        Visualize pose estimation results by drawing bounding boxes, keypoints, and joint connections
+        on the original input image.
+
+        Args:
+            results (dict): Dictionary containing processed pose estimation results, including
+                            bounding boxes, detection scores, keypoints, and keypoint scores.
+            image (np.ndarray): The original input image on which to draw the visualizations.
+            model_height (int): The height of the model input.
+            model_width (int): The width of the model input.
+            detection_threshold (float): Minimum confidence score for showing detected persons.
+            joint_threshold (float): Minimum confidence score for showing individual joints.
+
+        Returns:
+            np.ndarray: Image with visualized bounding boxes and pose skeletons.
         """
         if 'predictions' in results:
             results = results['predictions']
@@ -181,23 +266,26 @@ class PoseEstPostProcessing:
 
         batch_size = bboxes.shape[0]
         assert batch_size == 1
+        orig_h, orig_w = image.shape[:2]
 
         box, score, keypoint, keypoint_score = bboxes[0], scores[0], keypoints[0], joint_scores[0]
-        image = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
-            
+
         for (detection_box, detection_score, detection_keypoints,
-            detection_keypoints_score) in zip(box, score, keypoint, keypoint_score):
+             detection_keypoints_score) in zip(box, score, keypoint, keypoint_score):
             if detection_score < detection_threshold:
                 continue
-
+            detection_box = self.map_box_to_original_coords(detection_box, orig_w, orig_h, model_width, model_height)
             xmin, ymin, xmax, ymax = [int(x) for x in detection_box]
 
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0, 0), 1)
             cv2.putText(image, str(detection_score), (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (36, 255, 12), 1)
-            
+
             joint_visible = detection_keypoints_score > joint_threshold
             detection_keypoints = detection_keypoints.reshape(17, 2)
-            
+            detection_keypoints = self.map_keypoints_to_original_coords(
+                detection_keypoints, orig_w, orig_h, model_width, model_height
+            )
+
             for joint, joint_score in zip(detection_keypoints, detection_keypoints_score):
                 if joint_score < joint_threshold:
                     continue
@@ -211,29 +299,6 @@ class PoseEstPostProcessing:
 
         return image
 
-
-    def preprocess(self, image: Image.Image, model_w: int, model_h: int) -> Image.Image:
-        """
-        Resize image with unchanged aspect ratio using padding.
-
-        Args:
-            image (PIL.Image.Image): Input image.
-            model_w (int): Model input width.
-            model_h (int): Model input height.
-
-        Returns:
-            PIL.Image.Image: Preprocessed and padded image.
-        """
-        img_w, img_h = image.size
-        scale = min(model_w / img_w, model_h / img_h)
-        new_img_w, new_img_h = int(img_w * scale), int(img_h * scale)
-        image = image.resize((new_img_w, new_img_h), Image.BICUBIC)
-        padding_color = (114, 114, 114)
-        padded_image = Image.new('RGB', (model_w, model_h), padding_color)
-        padded_image.paste(image, ((model_w - new_img_w) // 2, (model_h - new_img_h) // 2))
-        return padded_image
-
-
     def _sigmoid(self, x: np.ndarray) -> np.ndarray:
         """
         Apply sigmoid function.
@@ -246,7 +311,6 @@ class PoseEstPostProcessing:
         """
         return 1 / (1 + np.exp(-x))
 
-
     def _softmax(self, x: np.ndarray) -> np.ndarray:
         """
         Apply softmax function.
@@ -258,7 +322,6 @@ class PoseEstPostProcessing:
             np.ndarray: Softmax transformed array.
         """
         return np.exp(x) / np.expand_dims(np.sum(np.exp(x), axis=-1), axis=-1)
-
 
     def max_value(self, a: float, b: float) -> float:
         """
@@ -273,7 +336,6 @@ class PoseEstPostProcessing:
         """
         return a if a >= b else b
 
-
     def min_value(self, a: float, b: float) -> float:
         """
         Return the minimum of two values.
@@ -286,7 +348,6 @@ class PoseEstPostProcessing:
             float: The minimum of `a` and `b`.
         """
         return a if a <= b else b
-
 
     def nms(self, dets: np.ndarray, thresh: float) -> np.ndarray:
         """
@@ -328,10 +389,9 @@ class PoseEstPostProcessing:
 
         return np.where(suppressed == 0)[0]
 
-
     def decoder(
-        self, raw_boxes: np.ndarray, raw_kpts: np.ndarray, strides: List[int],
-        image_dims: Tuple[int, int], reg_max: int
+            self, raw_boxes: np.ndarray, raw_kpts: np.ndarray, strides: List[int],
+            image_dims: Tuple[int, int], reg_max: int
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Decode the bounding boxes and keypoints from raw predictions.
@@ -361,21 +421,21 @@ class PoseEstPostProcessing:
             reg_range = np.arange(reg_max + 1)
             box_distribute = np.reshape(box_distribute,
                                         (-1,
-                                        box_distribute.shape[1] * box_distribute.shape[2],
-                                        4,
-                                        reg_max + 1))
+                                         box_distribute.shape[1] * box_distribute.shape[2],
+                                         4,
+                                         reg_max + 1))
             box_distance = self._softmax(box_distribute) * np.reshape(reg_range, (1, 1, 1, -1))
             box_distance = np.sum(box_distance, axis=-1) * stride
 
             box_distance = np.concatenate([box_distance[:, :, :2] * (-1), box_distance[:, :, 2:]],
-                                        axis=-1)
+                                          axis=-1)
             decode_box = np.expand_dims(center, axis=0) + box_distance
 
             xmin, ymin, xmax, ymax = decode_box[:, :, 0], decode_box[:, :, 1], decode_box[:, :, 2], decode_box[:, :, 3]
             decode_box = np.transpose([xmin, ymin, xmax, ymax], [1, 2, 0])
 
             xywh_box = np.transpose([(xmin + xmax) / 2,
-                                    (ymin + ymax) / 2, xmax - xmin, ymax - ymin], [1, 2, 0])
+                                     (ymin + ymax) / 2, xmax - xmin, ymax - ymin], [1, 2, 0])
             boxes = xywh_box if boxes is None else np.concatenate([boxes, xywh_box], axis=1)
 
             kpts[..., :2] *= 2
@@ -384,7 +444,6 @@ class PoseEstPostProcessing:
                                                                             axis=1)
 
         return boxes, decoded_kpts
-
 
     def xywh2xyxy(self, x: np.ndarray) -> np.ndarray:
         """
@@ -403,10 +462,9 @@ class PoseEstPostProcessing:
         y[:, 3] = x[:, 1] + x[:, 3] / 2
         return y
 
-
     def non_max_suppression(
-        self, prediction: np.ndarray, conf_thres: float = 0.1, iou_thres: float = 0.45,
-        max_det: int = 100, n_kpts: int = 17
+            self, prediction: np.ndarray, conf_thres: float = 0.1, iou_thres: float = 0.45,
+            max_det: int = 100, n_kpts: int = 17
     ) -> List[dict]:
         """
         Non-Maximum Suppression (NMS) on inference results to reject overlapping detections.
@@ -473,36 +531,3 @@ class PoseEstPostProcessing:
             })
 
         return output
-   
-def check_process_errors(*processes: Process) -> None:
-    """
-    Check the exit codes of processes and log errors if any process has a non-zero exit code.
-
-    Args:
-        processes (Process): The processes to check.
-    """
-    process_failed = False
-    for process in processes:
-        if process.exitcode != 0:
-            logger.error(f"{process.name} terminated with an error. Exit code: {process.exitcode}")
-            process_failed = True
-    if process_failed:
-        raise RuntimeError("One or more processes terminated with an error.")
-
-def output_data_type2dict(hef: HEF, data_type: str) -> dict:
-    """
-    initiates a dictionary where the keys are layers names and 
-    all values are the same requested data type.
-    
-    Args:
-        hef(HEF) : the HEF model file.
-        data_type(str) : the requested data type (e.g 'FLOAT32', 'UINT8', or 'UINT16')
-    
-    Returns:
-        Dict: layer name to data type 
-    """
-    data_type_dict = {info.name: data_type for info in hef.get_output_vstream_infos()}
-
-    return data_type_dict
-
-# End-of-file (EOF)

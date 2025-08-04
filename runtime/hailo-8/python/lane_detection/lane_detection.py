@@ -9,6 +9,7 @@ from functools import partial
 import numpy as np
 from loguru import logger
 import cv2
+import threading
 
 from lane_detection_utils import (UFLDProcessing,
                                   check_process_errors,
@@ -16,7 +17,7 @@ from lane_detection_utils import (UFLDProcessing,
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from common.hailo_inference import HailoAsyncInference
+from common.hailo_inference import HailoInfer
 
 
 
@@ -133,12 +134,7 @@ def postprocess_output(output_queue: mp.Queue,
         if result is None:
             break  # Exit when the sentinel value is received
         original_frame, inference_output = result
-        slices = [
-            inference_output['ufld_v2_tu/slice1'],
-            inference_output['ufld_v2_tu/slice2'],
-            inference_output['ufld_v2_tu/slice3'],
-            inference_output['ufld_v2_tu/slice4']
-        ]
+        slices = list(inference_output.values())
         output_tensor = np.concatenate(slices, axis=1)  # Shape: (1, total_features)
         lanes = ufld_processing.get_coordinates(output_tensor)
 
@@ -185,7 +181,48 @@ def inference_callback(
             output_queue.put((input_batch[i], result))
 
 
-def infer(
+
+def infer(hailo_inference, input_queue, output_queue):
+    """
+    Main inference loop that pulls data from the input queue, runs asynchronous
+    inference, and pushes results to the output queue.
+
+    Each item in the input queue is expected to be a tuple:
+        (input_batch, preprocessed_batch)
+        - input_batch: Original frames (used for visualization or tracking)
+        - preprocessed_batch: Model-ready frames (e.g., resized, normalized)
+
+    Args:
+        hailo_inference (HailoInfer): The inference engine to run model predictions.
+        input_queue (queue.Queue): Provides (input_batch, preprocessed_batch) tuples.
+        output_queue (queue.Queue): Collects (input_frame, result) tuples for visualization.
+
+    Returns:
+        None
+    """
+    while True:
+        next_batch = input_queue.get()
+        if not next_batch:
+            break  # Stop signal received
+
+        input_batch, preprocessed_batch = next_batch
+
+        # Prepare the callback for handling the inference result
+        inference_callback_fn = partial(
+            inference_callback,
+            input_batch=input_batch,
+            output_queue=output_queue
+        )
+
+        # Run async inference
+        hailo_inference.run(preprocessed_batch, inference_callback_fn)
+
+    # Release resources and context
+    hailo_inference.close()
+
+
+
+def run_inference_pipeline(
     video_path: str,
     net_path: str,
     batch_size: int,
@@ -205,12 +242,11 @@ def infer(
 
     input_queue = mp.Queue()
     output_queue = mp.Queue()
-    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
-    hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size, output_type="FLOAT32", send_original_frame=True)
+    hailo_inference = HailoInfer(net_path, batch_size, output_type="FLOAT32")
 
 
     preprocessed_frame_height, preprocessed_frame_width, _ = hailo_inference.get_input_shape()
-    preprocess = Process(
+    preprocess_thread = threading.Thread(
         target=preprocess_input,
         args=(video_path,
               input_queue,
@@ -218,32 +254,28 @@ def infer(
               preprocessed_frame_height,
               ufld_processing)
     )
-    postprocess = Process(
+    postprocess_thread = threading.Thread(
         target=postprocess_output,
         args=(output_queue, output_video_path, ufld_processing)
     )
 
-    preprocess.start()
-    postprocess.start()
+    infer_thread = threading.Thread(
+        target=infer, args=(hailo_inference, input_queue, output_queue)
+    )
 
-    try:
-        hailo_inference.run()
-        preprocess.join()
+    preprocess_thread.start()
+    postprocess_thread.start()
+    infer_thread.start()
 
-        # Signal to the postprocess to stop
-        output_queue.put(None)
-        postprocess.join()
+    infer_thread.join()
+    preprocess_thread.join()
 
-        check_process_errors(preprocess, postprocess)
-        logger.info(f"Inference was successful! Results saved in {output_video_path}")
+    # Signal to the postprocess to stop
+    output_queue.put(None)
+    postprocess_thread.join()
 
-    except Exception as e:
-        logger.error(f"Inference error: {e}")
-        input_queue.close()
-        output_queue.close()
-        preprocess.terminate()
-        postprocess.terminate()
-        os._exit(1)
+    logger.info(f"Inference was successful! Results saved in {output_video_path}")
+
 
 
 if __name__ == "__main__":
@@ -251,7 +283,7 @@ if __name__ == "__main__":
     # Parse command-line arguments
     args = parser_init().parse_args()
     try:
-        original_frame_width,original_frame_height, total_frames= get_video_info(args.input_video)
+        original_frame_width, original_frame_height, total_frames= get_video_info(args.input_video)
     except ValueError as e:
         logger.error(e)
 
@@ -265,7 +297,7 @@ if __name__ == "__main__":
                                      original_frame_height = original_frame_height,
                                      total_frames = total_frames)
 
-    infer(
+    run_inference_pipeline(
         args.input_video,
         args.net,
         batch_size=1,

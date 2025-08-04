@@ -13,9 +13,8 @@ from pathlib import Path
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from common.tracker.byte_tracker import BYTETracker
-from common.hailo_inference import HailoAsyncInference
-from common.toolbox import init_input_source, load_json_file, get_labels, visualize, preprocess
-frame_counter = [0]
+from common.hailo_inference import HailoInfer
+from common.toolbox import init_input_source, load_json_file, get_labels, visualize, preprocess, FrameRateTracker
 
 
 def parse_args() -> argparse.Namespace:
@@ -125,7 +124,7 @@ def inference_callback(
             output_queue.put((input_batch[i], result))
 
 
-def infer(
+def run_inference_pipeline(
     net,
     input_path,
     arch,
@@ -146,6 +145,10 @@ def infer(
     # Initialize input source from string: "camera", video file, or image folder
     cap, images = init_input_source(input_path, batch_size, resolution)
     tracker = None
+    fps_tracker = None
+
+    if show_fps:
+        fps_tracker = FrameRateTracker()
 
     if enable_tracking:
         # Load tracker config from config_data
@@ -155,16 +158,10 @@ def infer(
     input_queue = queue.Queue()
     output_queue = queue.Queue()
 
-    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
-
-    hailo_inference = HailoAsyncInference(
+    hailo_inference = HailoInfer(
         net,
-        input_queue,
-        inference_callback_fn,
         batch_size,
-        output_type="FLOAT32",
-        send_original_frame=True
-    )
+        output_type="FLOAT32")
 
     post_process_callback_fn = partial(
         inference_result_handler,
@@ -184,31 +181,74 @@ def infer(
 
     postprocess_thread = threading.Thread(
         target=visualize,
-        args=(output_queue, cap, save_stream_output, output_dir, post_process_callback_fn, frame_counter)
+        args=(output_queue, cap, save_stream_output, output_dir, post_process_callback_fn, fps_tracker)
     )
 
-    if show_fps:
-        start_time = time.time()
+    infer_thread = threading.Thread(
+        target=infer, args=(hailo_inference, input_queue, output_queue)
+    )
 
     preprocess_thread.start()
     postprocess_thread.start()
-    hailo_inference.run()
+    infer_thread.start()
+
+    if show_fps:
+        fps_tracker.start()
 
     preprocess_thread.join()
+    infer_thread.join()
     output_queue.put(None)  # Signal process thread to exit
     postprocess_thread.join()
 
-    logger.info("Inference was successful!")
-
     if show_fps:
-        end_time = time.time()
-        fps = frame_counter[0] / (end_time - start_time)
-        logger.debug(f"Processed {frame_counter[0]} frames at {fps:.2f} FPS")
+        logger.debug(fps_tracker.frame_rate_summary())
+
+    logger.info('Inference was successful!')
+
+
+
+def infer(hailo_inference, input_queue, output_queue):
+    """
+    Main inference loop that pulls data from the input queue, runs asynchronous
+    inference, and pushes results to the output queue.
+
+    Each item in the input queue is expected to be a tuple:
+        (input_batch, preprocessed_batch)
+        - input_batch: Original frames (used for visualization or tracking)
+        - preprocessed_batch: Model-ready frames (e.g., resized, normalized)
+
+    Args:
+        hailo_inference (HailoInfer): The inference engine to run model predictions.
+        input_queue (queue.Queue): Provides (input_batch, preprocessed_batch) tuples.
+        output_queue (queue.Queue): Collects (input_frame, result) tuples for visualization.
+
+    Returns:
+        None
+    """
+    while True:
+        next_batch = input_queue.get()
+        if not next_batch:
+            break  # Stop signal received
+
+        input_batch, preprocessed_batch = next_batch
+        # Prepare the callback for handling the inference result
+        inference_callback_fn = partial(
+            inference_callback,
+            input_batch=input_batch,
+            output_queue=output_queue
+        )
+
+        # Run async inference
+        hailo_inference.run(preprocessed_batch, inference_callback_fn)
+
+    # Release resources and context
+    hailo_inference.close()
+
 
 
 def main() -> None:
     args = parse_args()
-    infer(
+    run_inference_pipeline(
         args.net,
         args.input,
         args.arch,
