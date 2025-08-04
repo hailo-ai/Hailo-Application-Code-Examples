@@ -6,8 +6,8 @@ It processes images, videos, folders, or camera input, detects text regions, and
 
 Optionally, FPS performance can be shown, and output can be saved for each input.
 
-![output example](./output.gif)
 ![output example](./output.png)
+
 Requirements
 ------------
 
@@ -73,18 +73,18 @@ Arguments
 
 For more information:
 ```shell script
-    ./paddle_ocr.py -h
+./paddle_ocr.py -h
 ```
 Example 
 -------
 **Inference on single image**
 ```shell script
-    ./paddle_ocr.py -n ocr_det.hef ocr_model.hef -i ocr_img1.jpg
+./paddle_ocr.py -n ocr_det.hef ocr_model.hef -i ocr_img1.jpg
 ```
 
 **Inference on a camera stream**
 ```shell script
-    ./paddle_ocr.py -n ocr_det.hef ocr_model.hef -i camera
+./paddle_ocr.py -n ocr_det.hef ocr_model.hef -i camera
 ```
 
 Additional Notes
