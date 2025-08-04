@@ -1,7 +1,7 @@
 Super resolution 
 ================
 
-This example performs super resolution using a Hailo8 device.
+This example performs super resolution using a **Hailo8** or **Hailo10H** device.  
 It receives an input image and enhances the image quality and details.
 
 ![output example](./output_example.png)
@@ -9,7 +9,7 @@ It receives an input image and enhances the image quality and details.
 Requirements
 ------------
 
-- hailo_platform==4.21.0
+- hailo_platform==4.22.0
 - loguru
 - Pillow
 - opencv-python
@@ -42,9 +42,14 @@ Usage
     ```
 
 3. Download example files:
-    ```shell script
-    ./download_resources.sh
+
+   The script supports both Hailo-8 and Hailo-10 files.  
+   Use the `--arch` flag to specify your target hardware:
+   ```shell
+   ./download_resources.sh --arch 8     # For Hailo-8
+   ./download_resources.sh --arch 10    # For Hailo-10
     ```
+
 
 4. Run the script:
     ```shell script
@@ -57,6 +62,11 @@ Arguments
 - ``-n, --net``: Path to the pre-trained model file (HEF).
 - ``-i, --input``: Path to the input image on which super resolution will be performed.
 - ``-o, --output``: Path to save the output and comparison.
+- `-s, --save_stream_output`: [optional] Save the output of the inference from a stream.
+- `-o, --output-dir`: [optional] Directory where output images/videos will be saved.
+- `--show-fps`: [optional] Display FPS performance metrics for video/camera input.
+- `-r, --resolution`: [Camera input only] Choose output resolution: `sd` (640x480), `hd` (1280x720), or `fhd` (1920x1080). If not specified, native camera resolution is used.
+
 
 For more information:
 ```shell script
@@ -64,15 +74,20 @@ For more information:
 ```
 Example 
 -------
-**Command**
+**Inference on single image**
 ```shell script
 ./super_resolution.py -n ./real_esrgan_x2.hef -i input_image.png
+```
+
+**Inference on a camera stream**
+```shell script
+./super_resolution.py -n ./real_esrgan_x2.hef -i camera
 ```
 
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.21.0``
+- The example was only tested with ``HailoRT v4.22.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 
 Disclaimer

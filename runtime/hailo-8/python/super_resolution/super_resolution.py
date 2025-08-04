@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from PIL import Image
+import cv2
 from pathlib import Path
 import os
 from loguru import logger
@@ -9,13 +9,13 @@ import sys
 from typing import List
 import threading
 import queue
-from super_resolution_utils import SrganUtils, Espcnx4Utils, SuperResolutionUtils
+from super_resolution_utils import SrganUtils, Espcnx4Utils, inference_result_handler
 from functools import partial
 
 # Add the parent directory to the system path to access utils module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from common.hailo_inference import HailoAsyncInference
-from common.toolbox import load_input_images, validate_images, divide_list_to_batches
+from common.hailo_inference import HailoInfer
+from common.toolbox import  init_input_source, visualize, preprocess, FrameRateTracker
 
 def parse_args() -> argparse.Namespace:
     """
@@ -31,22 +31,32 @@ def parse_args() -> argparse.Namespace:
         default="real_esrgan_x2.hef"
     )
     parser.add_argument(
-        "-i", "--input", 
-        default="input_image.png",
+        "-i", "--input", default="ocr_img1.png",
         help="Path to the input - either an image or a folder of images."
     )
     parser.add_argument(
-        "-b", "--batch_size", 
-        default=1,
-        type=int,
-        required=False,
+        "-b", "--batch_size", default=1, type=int, required=False,
         help="Number of images in one batch"
     )
     parser.add_argument(
-        "-o",
-        "--output",
-        default="output_images",
-        help="Path of folder for output images",
+        "-s", "--save_stream_output", action="store_true",
+        help="Save the output of the inference from a stream."
+    )
+    parser.add_argument(
+        "-o", "--output-dir", help="Directory to save the results.",
+        default=None
+    )
+    parser.add_argument(
+        "-r", "--resolution",
+        choices=["sd", "hd", "fhd"],
+        default="sd",
+        help="Camera only: Choose input resolution: 'sd' (640x480), 'hd' (1280x720), or 'fhd' (1920x1080). Default is 'sd'."
+    )
+
+    parser.add_argument(
+        "--show-fps",
+        action="store_true",
+        help="Enable FPS measurement and display."
     )
 
     args = parser.parse_args()
@@ -54,73 +64,13 @@ def parse_args() -> argparse.Namespace:
     # Validate paths
     if not os.path.exists(args.net):
         raise FileNotFoundError(f"Network file not found: {args.net}")
-    if not os.path.exists(args.input):
-        raise FileNotFoundError(f"Input path not found: {args.input}")
+
+    if args.output_dir is None:
+        args.output_dir = os.path.join(os.getcwd(), "output")
+    os.makedirs(args.output_dir, exist_ok=True)
+
 
     return args
-
-def enqueue_images(
-    images: List[Image.Image],
-    batch_size: int,
-    input_queue: queue.Queue,
-    width: int,
-    height: int,
-    utils: SuperResolutionUtils,
-) -> None:
-    """
-    Preprocess and enqueue images into the input queue as they are ready.
-
-    Args:
-        images (List[Image.Image]): List of PIL.Image.Image objects.
-        batch_size (int): Number of images per batch.
-        input_queue (queue.Queue): Queue for input images.
-        width (int): Model input width.
-        height (int): Model input height.
-        utils (SuperResolutionUtils): Utility class for super resolution preprocessing.
-    """
-    for batch in divide_list_to_batches(images, batch_size):
-        processed_batch = []
-
-        for image in batch:
-            processed_image = utils.pre_process(image, width, height)
-            processed_batch.append(processed_image)
-
-        input_queue.put(processed_batch)
-
-    input_queue.put(None)
-
-def process_output(
-    output_queue: queue.Queue,
-    input_images: List[Image.Image],
-    utils: SuperResolutionUtils,
-    results: List[Image.Image], 
-) -> None:
-    """
-    Process and visualize the output results.
-
-    Args:
-        output_queue (queue.Queue): Queue for output results.
-        input_images (List[Image.Image]): List of input images.
-        utils (SuperResolutionUtils): Utility class for super resolution visualization.
-        results (List[Image.Image]): List to store the processed output images.
-    """
-    image_id = 0
-    while True:
-        result = output_queue.get()
-        if result is None:
-            break  # Exit the loop if sentinel value is received
-
-        _, infer_results = result
-
-        # Deals with the expanded results from hailort versions < 4.19.0
-        if len(infer_results) == 1:
-            infer_results = infer_results[0]
-
-        infer_results = utils.post_process(infer_results, input_images[image_id])
-        image_id += 1
-        results.append(infer_results)
-
-    output_queue.task_done()  # Indicate that processing is complete
 
 
 
@@ -155,76 +105,129 @@ def inference_callback(
             output_queue.put((input_batch[i], result))
 
 
-def infer(
-    input_images: List[Image.Image],
-    net_path: str,
-    batch_size: int,
-    output_path: Path,
-) -> None:
+
+
+def infer(hailo_inference, input_queue, output_queue):
     """
-    Initialize queues, HailoAsyncInference instance, and run the inference.
+    Main inference loop that pulls data from the input queue, runs asynchronous
+    inference, and pushes results to the output queue.
+
+    Each item in the input queue is expected to be a tuple:
+        (input_batch, preprocessed_batch)
+        - input_batch: Original frames (used for visualization or tracking)
+        - preprocessed_batch: Model-ready frames (e.g., resized, normalized)
 
     Args:
-        input_images (List[Image.Image]): List of images to process.
-        net_path (str): Path to the HEF model file.
-        batch_size (int): Number of images per batch.
-        output_path (Path): Path to save the output images.
+        hailo_inference (HailoInfer): The inference engine to run model predictions.
+        input_queue (queue.Queue): Provides (input_batch, preprocessed_batch) tuples.
+        output_queue (queue.Queue): Collects (input_frame, result) tuples for visualization.
+
+    Returns:
+        None
     """
+    while True:
+        next_batch = input_queue.get()
+        if not next_batch:
+            break  # Stop signal received
+
+        input_batch, preprocessed_batch = next_batch
+
+        # Prepare the callback for handling the inference result
+        inference_callback_fn = partial(
+            inference_callback,
+            input_batch=input_batch,
+            output_queue=output_queue
+        )
+
+        # Run async inference
+        hailo_inference.run(preprocessed_batch, inference_callback_fn)
+
+    # Release resources and context
+    hailo_inference.close()
+
+
+
+def run_inference_pipeline(
+    net_path: str,
+    input: str,
+    batch_size: int,
+    output_dir: str,
+    save_stream_output: bool,
+    resolution: str,
+    show_fps: bool
+) -> None:
+    """
+    Initialize queues, create HailoAsyncInference instance, and run the inference pipeline.
+
+    Args:
+        net_path (str): Path to the HEF model file.
+        input (str): Input source path (image directory, video file, or camera).
+        batch_size (int): Number of frames to process per batch.
+        output_dir (str): Directory path to save output visualizations.
+        save_stream_output (bool): Whether to save the processed stream to video/images.
+        resolution (str): Input resolution, e.g., 'sd', 'hd', or 'fhd'.
+        show_fps (bool): Whether to print/log FPS (frames per second) information during execution.
+
+    Returns:
+        None
+    """
+
     utils = None
+    # Initialize input source from string: "camera", video file, or image folder.
+    cap, images = init_input_source(input, batch_size, resolution)
+
     input_queue = queue.Queue()
     output_queue = queue.Queue()
-    results = [] 
 
-    inference_callback_fn = partial(inference_callback, output_queue=output_queue)
+
+    fps_tracker = None
+    if show_fps:
+        fps_tracker = FrameRateTracker()
 
     if 'espcn' in net_path:
         utils = Espcnx4Utils()
-        hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size, input_type="FLOAT32", output_type="FLOAT32")
+        hailo_inference = HailoInfer(net_path, batch_size, input_type="FLOAT32", output_type="FLOAT32")
     else:
         utils = SrganUtils()
-        hailo_inference = HailoAsyncInference(net_path, input_queue, inference_callback_fn, batch_size)
+        hailo_inference = HailoInfer(net_path, batch_size)
     
     height, width, _ = hailo_inference.get_input_shape()
-    enqueue_thread = threading.Thread(
-        target=enqueue_images, 
-        args=(input_images, batch_size, input_queue, width, height, utils)
-    )
-    process_thread = threading.Thread(
-        target=process_output, 
-        args=(output_queue, input_images, utils, results)
+
+    post_process_callback_fn = partial(
+        inference_result_handler,model_height=height, model_width=width
     )
 
-    enqueue_thread.start()
-    process_thread.start()
+    preprocess_thread = threading.Thread(
+        target=preprocess, args=(images, cap, batch_size, input_queue, width, height)
+    )
+    postprocess_thread = threading.Thread(
+        target=visualize, args=(output_queue, cap, save_stream_output,
+                                output_dir, post_process_callback_fn, fps_tracker, True)
+    )
+    infer_thread = threading.Thread(
+        target=infer, args=(hailo_inference, input_queue, output_queue)
+    )
 
-    hailo_inference.run()
+    preprocess_thread.start()
+    postprocess_thread.start()
+    infer_thread.start()
 
-    enqueue_thread.join()
+
+    if show_fps:
+        fps_tracker.start()
+
+    preprocess_thread.join()
+    infer_thread.join()
     output_queue.put(None)  # Signal process thread to exit
-    process_thread.join()
+    postprocess_thread.join()
 
-    # Save the results
-    save_results(input_images, results, output_path)
+    if show_fps:
+        logger.debug(fps_tracker.frame_rate_summary())
 
-    logger.info(
-        f'Inference was successful! Results have been saved in {output_path}'
-    )
 
-def save_results(images: List[Image.Image], results: List[Image.Image], output_path: Path) -> None:    
-    """
-    Save the results of the inference to the output path.
+    logger.info('Inference was successful!')
 
-    Args:
-        images (List[Image.Image]): List of PIL.Image.Image objects.
-        results (List[Image.Image]): List of PIL.Image.Image objects.
-        output_path (Path): Path to save the output images.
-    """
-    if results:
-        width, height = results[0].size
-    for idx, (image, result) in enumerate(zip(images, results)):
-        image = image.resize((width, height), Image.Resampling.BICUBIC)
-        result.save(output_path / f"sr_output_{idx}.png")
-        Image.fromarray(np.hstack((np.array(image), np.array(result)))).save(output_path / f"comparison_{idx}.png")
+
 
 def main() -> None:
     """
@@ -233,22 +236,8 @@ def main() -> None:
     # Parse command line arguments
     args = parse_args()
 
-    # Create output directory if it doesn't exist
-    output_path = Path(args.output)
-    output_path.mkdir(exist_ok=True)
-
-    # Load input images
-    images = load_input_images(args.input)
-
-    # Validate images
-    try:
-        validate_images(images, args.batch_size)
-    except ValueError as e:
-        logger.error(e)
-        return
-
     # Start the inference
-    infer(images, args.net, args.batch_size, output_path)
-
+    run_inference_pipeline(args.net, args.input, args.batch_size, args.output_dir,
+          args.save_stream_output, args.resolution, args.show_fps)
 if __name__ == "__main__":
     main()

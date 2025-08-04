@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import queue
 import cv2
-
+import time
 
 IMAGE_EXTENSIONS: Tuple[str, ...] = ('.jpg', '.png', '.bmp', '.jpeg')
 CAMERA_RESOLUTION_MAP = {
@@ -332,6 +332,7 @@ def preprocess_images(images: List[np.ndarray], batch_size: int, input_queue: qu
 
 
 
+
 def default_preprocess(image: np.ndarray, model_w: int, model_h: int) -> np.ndarray:
     """
     Resize image with unchanged aspect ratio using padding.
@@ -361,17 +362,20 @@ def default_preprocess(image: np.ndarray, model_w: int, model_h: int) -> np.ndar
 # Visualization
 ####################################################################
 
-def visualize(output_queue: queue.Queue, cap: cv2.VideoCapture, save_stream_output: bool, output_dir,
-                callback: Callable[[Any, Any], None], frame_counter=None) -> None:
+def visualize(output_queue: queue.Queue, cap: cv2.VideoCapture, save_stream_output: bool, output_dir: str,
+                callback: Callable[[Any, Any], None], fps_tracker: Optional["FrameRateTracker"] = None, side_by_side: bool = False) -> None:
     """
     Process and visualize the output results.
 
     Args:
-        output_queue (queue.Queue): Queue for output results.
-        camera (bool): Flag indicating if the input is from a camera.
-        save_stream_output (bool): Flag indicating if the camera output should be saved.
-                output_dir (str or Path): Directory to save output frames.
-        callback (Callable, optional): Function to be called once processing is complete.
+        output_queue (queue.Queue): Queue containing (frame, results, boxes) to visualize.
+        cap (cv2.VideoCapture): VideoCapture object (camera or video file) or None.
+        save_stream_output (bool): Whether to save output video stream to disk.
+        output_dir (str): Directory where output video will be saved.
+        callback (Callable): Function to process each (frame, result) pair.
+        fps_tracker (FrameRateTracker, optional): Instance of a frame rate tracking class to monitor and log FPS.
+        side_by_side (bool): If True, assumes callback generates a side-by-side comparison (original vs. processed),
+                             and output frame width will be doubled.
     """
 
     image_id = 0
@@ -384,35 +388,44 @@ def visualize(output_queue: queue.Queue, cap: cv2.VideoCapture, save_stream_outp
         cv2.setWindowProperty("Output", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
         if save_stream_output:
+            # Read video dimensions
+            base_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            base_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            # Double width if side-by-side visualization is expected
+            frame_width = base_width * 2 if side_by_side else base_width
+            frame_height = base_height
 
-            #Define the codec and create VideoWriter object
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            #Save the output video in the output path
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            if fps == 0:  # If FPS is not available, set a default value
-                print(f"fps: {fps}")
-                fps = 20.0
-
-            out = cv2.VideoWriter(os.path.join(output_dir,'output_video.avi'), fourcc, fps,  (frame_width, frame_height))
+            # Setup video writer
+            os.makedirs(output_dir, exist_ok=True)
+            out_path = os.path.join(output_dir, "output.avi")
+            out = cv2.VideoWriter(
+                out_path,
+                cv2.VideoWriter_fourcc(*"XVID"),
+                cap.get(cv2.CAP_PROP_FPS),
+                (frame_width, frame_height)
+            )
 
     while True:
+
         result = output_queue.get()
+        if result is None: break
 
-        if result is None:
-            break  #Exit the loop if sentinel value is received
+        # Unpack the result tuple into original frame, inference results, and optional extra context
+        original, infer, *rest = result  # result can be (original, infer) or (original, infer, extra)
 
-        original_frame, infer_results = result
+        # If the inference result is a single-item list, unwrap it to get the actual result object
+        infer = infer[0] if isinstance(infer, list) and len(infer) == 1 else infer
 
-        if len(infer_results) == 1:
-            infer_results = infer_results[0]
+        # If there is extra context (e.g. boxes or metadata), pass it to the callback
+        if rest:
+            frame_with_detections = callback(original, infer, rest[0])
+        else:
+            frame_with_detections = callback(original, infer)
 
-        frame_with_detections = callback(original_frame, infer_results)
 
-        if frame_counter is not None:
-            frame_counter[0]+=1
+        if fps_tracker is not None:
+            fps_tracker.increment()
 
         if cap is not None:
             # Display output
@@ -435,7 +448,68 @@ def visualize(output_queue: queue.Queue, cap: cv2.VideoCapture, save_stream_outp
 
     if cap is not None and save_stream_output:
         out.release()  # Release the VideoWriter object
+
     output_queue.task_done()  # Indicate that processing is complete
 
 
+
+
+####################################################################
+# Frame Rate Tracker
+####################################################################
+
+class FrameRateTracker:
+    """
+    Tracks frame count and elapsed time to compute real-time FPS (frames per second).
+    """
+
+    def __init__(self):
+        """Initialize the tracker with zero frames and no start time."""
+        self._count = 0
+        self._start_time = None
+
+    def start(self) -> None:
+        """Start or restart timing and reset the frame count."""
+        self._start_time = time.time()
+
+    def increment(self, n: int = 1) -> None:
+        """Increment the frame count.
+
+        Args:
+            n (int): Number of frames to add. Defaults to 1.
+        """
+        self._count += n
+
+
+    @property
+    def count(self) -> int:
+        """Returns:
+            int: Total number of frames processed.
+        """
+        return self._count
+
+    @property
+    def elapsed(self) -> float:
+        """Returns:
+            float: Elapsed time in seconds since `start()` was called.
+        """
+        if self._start_time is None:
+            return 0.0
+        return time.time() - self._start_time
+
+    @property
+    def fps(self) -> float:
+        """Returns:
+            float: Calculated frames per second (FPS).
+        """
+        elapsed = self.elapsed
+        return self._count / elapsed if elapsed > 0 else 0.0
+
+    def frame_rate_summary(self) -> str:
+        """Return a summary of frame count and FPS.
+
+        Returns:
+            str: e.g. "Processed 200 frames at 29.81 FPS"
+        """
+        return f"Processed {self.count} frames at {self.fps:.2f} FPS"
 

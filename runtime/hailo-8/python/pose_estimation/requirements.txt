@@ -1,3 +1,3 @@
 loguru
 opencv-python
-Pillow
+numpy<2.0
