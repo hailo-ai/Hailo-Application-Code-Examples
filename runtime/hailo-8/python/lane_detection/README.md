@@ -1,7 +1,7 @@
 Lane Detection
 ================
 
-This example performs lane detection using a Hailo8 device.
+This example performs lane detection using a **Hailo8** or **Hailo10H** device.  
 It receives an input video and annotates it with the lane detection coordinates.
 
 ![output GIF example](lane_det_output.gif)
@@ -9,7 +9,7 @@ It receives an input video and annotates it with the lane detection coordinates.
 Requirements
 ------------
 
-- hailo_platform==4.21.0
+- hailo_platform==4.22.0
 - loguru
 - tqdm
 - opencv-python
@@ -18,14 +18,7 @@ Requirements
 
 Supported Models
 ----------------
-
-This example expects the hef to contain HailoRT-Postprocess. 
-
-Because of that, this example only supports detections models that allow hailort-postprocess:
-- yolov5/6/7/8
-- yolox
-- ssd
-- centernet
+- ufld_v2_tu
 
 Usage
 -----
@@ -50,8 +43,12 @@ Usage
     ```
 
 3. Download example files:
-    ```shell script
-    ./download_resources.sh
+
+   The script supports both Hailo-8 and Hailo-10 files.  
+   Use the `--arch` flag to specify your target hardware:
+   ```shell
+   ./download_resources.sh --arch 8     # For Hailo-8
+   ./download_resources.sh --arch 10    # For Hailo-10
     ```
 
 4. Run the script:
@@ -80,7 +77,7 @@ Example
 Additional Notes
 ----------------
 
-- The example was only tested with ``HailoRT v4.21.0``
+- The example was only tested with ``HailoRT v4.22.0``
 - The postprocessed video will be saved as **output_video.mp4**.  
 
 Disclaimer

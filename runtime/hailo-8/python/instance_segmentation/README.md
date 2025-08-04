@@ -1,7 +1,7 @@
 Instance Segmentation
 =====================
 
-This example performs instance segmentation using a Hailo8 device.
+This example performs instance segmentation using a **Hailo8** or **Hailo10** device.  
 It processes input images, videos, or a camera stream, performs inference using the input HEF file, and overlays the segmentation masks, bounding boxes, class labels, and confidence scores on the resized output image.  
 Optionally, object tracking across frames can be enabled for video and camera streams.
 
@@ -9,7 +9,7 @@ Optionally, object tracking across frames can be enabled for video and camera st
 
 Requirements
 ------------
-- hailo_platform==4.21.0
+- hailo_platform==4.22.0
 - loguru
 - opencv-python
 - scipy
@@ -45,8 +45,12 @@ To avoid compatibility issues, it's recommended to have a separate venv from the
     ```
 
 3. Download example files:
-    ```shell script
-    ./download_resources.sh
+
+   The script supports both Hailo-8 and Hailo-10 files.  
+   Use the `--arch` flag to specify your target hardware:
+   ```shell
+   ./download_resources.sh --arch 8     # For Hailo-8
+   ./download_resources.sh --arch 10    # For Hailo-10
     ```
 
 4. Run the script:
@@ -162,7 +166,7 @@ These models include optimized NMS and postprocessing inside the HEF, allowing f
 Additional Notes
 ----------------
 
-- The example was only tested with `HailoRT v4.21.0`
+- The example was only tested with `HailoRT v4.22.0`
 - Images are only supported in the following formats: .jpg, .jpeg, .png or .bmp
 - Number of input images should be divisible by `batch_size`
 - Using the yolov-seg model for inference, this example performs instance segmentation, draw detection boxes and add a label to each class. When using the FastSAM model, it only performs the instance segmenation.
