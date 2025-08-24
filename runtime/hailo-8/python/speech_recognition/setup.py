@@ -39,7 +39,7 @@ def create_venv():
 
 def download_resources():
     try:
-        run_command(f"./download_resources.sh", cwd=APP_DIR)
+        run_command(f"python3 ./download_resources.py", cwd=APP_DIR)
         print("Downloading inference files.")
     except subprocess.CalledProcessError:
         print("Inference files download failed.")

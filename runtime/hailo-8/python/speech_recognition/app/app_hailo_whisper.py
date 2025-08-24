@@ -32,7 +32,7 @@ def get_args():
         "--hw-arch",
         type=str,
         default="hailo8",
-        choices=["hailo8", "hailo8l"],
+        choices=["hailo8", "hailo8l", "hailo10h"],
         help="Hardware architecture to use (default: hailo8)"
     )
     parser.add_argument(
@@ -70,7 +70,7 @@ def get_hef_path(model_variant: str, hw_arch: str, component: str) -> str:
         ) from e
 
     if not os.path.exists(hef_path):
-        raise FileNotFoundError(f"HEF file not found at: {hef_path}\nIf not done yet, please run ./download_resources.sh from the app/ folder to download the required HEF files.")
+        raise FileNotFoundError(f"HEF file not found at: {hef_path}\nIf not done yet, please run python3 ./download_resources.py --hw-arch {hw_arch} from the app/ folder to download the required HEF files.")
     return hef_path
 
 
@@ -91,7 +91,7 @@ def main():
     audio_path = "sampled_audio.wav"
     is_nhwc = True
 
-    chunk_length = 10 if variant == "tiny" else 5
+    chunk_length = 10 if "tiny" in variant else 5
 
     while True:
         if args.reuse_audio:
@@ -123,7 +123,7 @@ def main():
 
         for mel in mel_spectrograms:
             whisper_hailo.send_data(mel)
-            time.sleep(0.2)
+            time.sleep(0.1)
             transcription = clean_transcription(whisper_hailo.get_transcription())
             print(f"\n{transcription}")
 
