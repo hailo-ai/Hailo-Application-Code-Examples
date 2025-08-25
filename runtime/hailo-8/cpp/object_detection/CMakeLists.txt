@@ -15,8 +15,9 @@ file(GLOB SOURCES
     ./*.cpp
     ./utils/*.cpp
 )
+list(APPEND SOURCES ../common/toolbox.cpp ../common/hailo_infer.cpp)
 
-include_directories(${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/utils)
+include_directories(${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/utils ${CMAKE_CURRENT_SOURCE_DIR}/../common)
 
 # Define the executable and link libraries
 link_libraries(stdc++fs)

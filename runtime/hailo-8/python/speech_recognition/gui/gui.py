@@ -39,7 +39,7 @@ def get_args():
         "--hw-arch",
         type=str,
         default="hailo8",
-        choices=["hailo8", "hailo8l"],
+        choices=["hailo8", "hailo8l", "hailo10h"],
         help="Hardware architecture to use (default: hailo8)"
     )
     parser.add_argument(
@@ -235,7 +235,7 @@ if 'initialized' not in st.session_state:
     variant = args.variant
     print(f"Selected variant: Whisper {variant}")
     st.session_state.variant = variant
-    st.session_state.chunk_length = 10 if variant == "tiny" else 5
+    st.session_state.chunk_length = 10 if ("tiny" in variant) else 5
     encoder_path = get_hef_path(variant, args.hw_arch, "encoder")
     decoder_path = get_hef_path(variant, args.hw_arch, "decoder")
     st.session_state.initialized = True
