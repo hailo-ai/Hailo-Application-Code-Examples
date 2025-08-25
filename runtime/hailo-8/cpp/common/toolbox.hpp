@@ -49,6 +49,12 @@ struct InputType {
     bool is_camera = false;
 };
 
+struct CommandLineArgs {
+    std::string detection_hef;
+    std::string input_path;
+    bool save;
+    std::string batch_size;
+};
 // Callback types for task-specific processing
 using PreprocessCallback = std::function<void(const std::vector<cv::Mat>&, std::vector<cv::Mat>&, uint32_t, uint32_t)>;
 using PostprocessCallback = std::function<void(cv::Mat&, const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>>&)>;
@@ -67,9 +73,13 @@ bool is_image(const std::string &path);
 bool is_video(const std::string &path);
 std::string get_hef_name(const std::string &path);
 
+InputType determine_input_type(const std::string &input_path, cv::VideoCapture &capture,
+    double &org_height, double &org_width, size_t &frame_count, size_t batch_size);
+
 // CLI
 std::string getCmdOption(int argc, char *argv[], const std::string &option);
 bool has_flag(int argc, char *argv[], const std::string &flag);
+CommandLineArgs parse_command_line_arguments(int argc, char **argv);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DISPLAY & VIDEO

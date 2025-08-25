@@ -65,6 +65,11 @@ const std::shared_ptr<hailort::InferModel> HailoInfer::get_infer_model(){
     return this->infer_model;
 }
 
+hailo_3d_image_shape_t HailoInfer::get_model_shape(){
+    auto input_infos = this->infer_model->hef().get_input_vstream_infos().expect("Failed to get input vstream infos");
+    return input_infos[0].shape;
+} 
+
 void HailoInfer::infer(
     std::vector<cv::Mat> input_data,
     std::function<void(const hailort::AsyncInferCompletionInfo&,
@@ -83,7 +88,7 @@ void HailoInfer::set_input_buffers(
     std::vector<std::shared_ptr<cv::Mat>> &image_guards)
 {
     this->multiple_bindings.clear();
-    for (int i = 0; i < this->batch_size; ++i) {
+    for (size_t i = 0; i < this->batch_size; ++i) {
         for (const auto &input_name : infer_model->get_input_names()) {
             size_t frame_size = infer_model->input(input_name)->get_frame_size();
             auto bindings = this->configured_infer_model.create_bindings().expect("Failed");
@@ -124,7 +129,7 @@ void HailoInfer::run_async(
                        const std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> &,
                        const std::vector<std::shared_ptr<uint8_t>> &)> callback)
 {
-    auto status = configured_infer_model.wait_for_async_ready(std::chrono::milliseconds(20000), this->batch_size);
+    auto status = configured_infer_model.wait_for_async_ready(std::chrono::milliseconds(50000), this->batch_size);
     if (HAILO_SUCCESS != status) {
         std::cerr << "Failed wait_for_async_ready, status = " << status << std::endl;
     }
@@ -145,7 +150,7 @@ void HailoInfer::run_async(
 
 void HailoInfer::wait_for_last_job()
 {
-    auto st = last_infer_job.wait(std::chrono::milliseconds(20000));
+    auto st = last_infer_job.wait(std::chrono::milliseconds(50000));
     if (HAILO_SUCCESS != st && HAILO_TIMEOUT != st) {
         std::cerr << "Failed waiting for last infer job, status = " << st << std::endl;
     }

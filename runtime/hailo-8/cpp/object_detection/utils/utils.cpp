@@ -109,49 +109,6 @@ std::string get_coco_name_from_int(int cls)
     return result;
 }
 
-std::string getCmdOptionWithShortFlag(int argc, char *argv[], const std::string &longOption, const std::string &shortOption) {
-    std::string cmd;
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == longOption || arg == shortOption) {
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-                cmd = argv[i + 1];
-                return cmd;
-            }
-        }
-    }
-    return cmd;
-}
-
-CommandLineArgs parse_command_line_arguments(int argc, char** argv) {
-    return {
-        getCmdOptionWithShortFlag(argc, argv, "--net", "-n"),
-        getCmdOptionWithShortFlag(argc, argv, "--input", "-i"),
-        has_flag(argc, argv, "-s"),
-        (getCmdOptionWithShortFlag(argc, argv, "--batch_size", "-b").empty() ? "1" : getCmdOptionWithShortFlag(argc, argv, "--batch_size", "-b"))
-    };
-}
-
-InputType determine_input_type(const std::string& input_path, cv::VideoCapture &capture,
-                               double &org_height, double &org_width, size_t &frame_count, size_t batch_size) {
-
-    InputType input_type;
-    int directory_entry_count;
-    if (is_directory_of_images(input_path, directory_entry_count, batch_size)) {
-        input_type.is_directory = true;
-        input_type.directory_entry_count = directory_entry_count;
-    } else if (is_image(input_path)) {
-        input_type.is_image = true;
-    } else if (is_video(input_path)) {
-        input_type.is_video = true;
-        capture = open_video_capture(input_path, std::ref(capture), org_height, org_width, frame_count);
-    } else {
-        std::cout << "Input is not an image or video, trying to open as camera" << std::endl;
-        input_type.is_camera = true;
-        capture = open_video_capture(input_path, std::ref(capture), org_height, org_width, frame_count);
-    }
-    return input_type;
-}
 
 void initialize_class_colors(std::unordered_map<int, cv::Scalar>& class_colors) {
     for (int cls = 0; cls <= 80; ++cls) {

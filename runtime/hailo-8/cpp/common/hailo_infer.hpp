@@ -104,6 +104,12 @@ class HailoInfer {
          */
         const std::shared_ptr<hailort::InferModel> get_infer_model();
         
+        /**
+         * @brief Get the shape of the model's input layer. Assumes one input
+         * @return Shape of the model's input layer
+         */
+        hailo_3d_image_shape_t get_model_shape();
+        
         // Main inference method
         
         /**

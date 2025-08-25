@@ -27,25 +27,10 @@
 using namespace hailo_utils;
 // --------------------------- FUNCTION DECLARATIONS ---------------------------
 
-struct CommandLineArgs {
-    std::string detection_hef;
-    std::string input_path;
-    bool save;
-    std::string batch_size;
-};
-
 struct NamedBbox {
     hailo_bbox_float32_t bbox;
     size_t class_id;
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// COMMAND-LINE PARSING / FLAGS
-// ─────────────────────────────────────────────────────────────────────────────
-
-std::string getCmdOptionWithShortFlag(int argc, char *argv[], const std::string &longOption, const std::string &shortOption);
-CommandLineArgs parse_command_line_arguments(int argc, char **argv);
-hailo_utils::InputType determine_input_type(const std::string &input_path, cv::VideoCapture &capture,
-    double &org_height, double &org_width, size_t &frame_count, size_t batch_size);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POSTPROCESSING
