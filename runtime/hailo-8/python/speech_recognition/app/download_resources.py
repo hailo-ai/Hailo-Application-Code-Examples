@@ -33,6 +33,10 @@ FILES = {
                 f"{BASE_HEF}/h10h/tiny-whisper-decoder-fixed-sequence.hef",
                 f"{BASE_HEF}/h10h/tiny-whisper-encoder-10s.hef",
             ],
+            "tiny.en": [
+                f"{BASE_HEF}/h10h/tiny_en-whisper-decoder-fixed-sequence.hef",
+                f"{BASE_HEF}/h10h/tiny_en-whisper-encoder-10s.hef",
+            ]
         }
     },
     "assets": {
@@ -44,6 +48,10 @@ FILES = {
             f"{BASE_ASSETS}/base/decoder_tokenization/onnx_add_input_base.npy",
             f"{BASE_ASSETS}/base/decoder_tokenization/token_embedding_weight_base.npy",
         ],
+        "tiny.en": [
+            f"{BASE_ASSETS}/tiny.en/decoder_tokenization/onnx_add_input_tiny.en.npy",
+            f"{BASE_ASSETS}/tiny.en/decoder_tokenization/token_embedding_weight_tiny.en.npy",
+        ]
     },
 }
 
@@ -60,7 +68,7 @@ def get_args():
         "--variant",
         type=str,
         default=None,
-        choices=["base", "tiny"],
+        choices=["base", "tiny", "tiny.en"],
         help="Whisper variant to download (default: None)"
     )
     return parser.parse_args()

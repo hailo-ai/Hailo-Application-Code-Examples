@@ -39,7 +39,7 @@ def get_args():
         "--variant",
         type=str,
         default="base",
-        choices=["base", "tiny"],
+        choices=["base", "tiny", "tiny.en"],
         help="Whisper variant to use (default: base)"
     )
     parser.add_argument(

@@ -25,5 +25,11 @@ HEF_REGISTRY = {
             "encoder": "app/hefs/h10h/tiny/tiny-whisper-encoder-10s.hef",
             "decoder": "app/hefs/h10h/tiny/tiny-whisper-decoder-fixed-sequence.hef",
         }
+    },
+    "tiny.en": {
+        "hailo10h": {
+                "encoder": "app/hefs/h10h/tiny.en/tiny_en-whisper-encoder-10s.hef",
+                "decoder": "app/hefs/h10h/tiny.en/tiny_en-whisper-decoder-fixed-sequence.hef",
+        }
     }
 }
