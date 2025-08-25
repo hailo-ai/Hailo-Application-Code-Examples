@@ -8,7 +8,7 @@ It receives a HEF and images/video/camera as input, and returns the image\video 
 Requirements
 ------------
 
-- HailoRT==4.21.0
+- HailoRT==4.22.0
 - OpenCV >= 4.5.4
     ```shell script
     sudo apt-get install -y libopencv-dev python3-opencv
@@ -40,7 +40,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/cpp/object_detection
+    cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/object_detection
     ``` 
 
 2. Download sample resources:
@@ -63,41 +63,46 @@ Usage
 5. Run the example:
 
 	```shell script
-    ./build/x86_64/obj_det -hef=<hef_path> -input=<image_or_video_or_camera_path>
+    ./build/x86_64/obj_det --net <hef_path> --input <image_or_video_or_camera_path>
     ```
-	
+
 Arguments
 ---------
 
-- ``-input``: Path to the input image\video\camera on which object detection will be performed.
-- ``-hef``: Path to HEF file to run inference on.
-- ``-s (optional)``: A flag for saving the output video of a camera input. 
+- ``-n, --net``: Path to the pre-trained model file (HEF).
+- ``-i, --input``: Path to the input (image, folder, video file, or camera).
+- ``-b, --batch_size (optional)``: Number of images in one batch. Defaults to 1.
+- ``-s (optional)``: A flag for saving the output video of a camera input.
 
 Running the Example
 -------------------
 - For a video:
     ```shell script
-	./build/x86_64/obj_det -hef=yolov8n.hef -input=full_mov_slow.mp4
+	./build/x86_64/obj_det --net yolov8n.hef --input full_mov_slow.mp4 --batch_size 16
     ```
-    The output video is saved as processed_video.mp4
+    Output video is saved as processed_video.mp4
+
 - For a single image:
     ```shell script
-    ./build/x86_64/obj_det -hef=yolov8n.hef -input=bus.jpg
+    ./build/x86_64/obj_det -n yolov8n.hef -i bus.jpg
     ```
-    The output image is saved as processed_image_0.jpg
+    Output image is saved as processed_image_0.jpg
+
 - For a directory of images:
     ```shell script
-    ./build/x86_64/obj_det -hef=yolov8n.hef -input=images
+    ./build/x86_64/obj_det -n yolov8n.hef -i images -b 4
     ````
-    Each image i will be saved as processed_image_i.jpg
+    Each image is saved as processed_image_i.jpg
+    
 - For camera, enabling saving the output:
     ```shell script
-    ./build/x86_64/obj_det -hef=yolov8n.hef -input=/dev/video0 -s
+    ./build/x86_64/obj_det --net yolov8n.hef --input /dev/video0 --batch_size 2 -s
     ```
+    Output video is saved as processed_video.mp4
 
 Notes
 ----------------
-- Last HailoRT version checked - ``HailoRT v4.21.0``
+- Last HailoRT version checked - ``HailoRT v4.22.0``
 - The script assumes that the image is in one of the following formats: .jpg, .jpeg, .png or .bmp 
 - There should be no spaces between "=" given in the command line arguments and the file name itself
 - The example only works for detection models that have the NMS on-Hailo (either on the NN-core or on the CPU)

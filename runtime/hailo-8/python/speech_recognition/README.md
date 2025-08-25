@@ -1,6 +1,6 @@
 # Automatic Speech Recognition with Whisper model
 
-This application performs a speech-to-text transcription using OpenAI's *Whisper-tiny* and *Whisper-base* model on the Hailo-8/8L AI accelerator.
+This application performs a speech-to-text transcription using OpenAI's *Whisper-tiny* and *Whisper-base* model on the Hailo-8/8L/10H AI accelerators.
 
 ## Prerequisites
 
@@ -82,7 +82,7 @@ Use the `python3 -m app.app_hailo_whisper --help` command to print the helper.
 The following command line options are available:
 
 - **--reuse-audio**: Reloads the audio from the previous run.
-- **--hw-arch**: Selects the Whisper models compiled for the target architecture (*hailo8* / *hailo8l*). If not specified, the *hailo8* architecture is selected.
+- **--hw-arch**: Selects the Whisper models compiled for the target architecture (*hailo8* / *hailo8l / hailo10h*). If not specified, the *hailo8* architecture is selected.
 - **--variant**: Variant of the Whisper model to use (*tiny* / *base*). If not specified, the *base* model is used.
 - **--multi-process-service**: Enables the multi-process service, to run other models on the same chip in addition to Whisper
 
@@ -113,7 +113,7 @@ The following command line options are available:
 
 ## Additional notes
 
-- This application is just an example to show how to run a Whisper-based pipeline on the Hailo-8/8L AI accelerator, and it is not focused on optimal pre/post-processing.
+- This application is just an example to show how to run a Whisper-based pipeline on the Hailo-8/8L/10H AI accelerator, and it is not focused on optimal pre/post-processing.
 - Torch is still required for pre-processing. It will be removed in the next release.
 - We are considering future improvements, like:
   - Release scripts for model conversion

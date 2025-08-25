@@ -25,7 +25,7 @@ class HailoWhisperPipeline:
         self.timeout_ms = 100000000
         self.variant = variant
 
-        self.decoding_sequence_length = 32 if self.variant == "tiny" else 24
+        self.decoding_sequence_length = 32 if ("tiny" in self.variant) else 24
         self.host = host  # not used in this version
         self.multi_process_service = multi_process_service
 
