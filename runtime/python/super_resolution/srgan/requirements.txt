@@ -1,3 +1,0 @@
-pillow 
-loguru
-opencv-python 
