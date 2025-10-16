@@ -1,7 +1,18 @@
 import cv2
 import numpy as np
 from common.toolbox import id_to_color
+import os
+from collections import deque
 
+# Dictionary to store a limited history of tracklet coordinates.
+# The keys will be the track IDs.
+tracklet_history = {}
+# Maximum number of past frames to display
+trail_length = 30 
+# Get the flag for doing tracklet from environment variable
+draw_tracklet_history = os.environ.get('DRAW_TRAIL', '0') == '1'  # Set to '1' to enable trail drawing
+# Only draw trail for certain classes (e.g., person=0, phone=67 in COCO)
+TRACKLET_CLASSES = [0, 67]  # PERSON, SMARTPHONE
 
 def inference_result_handler(original_frame, infer_results, labels, config_data, tracker=None):
     """
@@ -173,7 +184,7 @@ def draw_detections(detections: dict, img_out: np.ndarray, labels, tracker=None)
         #run BYTETracker and get active tracks
         online_targets = tracker.update(np.array(dets_for_tracker))
 
-        #draw tracked bounding boxes with ID labels
+        # Draw tracked bounding boxes with ID labels
         for track in online_targets:
             track_id = track.track_id  #unique tracker ID
             x1, y1, x2, y2 = track.tlbr  #bounding box (top-left, bottom-right)
@@ -186,9 +197,29 @@ def draw_detections(detections: dict, img_out: np.ndarray, labels, tracker=None)
             else:
                 draw_detection(img_out, [xmin, ymin, xmax, ymax], [labels[classes[best_idx]], f"ID {track_id}"],
                                track.score * 100.0, color, track=True)
+            
+            if not classes[best_idx] in TRACKLET_CLASSES:
+                continue
 
+            # Get the centroid of the current bounding box
+            center_x = int((x1 + x2) / 2)
+            center_y = int((y1 + y2) / 2)
+            centroid = (center_y, center_x)
+            
+            # Initialize or update the tracklet history
+            if track_id not in tracklet_history:
+                tracklet_history[track_id] = deque(maxlen=trail_length)
+            tracklet_history[track_id].append(centroid)
 
+            if draw_tracklet_history:
+                for i in range(1, len(tracklet_history[track_id])):
+                    # Get the center point for the current and previous frames
+                    point_a = tracklet_history[track_id][i-1]
+                    point_b = tracklet_history[track_id][i]
 
+                    # Draw a line between the points and draw the points as circles
+                    cv2.line(img_out, point_a, point_b, color, 3) #(255, 0, 0), 2)
+                    cv2.circle(img_out, point_b, radius=20, thickness=1, color=color) #, thickness=-1) # -1 for filled circle
     else:
         #No tracking — draw raw model detections
         for idx in range(num_detections):

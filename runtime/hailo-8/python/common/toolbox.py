@@ -119,6 +119,8 @@ def init_input_source(input_path, batch_size, resolution):
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_CAP_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_CAP_HEIGHT)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'YUYV'))
+        if 'FPS' in os.environ:
+            cap.set(cv2.CAP_PROP_FPS, int(os.environ['FPS']))
 
     elif any(input_path.lower().endswith(suffix) for suffix in ['.mp4', '.avi', '.mov', '.mkv']):
         if not os.path.exists(input_path):
@@ -307,7 +309,6 @@ def preprocess_from_cap(cap: cv2.VideoCapture, batch_size: int, input_queue: que
         processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         processed_frame = preprocess_fn(processed_frame, width, height)
         processed_frames.append(processed_frame)
-
         if len(frames) == batch_size:
             input_queue.put((frames, processed_frames))
             processed_frames, frames = [], []
