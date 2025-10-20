@@ -100,7 +100,7 @@ def inference_callback(
         output_queue: queue.Queue
 ) -> None:
     """
-    infernce callback to handle inference results and push them to a queue.
+    inference callback to handle inference results and push them to a queue.
 
     Args:
         completion_info: Hailo inference completion info.
