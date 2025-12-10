@@ -33,8 +33,8 @@
     },
 
     "paddle_ocr": {
-      "ocr_det": { "arch": ["hailo8","hailo10h"], "source": "cs", "hefs": ["ocr_det.hef"], "group": "paddle_ocr", "description": "optical character detection" },
-      "ocr_rec": { "arch": ["hailo8","hailo10h"], "source": "cs", "hefs": ["ocr_rec.hef"], "group": "paddle_ocr", "description": "optical character recognition" }
+      "ocr_det": { "arch": ["hailo8","hailo8l","hailo10h"], "source": "cs", "hefs": ["ocr_det.hef"], "group": "paddle_ocr", "description": "optical character detection" },
+      "ocr_rec": { "arch": ["hailo8","hailo8l","hailo10h"], "source": "cs", "hefs": ["ocr_rec.hef"], "group": "paddle_ocr", "description": "optical character recognition" }
     },
 
     "pose_estimation": {
