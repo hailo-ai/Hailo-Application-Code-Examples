@@ -1,7 +1,7 @@
 Paddle OCR
 ================
 
-This example performs end-to-end text detection and recognition using the PaddleOCR pipeline accelerated by a **Hailo8** or **Hailo10H** device.
+This example performs end-to-end text detection and recognition using the PaddleOCR pipeline accelerated by a **Hailo-8**, **Hailo-8L**, or **Hailo-10H** device.
 It processes images, videos, folders, or camera input, detects text regions, and decodes the text using an OCR model.
 
 Optionally, FPS performance can be shown, and output can be saved for each input.
