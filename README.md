@@ -1,93 +1,72 @@
 ![github_code](banner.jpeg)
- 
+
+Welcome to the Hailo Application Code Examples repository! <br>
+Here you'll find a collection of application examples for running inference on Hailo-8, Hailo-8L, Hailo-10, and Hailo-15 devices, using various programming languages and operating systems.
+
+---
 
 ## 🚀 [Runtime](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/runtime)
-Application examples for Hailo inference with different languages and operating systems
-### Hailo-8 
 
-<div style="margin-left: 20px;">
-<details>
-<summary>C++</summary>
-
-APP | Description |
-|:---|:---|
-| `classifier` | Classification with models trained on ImageNet
-| `depth_estimation` | Depth estimation with scdepthv3 and stereonet
-| `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
-| `object_detection` | Object detection - generic, asynchronous
-| `onnxruntime` | Inference with a Hailo device and postprocessing with ONNXRuntime
-| `pose_estimation` | Pose estimation with yolov8
-| `semantic_segmentation` | Semantic segmentation with Resnet18_fcn trained on cityscape
-| `zero_shot_classification` | Zero-Shot Classification with clip_vit_l14
-
-</details>
+Application examples for real-time inference on Hailo accelerator devices.
 
 <details>
-<summary>Python</summary>
+<summary><strong>C++ Examples</strong></summary>
 
-APP | Description |
-|:---|:---|
-| `object_detection` | Object detection + tracker with yolo, ssd, centernet
-| `instance_segmentation` | Instance segmentation with yolov5_seg, yolov8_seg
-| `lane_detection` | Lane detection with UFLDv2
-| `pose_estimation` | Pose estimation with yolov8
-| `speech_recognition` |  Automatic Speech Recognition with Whisper model
-| `super_resolution` | Super-resolution with espcnx4, srgan
+| APP                        | Description                                                      |
+|:---------------------------|:-----------------------------------------------------------------|
+| `classification`               | Image classification with models trained on ImageNet         |
+| `depth_estimation`         | Depth estimation using scdepthv3 and stereonet                   |
+| `instance_segmentation`    | Instance segmentation with yolov5_seg and yolov8_seg             |
+| `object_detection`         | Generic and asynchronous object detection                        |
+| `onnxruntime`              | Inference with Hailo device and postprocessing via ONNXRuntime   |
+| `pose_estimation`          | Pose estimation with yolov8                                      |
+| `semantic_segmentation`    | Semantic segmentation with Resnet18_fcn (Cityscapes dataset)     |
+| `zero_shot_classification` | Zero-shot classification with clip_vit_l14                       |
+| `oriented_object_detection`| Oriented object detection using YOLO11 OBB                       |
 
 </details>
 
 <details>
-<summary>GStreamer</summary>
+<summary><strong>Python Examples</strong></summary>
 
-APP | Description |
-|:---|:---|
-| `advanced_cpp_app` | Complex GStreamer pipeline wrapped by C++
-| `cropper_aggregator` | Gstreamer pipeline with hailocropper and hailoaggregator
-| `detection_python` | Python implementation of TAPPAS detection pipeline using Yolov5m
-| `hailo"_clip` | CLIP inference on a video in real-time
-| `cpp_cascaded_networks_dynamic_osd` | Cascade networks pipeline wrapped by C++
-| `multistream_app` | Inference on multiple streams on the same pipeline, added C++ usability
-| `multistream_multi_networks` | Object detection + semantic segmentation
-| `multistream_stream_id` | Multistream with stream ID
-| `simple_cpp_app` | Simple app that shows how to use Gstreamer with C++ on top
-| `tda4vm/pose_estimation` | Single-stream pose estimation pipelin` on top of GStreamer and TDA4VM DSP
-| `tonsofstreams` | Many streams with 4 Hailo devices
-
+| APP                        | Description                                                        |
+|:---------------------------|:-------------------------------------------------------------------|
+| `object_detection`         | Object detection and tracking with YOLO, SSD, and CenterNet        |
+| `instance_segmentation`    | Instance segmentation with yolov5_seg and yolov8_seg               |
+| `lane_detection`           | Lane detection using UFLDv2                                        |
+| `pose_estimation`          | Pose estimation with yolov8                                        |
+| `speech_recognition`       | Automatic speech recognition with the Whisper model                |
+| `super_resolution`         | Super-resolution with espcnx4 and SRGAN                            |
+| `oriented_object_detection`| Oriented object detection using YOLO11 OBB                         |
 
 </details>
 
+
+## 📷 [VPU](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/vpu)
+
+Application examples for Hailo VPU:
 <details>
-<summary>Windows</summary>
+<summary><strong>All VPU Examples</strong></summary>
 
-APP | Description |
-|:---|:---|
-| `yolov5` | Object detection with yolov5 using a C++ script compiled for Windows
-| `yolov8` | Object detection with yolov8 using a C++ script compiled for Windows
-
-</details>
-</details>
-</div>
-
-<br>
-
-### Hailo-15
-
-APP | Description |
-|:---|:---|
-| `dsp example` | Demonstrate how to use Hailo DSP 
-| `zero shot classification` | Zero-Shot Classification with clip_resnet50
+| APP                      | Description                                                      |
+|:-------------------------|:-----------------------------------------------------------------|
+| `dsp example`            | Demonstrates usage of the Hailo DSP                              |
+| `zero shot classification` | Zero-shot classification with clip_resnet50                   |
 
 </details>
-
-<br>
 
 ## 🏗️ [Compilation](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/compilation)
 
-**Basic optimization diagnostic tool:** help diagnosing common optimization issues and mistakes
-</br>**Pointpillars:** Hailo device offload of the heavy 2D-convolutional part of a 3D-object-detection network operating on point-clouds
-</br>**16-bit Optimization:** Guide on how to perform 16-bit optimization
+<details>
+<summary><strong>All Compilation Examples</strong></summary>
 
-<br>
+| APP                              | Description                                                                 |
+|:----------------------------------|:----------------------------------------------------------------------------|
+| `basic_optimization_diagnostic`   | Diagnose common optimization issues and mistakes.                           |
+| `pointpillars`                    | Offload the heavy 2D-convolutional part of a 3D object detection network (PointPillars) to a Hailo device. |
+| `16bit_optimization`              | Guide for performing 16-bit optimization on Hailo devices.                  |
+
+</details>
 
 ## ⚠️ Disclaimer
 
