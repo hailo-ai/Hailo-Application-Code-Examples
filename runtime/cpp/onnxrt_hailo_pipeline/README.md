@@ -68,23 +68,13 @@ Usage
     cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/onnxrt_hailo_pipeline
     ``` 
 
-2. Download sample resources and install ONNX if missing:
-	```shell script
-    ./download_resources.sh
-    ```
-    The following files will be downloaded:
-    ```
-    yolov8m_seg.hef
-    yolov8m-seg_post.onnx
-    ```
-
-3. Compile the project on the development machine  
+2. Compile the project on the development machine  
 	```shell script
     ./build.sh
     ```
 	This creates the directory hierarchy build/ and compile an executable file called onnxrt_hailo_pipeline
 
-5. Run the example:
+3. Run the example:
 
 	```shell script
 	./build/x86_64/onnxrt_hailo_pipeline --net <hef_path> --onnx <onnx_path> --input <image_or_video_or_camera_path>
