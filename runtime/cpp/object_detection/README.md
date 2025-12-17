@@ -44,24 +44,13 @@ Usage
     cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/object_detection
     ``` 
 
-2. Download sample resources:
-	```shell script
-    ./download_resources.sh
-    ```
-    The following files will be downloaded:
-    ```
-    full_mov_slow.mp4
-    bus.jpg
-    yolov8n.hef
-    ```
-
-3. Compile the project on the development machine  
+2. Compile the project on the development machine  
 	```shell script
     ./build.sh
     ```
 	This creates the directory hierarchy build/x86_64 and compile an executable file called obj_det
 
-5. Run the example:
+3. Run the example:
 
 	```shell script
     ./build/x86_64/object_detection --net <hef_path> --input <image_or_video_or_camera_path>
