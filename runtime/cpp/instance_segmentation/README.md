@@ -50,23 +50,13 @@ Usage
     cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/instance_segmentation/yolov5seg
     ``` 
 
-2. Download sample resources:
-	```shell script
-    ./download_resources.sh
-    ```
-    The following files will be downloaded:
-    ```
-    full_mov_slow.mp4
-    yolov5m-seg.hef
-    ```
-
-3. Compile the project on the development machine  
+2. Compile the project on the development machine  
 	```shell script
     ./build.sh
     ```
 	This creates the directory hierarchy build/ and compile an executable file called instance_segmentation_cpp
 
-5. Run the example:
+3. Run the example:
 
 	```shell script
     ./build/x86_64/instance_segmentation --net <hef_path> --input <image_or_video_or_camera_path>
