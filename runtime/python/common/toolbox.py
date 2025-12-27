@@ -378,7 +378,7 @@ def resolve_input_arg(app: str, input_arg: str | None) -> str:
             sys.exit(1)
 
     # "camera" stays as is
-    if input_arg == "camera":
+    if input_arg == "camera" or input_arg.startswith(("http://", "https://", "rtsp://")):
         return input_arg
 
     path_candidate = Path(input_arg)
@@ -529,17 +529,19 @@ def init_input_source(input_path, batch_size, camera_resolution):
     cap = None
     images = None
 
-    if input_path == "camera":
+    if input_path == "camera" or input_path.startswith(("http://", "https://", "rtsp://")):
+        if input_path.startswith(("http://", "https://", "rtsp://")):
+            cap = cv2.VideoCapture(input_path)        
+        else:
+            if not is_valid_camera_index(CAMERA_INDEX):
+                logger.error(f"CAMERA_INDEX {CAMERA_INDEX} not found.")
+                available = list_available_cameras()
+                logger.warning(f"Available camera indices: {available}")
+                exit(1)
 
-        if not is_valid_camera_index(CAMERA_INDEX):
-            logger.error(f"CAMERA_INDEX {CAMERA_INDEX} not found.")
-            available = list_available_cameras()
-            logger.warning(f"Available camera indices: {available}")
-            exit(1)
-
-        resolution = None
-        # Open camera at its native resolution; don't force sd/hd/fhd here.
-        cap = cv2.VideoCapture(CAMERA_INDEX)
+            resolution = None
+            # Open camera at its native resolution; don't force sd/hd/fhd here.
+            cap = cv2.VideoCapture(CAMERA_INDEX)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'YUYV'))
         if camera_resolution in RESOLUTION_MAP:
             CAMERA_CAP_WIDTH, CAMERA_CAP_HEIGHT = RESOLUTION_MAP.get(camera_resolution)
