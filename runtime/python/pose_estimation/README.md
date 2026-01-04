@@ -43,7 +43,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/pose_estimation
+    cd Hailo-Application-Code-Examples/runtime/python/pose_estimation
     ```
 
 2. Install dependencies:
