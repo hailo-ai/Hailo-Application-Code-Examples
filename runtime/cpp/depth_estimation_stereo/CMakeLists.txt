@@ -4,7 +4,9 @@ project(stereo_depth_estimation)
 set(CMAKE_CXX_STANDARD 20)
 
 set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -std=c++17 -Wno-reorder -Wno-ignored-qualifiers -Wno-extra -Wno-unused-parameter -Wno-error=conversion -Wno-conversion)
-
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 set(CMAKE_HAVE_THREADS_LIBRARY 1)
