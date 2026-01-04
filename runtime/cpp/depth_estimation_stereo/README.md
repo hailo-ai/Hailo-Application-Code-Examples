@@ -37,7 +37,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/depth_estimation/stereo
+    cd Hailo-Application-Code-Examples/runtime/cpp/depth_estimation_stereo
     ``` 
 
 2. Compile the project on the development machine  

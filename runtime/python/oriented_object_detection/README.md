@@ -45,7 +45,7 @@ To avoid compatibility issues, it's recommended to have a separate venv from the
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/oriented_object_detection
+    cd Hailo-Application-Code-Examples/runtime/python/oriented_object_detection
     ```
 
 2. Install dependencies:
