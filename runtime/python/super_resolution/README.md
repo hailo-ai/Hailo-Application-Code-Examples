@@ -35,7 +35,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/super_resolution
+    cd Hailo-Application-Code-Examples/runtime/python/super_resolution
     ```
 
 2. Install dependencies:

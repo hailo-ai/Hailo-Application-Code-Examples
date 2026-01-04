@@ -25,7 +25,7 @@ Follow these steps to set up the environment and install dependencies for infere
 
    ```sh
    git clone https://github.com/hailo-ai/Hailo-Application-Code-Examples.git
-   cd Hailo-Application-Code-Examples/runtime/hailo-8/python/speech_recognition
+   cd Hailo-Application-Code-Examples/runtime/python/speech_recognition
    ```
    If you have any authentication issues, add your SSH key or download the zip.
 

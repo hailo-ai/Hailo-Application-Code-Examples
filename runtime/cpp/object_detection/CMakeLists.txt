@@ -3,6 +3,9 @@ project(object_detection)
 
 # Compilation options for warnings, debugging, and optimization
 set(COMPILE_OPTIONS -Wall -Wextra -O3 -fconcepts -Wno-ignored-qualifiers -Wno-extra -Wno-stringop-truncation -Wno-reorder)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find necessary packages
 find_package(Threads)

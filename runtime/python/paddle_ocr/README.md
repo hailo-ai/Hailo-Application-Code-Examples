@@ -37,7 +37,7 @@ To avoid compatibility issues, it's recommended to have a separate venv from the
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/python/paddle_ocr
+    cd Hailo-Application-Code-Examples/runtime/python/paddle_ocr
     ```
 
 2. Install dependencies:

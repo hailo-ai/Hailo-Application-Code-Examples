@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.10.0)
 project(classifier)
 
 set(COMPILE_OPTIONS -Wall -std=gnu++2a -Werror -O3)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(HailoRT REQUIRED)
 find_package(Threads)

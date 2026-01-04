@@ -1,11 +1,21 @@
+# 📦 Deprecated Repository
+
+This repository is no longer in use and is not receiving updates, fixes, or support.
+
+You can now find the latest code at:
+https://github.com/hailo-ai/hailo-apps
+
+---
+
 ![github_code](banner.jpeg)
 
 Welcome to the Hailo Application Code Examples repository! <br>
 Here you'll find a collection of application examples for running inference on Hailo-8, Hailo-8L, Hailo-10, and Hailo-15 devices, using various programming languages and operating systems.
 
----
 
-## 🚀 [Runtime](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/runtime)
+
+
+# 🚀 [Runtime](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/runtime)
 
 Application examples for real-time inference on Hailo accelerator devices.
 
@@ -42,7 +52,7 @@ Application examples for real-time inference on Hailo accelerator devices.
 </details>
 
 
-## 📷 [VPU](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/vpu)
+# 📷 [VPU](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/vpu)
 
 Application examples for Hailo VPU:
 <details>
@@ -55,7 +65,7 @@ Application examples for Hailo VPU:
 
 </details>
 
-## 🏗️ [Compilation](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/compilation)
+# 🏗️ [Compilation](https://github.com/hailo-ai/Hailo-Application-Code-Examples/tree/main/compilation)
 
 <details>
 <summary><strong>All Compilation Examples</strong></summary>
@@ -68,6 +78,6 @@ Application examples for Hailo VPU:
 
 </details>
 
-## ⚠️ Disclaimer
+# ⚠️ Disclaimer
 
 The code examples are provided by Hailo solely on an “AS IS” basis and “with all faults”. No responsibility or liability is accepted or shall be imposed upon Hailo regarding the accuracy, merchantability, completeness or suitability of the code example. Hailo shall not have any liability or responsibility for errors or omissions in, or any business decisions made by you in reliance on this code example or any part of it. If an error occurs when running the examples, please open a ticket in the "Issues" tab.

@@ -65,7 +65,7 @@ Usage
     ```shell script
     git clone <https://github.com/hailo-ai/Hailo-Application-Code-Examples.git>
         
-    cd Hailo-Application-Code-Examples/runtime/hailo-8/cpp/onnxrt_hailo_pipeline
+    cd Hailo-Application-Code-Examples/runtime/cpp/onnxrt_hailo_pipeline
     ``` 
 
 2. Compile the project on the development machine  

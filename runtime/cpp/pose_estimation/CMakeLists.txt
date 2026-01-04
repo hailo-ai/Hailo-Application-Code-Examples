@@ -3,6 +3,15 @@ project(pose_estimation)
 
 set(CMAKE_CXX_STANDARD 20)
 
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")
+    message(FATAL_ERROR
+        "GCC 11+ required. Found version ${CMAKE_CXX_COMPILER_VERSION} at ${CMAKE_CXX_COMPILER}\n"
+        "Fix:\n"
+        "  • Install GCC 11+: sudo apt install gcc-11 g++-11\n"
+        "  • Reconfigure: cmake -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 <src>\n"
+        "  • Delete your build directory and rerun cmake.")
+endif()
+
 set(COMPILE_OPTIONS -Werror -Wall -Wextra -Wconversion -O3 -Wno-reorder -Wno-ignored-qualifiers -Wno-extra -Wno-unused-local-typedefs -Wno-conversion -Wno-parentheses -Wno-unused-but-set-variable -Wno-array-bounds -Wno-unused-value)
 
 set(BASE_DIR /path/to/yolov8/example/folder)
@@ -47,7 +56,6 @@ link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 add_dependencies(${PROJECT_NAME} xtl-test xtensor-test)
 include_directories(${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../common)
-include_directories(${ONNXRUNTIME_INCLUDE_DIR})
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS} -fconcepts)
 target_link_libraries(${PROJECT_NAME} HailoRT::libhailort ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS})
 

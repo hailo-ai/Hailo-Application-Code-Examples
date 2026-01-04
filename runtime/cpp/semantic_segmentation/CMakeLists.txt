@@ -6,6 +6,9 @@ find_package(OpenCV REQUIRED)
 find_package(HailoRT REQUIRED)
 
 set(COMPILE_OPTIONS_CPP -Wall -Werror -O3)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCES
     ${PROJECT_NAME}.cpp
