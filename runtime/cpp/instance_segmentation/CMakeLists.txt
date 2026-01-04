@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.11)
+
 project(instance_segmentation CXX)
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")
+    message(FATAL_ERROR
+        "GCC 11+ required. Found version ${CMAKE_CXX_COMPILER_VERSION} at ${CMAKE_CXX_COMPILER}\n"
+        "Fix:\n"
+        "  • Install GCC 11+: sudo apt install gcc-11 g++-11\n"
+        "  • Reconfigure: cmake -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 <src>\n"
+        "  • Delete your build directory and rerun cmake.")
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(COMPILE_OPTIONS_CPP
