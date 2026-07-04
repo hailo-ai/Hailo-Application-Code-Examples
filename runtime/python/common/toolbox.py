@@ -588,7 +588,7 @@ def load_images_opencv(images_path: str) -> List[np.ndarray]:
     elif path.is_dir():
         images = [
             read_rgb(img)
-            for img in path.glob("*")
+            for img in sorted(path.glob("*"))
             if img.suffix.lower() in IMAGE_EXTENSIONS
         ]
         return [img for img in images if img is not None]
@@ -611,7 +611,7 @@ def load_input_images(images_path: str):
         return [Image.open(path)]
     elif path.is_dir():
         return [
-            Image.open(img) for img in path.glob("*")
+            Image.open(img) for img in sorted(path.glob("*"))
             if img.suffix.lower() in IMAGE_EXTENSIONS
         ]
     return []
